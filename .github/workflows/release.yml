@@ -20,8 +20,26 @@ jobs:
         with:
           go-version: "1.19"
 
+      - id: go-cache-paths
+        run: |
+          echo "go_build=$(go env GOCACHE)" >> $GITHUB_ENV
+          echo "go_mod=$(go env GOMODCACHE)" >> $GITHUB_ENV
+
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Go Build Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.go_build }}
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+
+      - name: Go Mod Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.go_mod }}
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+
 
       - name: Install Linux dependencies
         run: |
@@ -37,12 +55,13 @@ jobs:
       - name: Update executable
         run: |
           chmod +x VencordInstaller
+          mv VencordInstaller VencordInstaller.linux
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: VencordInstaller.linux
-          path: VencordInstaller
+          path: VencordInstaller.linux
 
 
 
@@ -55,8 +74,25 @@ jobs:
         with:
           go-version: "1.19"
 
+      - id: go-cache-paths
+        run: |
+          echo "go_build=$(go env GOCACHE)" >> $GITHUB_ENV
+          echo "go_mod=$(go env GOMODCACHE)" >> $GITHUB_ENV
+
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Go Build Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.go_build }}
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+
+      - name: Go Mod Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.go_mod }}
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
 
       - name: Install dependencies
         run: brew install pkg-config sdl2
@@ -81,9 +117,9 @@ jobs:
           zip -r VencordInstaller.MacOS.zip VencordInstaller.app
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: Vencord.macos
+          name: VencordInstaller.macos
           path: VencordInstaller.MacOS.zip
 
 
@@ -96,8 +132,25 @@ jobs:
         with:
           go-version: "1.19"
 
+      - id: go-cache-paths
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "go_build=$(go env GOCACHE)"
+          Add-Content -Path $env:GITHUB_ENV -Value "go_mod=$(go env GOMODCACHE)"
+
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Go Build Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.go_build }}
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+
+      - name: Go Mod Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.go_mod }}
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
 
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
@@ -126,7 +179,7 @@ jobs:
           CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -v -tags static -ldflags "-s -w -H=windowsgui -extldflags=-static"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: VencordInstaller.windows
           path: VencordInstaller.exe
@@ -139,37 +192,35 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: VencordInstaller.linux
           path: linux
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: VencordInstaller.macos
           path: macos
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
-          name: VencordInstaller-windows
+          name: VencordInstaller.windows
           path: windows
 
       - name: Get some values needed for the release
         id: release_values
         run: |
-          echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
+          echo "release_tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - name: Create the release
         uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ steps.release_values.outputs.tag }}
-          draft: true
+          name: ${{ env.release_tag }}
           prerelease: false
-          body_path: .github/release_body_template.md
           files: |
             linux/VencordInstaller.linux
             macos/VencordInstaller.MacOS.zip
