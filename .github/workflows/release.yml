@@ -1,0 +1,182 @@
+# Based heavily on https://github.com/Cumcord/Impregnate/blob/9a0136038c746af7c8c68b9a24aca5dd937e5c88/.github/workflows/release.yml
+# Thanks a lot Alyxia!
+
+name: Release
+on:
+  push:
+    tags:
+      - v*
+
+env:
+  FORCE_COLOR: true
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.19"
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y pkg-config libsdl2-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libglx-dev libgl1-mesa-dev libxxf86vm-dev
+
+
+      - name: Install Go dependencies
+        run: go get -v
+
+      - name: Build
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w"
+
+      - name: Update executable
+        run: |
+          chmod +x VencordInstaller
+          mv VencordInstaller
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: VencordInstaller.linux
+          path: VencordInstaller
+
+
+
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.19"
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: brew install pkg-config sdl2
+
+      - name: Install Go dependencies
+        run: go get -v
+
+      - name: Build
+        run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "-s -w"
+
+      - name: Update executable
+        run: |
+          chmod +x VencordInstaller
+
+      # TODO figure this out later oh god i hate Mac
+      - name: Generate MacOS bundle
+        run: |
+          # mkdir -p Impregnate.app/Contents/MacOS
+          # mkdir -p Impregnate.app/Contents/Resources
+          # wget https://nova-vps.ml/~alyxia/static/Info.plist -O Impregnate.app/Contents/Info.plist
+          # mv impregnate Impregnate.app/Contents/MacOS/impregnate
+          # wget https://nova-vps.ml/~alyxia/static/icon.icns -O Impregnate.app/Contents/Resources/icon.icns
+          # zip -r Impregnate.MacOS.zip Impregnate.app
+          # mv Impregnate.MacOS.zip impregnate.MacOS.zip
+          
+          echo > Vencord.MacOS.zip # problem?
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: Vencord.macos
+          path: Vencord.MacOS.zip
+
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.19"
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+
+      - name: Install Windows dependencies
+        shell: msys2 {0}
+        run: |
+          pacman -S --noconfirm git mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-go
+          export GOROOT=/mingw64/lib/go
+          export GOPATH=/mingw64
+
+      - name: Install Go dependencies
+        shell: msys2 {0}
+        run: |
+          export GOROOT=/mingw64/lib/go
+          export GOPATH=/mingw64
+          go get -v
+          go install github.com/tc-hib/go-winres@latest
+
+      - name: Build
+        shell: msys2 {0}
+        run: |
+          export GOROOT=/mingw64/lib/go
+          export GOPATH=/mingw64
+          go-winres make --product-version "git-tag"
+          CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -v -tags static -ldflags "-s -w -H=windowsgui -extldflags=-static"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: VencordInstaller.windows
+          path: VencordInstaller.exe
+
+
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-mac, build-windows]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: VencordInstaller.linux
+          path: linux
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: VencordInstaller.macos
+          path: macos
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: VencordInstaller-windows
+          path: windows
+
+      - name: Get some values needed for the release
+        id: release_values
+        run: |
+          echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
+
+      - name: Create the release
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ steps.release_values.outputs.tag }}
+          draft: true
+          prerelease: false
+          body_path: .github/release_body_template.md
+          files: |
+            linux/VencordInstaller.linux
+            macos/VencordInstaller.MacOS.zip
+            windows/VencordInstaller.exe

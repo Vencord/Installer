@@ -1,0 +1,40 @@
+{
+  "RT_GROUP_ICON": {
+    "APP": {
+      "0000": [
+        "icon.png",
+        "icon16.png"
+      ]
+    }
+  },
+  "RT_MANIFEST": {
+    "#1": {
+      "0409": {
+        "identity": {
+          "name": "VencordInstaller",
+          "version": ""
+        },
+        "description": "Vencord Installer yes",
+        "minimum-os": "win10",
+        "execution-level": "as invoker",
+        "dpi-awareness": "system"
+      }
+    }
+  },
+  "RT_VERSION": {
+    "#1": {
+      "0000": {
+        "info": {
+          "0409": {
+            "Comments": "Comments",
+            "CompanyName": "Vendicated",
+            "FileDescription": "Vencord Installer",
+            "LegalCopyright": "© 2022 Vendicated - GPL3.0",
+            "ProductName": "Vencord Installer",
+            "ProductVersion": ""
+          }
+        }
+      }
+    }
+  }
+}
