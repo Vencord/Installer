@@ -61,3 +61,10 @@ func ReadFile(path string) (string, error) {
 	}
 	return string(b), nil
 }
+
+func Ternary[T any](b bool, ifTrue, ifFalse T) T {
+	if b {
+		return ifTrue
+	}
+	return ifFalse
+}

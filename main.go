@@ -19,18 +19,12 @@
 package main
 
 import (
-	"image/color"
 	"os"
 	"path"
 	"strings"
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/imgui-go"
-)
-
-var (
-	DiscordGreen = color.RGBA{R: 0x2D, G: 0x7C, B: 0x46, A: 0xff}
-	DiscordRed   = color.RGBA{R: 0xEC, G: 0x41, B: 0x44, A: 0xff}
 )
 
 var (
@@ -51,14 +45,14 @@ var (
 
 type CondWidget struct {
 	predicate  bool
-	ifWidget   func() g.Layout
-	elseWidget func() g.Layout
+	ifWidget   func() g.Widget
+	elseWidget func() g.Widget
 }
 
 func (w *CondWidget) Build() {
 	if w.predicate {
 		w.ifWidget().Build()
-	} else {
+	} else if w.elseWidget != nil {
 		w.elseWidget().Build()
 	}
 }
@@ -71,13 +65,10 @@ func handlePatch() {
 		choice = discords[radioIdx].(string)
 	}
 
-	g.Msgbox("Ready to patch?", choice).
-		Buttons(g.MsgboxButtonsYesNo).
-		ResultCallback(func(result g.DialogResult) {
-			if result {
-				g.Msgbox("Success!", "Yayyyy").Buttons(g.MsgboxButtonsOk)
-			}
-		})
+	// TODO
+	if len(choice) == -1 {
+		panic(2)
+	}
 }
 
 func handleUnpatch() {
@@ -88,13 +79,10 @@ func handleUnpatch() {
 		choice = discords[radioIdx].(string)
 	}
 
-	g.Msgbox("Ready to unpatch?", choice).
-		Buttons(g.MsgboxButtonsYesNo).
-		ResultCallback(func(result g.DialogResult) {
-			if result {
-				g.Msgbox("Success!", "Yayyyy").Buttons(g.MsgboxButtonsOk)
-			}
-		})
+	// TODO
+	if len(choice) == -1 {
+		panic(2)
+	}
 }
 
 func onCustomInputChanged() {
@@ -160,7 +148,7 @@ func makeRadioOnChange(i int) func() {
 	}
 }
 
-func renderFilesDirErr() g.Layout {
+func renderFilesDirErr() g.Widget {
 	return g.Layout{
 		g.Dummy(0, 50),
 		g.Style().
@@ -175,7 +163,7 @@ func renderFilesDirErr() g.Layout {
 	}
 }
 
-func renderInstaller() g.Layout {
+func renderInstaller() g.Widget {
 	candidates := makeAutoComplete()
 	wi, _ := win.GetSize()
 	w := float32(wi)
@@ -253,17 +241,32 @@ func renderInstaller() g.Layout {
 			g.Row(
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordGreen).
+					SetDisabled(GithubError != nil).
 					To(
 						g.Button("Patch").
 							OnClick(handlePatch).
-							Size(w*0.5, 50),
+							Size(w/3, 50),
+						g.Tooltip("Patch the selected Discord Install"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordRed).
+					SetDisabled(GithubError != nil).
 					To(
 						g.Button("Unpatch").
 							OnClick(handleUnpatch).
-							Size(w*0.5, 50),
+							Size(w/3, 50),
+						g.Tooltip("Unpatch the selected Discord Install"),
+					),
+				g.Style().
+					SetColor(g.StyleColorButton, DiscordBlue).
+					SetDisabled(GithubError != nil).
+					To(
+						g.Button(Ternary(GithubError == nil && LatestHash == InstalledHash, "Re-Download Vencord", "Update")).
+							OnClick(func() {
+								_ = InstallLatestBuilds()
+							}).
+							Size(w/3, 50),
+						g.Tooltip("Update your local Vencord files"),
 					),
 			),
 		),
@@ -297,8 +300,36 @@ func loop() {
 			g.Dummy(0, 20),
 
 			g.Style().SetFontSize(20).To(
-				g.Label("Files will be downloaded to: "+FilesDir),
+				g.Row(
+					g.Label("Files will be downloaded to: "+FilesDir),
+					g.Style().
+						SetColor(g.StyleColorButton, DiscordBlue).
+						SetStyle(g.StyleVarFramePadding, 4, 4).
+						To(
+							g.Button("Open Directory").OnClick(func() {
+								g.OpenURL("file://" + FilesDir)
+							}),
+						),
+				),
 				g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me"),
+				g.Dummy(0, 10),
+				g.Label("Installer Version: "+InstallerGitHash),
+				g.Label("Local Vencord Version: "+InstalledHash),
+				&CondWidget{
+					GithubError == nil,
+					func() g.Widget {
+						return g.Label("Latest Vencord Version: " + LatestHash)
+					}, func() g.Widget {
+						return g.Style().
+							SetColor(g.StyleColorText, DiscordRed).
+							To(
+								g.Align(g.AlignCenter).To(
+									g.Label("Failed to fetch Info from GitHub: "+GithubError.Error()),
+									g.Label("Resolve this error, then restart me!"),
+								),
+							)
+					},
+				},
 			),
 
 			&CondWidget{
@@ -310,6 +341,9 @@ func loop() {
 }
 
 func main() {
+	// this init function depends on patcher init, so using the automatic init won't work
+	InitGithubDownloader()
+
 	discords = FindDiscords()
 	customChoiceIdx = len(discords)
 
