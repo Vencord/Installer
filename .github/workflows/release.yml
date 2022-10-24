@@ -38,7 +38,6 @@ jobs:
       - name: Update executable
         run: |
           chmod +x VencordInstaller
-          mv VencordInstaller
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2

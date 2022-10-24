@@ -17,3 +17,7 @@
  */
 
 package main
+
+func FindDiscords() []any {
+	return nil
+}
