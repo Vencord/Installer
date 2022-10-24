@@ -28,7 +28,6 @@ jobs:
           sudo apt update
           sudo apt install -y pkg-config libsdl2-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libglx-dev libgl1-mesa-dev libxxf86vm-dev
 
-
       - name: Install Go dependencies
         run: go get -v
 
@@ -72,24 +71,20 @@ jobs:
         run: |
           chmod +x VencordInstaller
 
-      # TODO figure this out later oh god i hate Mac
       - name: Generate MacOS bundle
         run: |
-          # mkdir -p Impregnate.app/Contents/MacOS
-          # mkdir -p Impregnate.app/Contents/Resources
-          # wget https://nova-vps.ml/~alyxia/static/Info.plist -O Impregnate.app/Contents/Info.plist
-          # mv impregnate Impregnate.app/Contents/MacOS/impregnate
-          # wget https://nova-vps.ml/~alyxia/static/icon.icns -O Impregnate.app/Contents/Resources/icon.icns
-          # zip -r Impregnate.MacOS.zip Impregnate.app
-          # mv Impregnate.MacOS.zip impregnate.MacOS.zip
-          
-          echo > Vencord.MacOS.zip # problem?
+          mkdir -p VencordInstaller.app/Contents/MacOS
+          mkdir -p VencordInstaller.app/Contents/Resources
+          cp macos/Info.plist VencordInstaller.app/Contents/Info.plist
+          mv VencordInstaller VencordInstaller.app/Contents/MacOS/VencordInstaller
+          cp macos/icon.icns VencordInstaller.app/Contents/Resources/icon.icns
+          zip -r VencordInstaller.MacOS.zip VencordInstaller.app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: Vencord.macos
-          path: Vencord.MacOS.zip
+          path: VencordInstaller.MacOS.zip
 
 
   build-windows:
