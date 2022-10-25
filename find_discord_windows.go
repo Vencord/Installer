@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	path "path/filepath"
 	"strings"
 )
 
@@ -50,7 +50,7 @@ func ParseDiscord(p, branch string) *DiscordInstall {
 			if !ExistsFile(resources) {
 				continue
 			}
-			app := path.Join(p, "app")
+			app := path.Join(resources, "app")
 			versions = append(versions, app)
 			isPatched = isPatched || ExistsFile(app)
 		}
@@ -63,7 +63,7 @@ func ParseDiscord(p, branch string) *DiscordInstall {
 	if branch == "" {
 		branch = GetBranch(p)
 	}
-	
+
 	return &DiscordInstall{
 		path:             p,
 		branch:           branch,

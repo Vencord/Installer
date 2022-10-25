@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	path "path/filepath"
 	"strings"
 )
 
@@ -36,19 +36,24 @@ func init() {
 	// Thankfully, sudo sets the SUDO_USER env variable, so use that to look up
 	// the actual HOME
 	var sudoUser = os.Getenv("SUDO_USER")
+	fmt.Println(sudoUser)
 	if sudoUser != "" {
 		passwd, err := ReadFile("/etc/passwd")
 		if err != nil {
 			// TODO
 		}
 		for _, line := range strings.Fields(passwd) {
+			fmt.Println(line)
 			if strings.HasPrefix(line, sudoUser+":") {
+				fmt.Println("Found line")
 				Home = strings.Split(line, ":")[5]
+				// Error = invalid key but that won't ever happen
+				_ = os.Setenv("HOME", Home)
 				break
 			}
-			// somehow not found?
-			Home = os.Getenv("HOME")
 		}
+		// somehow not found?
+		Home = os.Getenv("HOME")
 	} else {
 		Home = os.Getenv("HOME")
 	}

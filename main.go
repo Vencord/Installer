@@ -20,7 +20,7 @@ package main
 
 import (
 	"os"
-	"path"
+	path "path/filepath"
 	"strings"
 
 	g "github.com/AllenDang/giu"

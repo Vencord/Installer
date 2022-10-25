@@ -23,7 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	path "path/filepath"
 
 	g "github.com/AllenDang/giu"
 	"github.com/ProtonMail/go-appdir"
