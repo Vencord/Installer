@@ -24,6 +24,8 @@ Download the latest Mac build from [GitHub Releases](https://github.com/Vendicat
 
 If you get a `VencordInstaller can't be opened` message, right-click `VencordInstaller.app` and click open.
 
+This error shows because the app isn't signed since I'm not paying 100 bucks for an Apple Developer license. 
+
 ### Building from source
 
 You need the go compiler and gcc (MinGW on Windows).
