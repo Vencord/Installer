@@ -32,29 +32,32 @@ var (
 )
 
 func init() {
-	// If ran as sudo, the HOME environment variable will be that of root.
+	// If ran via sudo, the HOME environment variable will be that of root.
 	// Thankfully, sudo sets the SUDO_USER env variable, so use that to look up
 	// the actual HOME
 	var sudoUser = os.Getenv("SUDO_USER")
 	fmt.Println(sudoUser)
 	if sudoUser != "" {
+		fmt.Println("VencordInstaller was run with sudo")
 		passwd, err := ReadFile("/etc/passwd")
 		if err != nil {
 			// TODO
 		}
 		for _, line := range strings.Fields(passwd) {
-			fmt.Println(line)
 			if strings.HasPrefix(line, sudoUser+":") {
-				fmt.Println("Found line")
 				Home = strings.Split(line, ":")[5]
+				fmt.Println("Found actual HOME at", Home)
+
 				// Error = invalid key but that won't ever happen
 				_ = os.Setenv("HOME", Home)
 				break
 			}
 		}
-		// somehow not found?
 		Home = os.Getenv("HOME")
 	} else {
+		if os.Getuid() == 0 {
+			panic("VencordInstaller was run as root but SUDO_USER is not set. Please rerun me as a normal user or with sudo")
+		}
 		Home = os.Getenv("HOME")
 	}
 
@@ -73,10 +76,10 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 
 	isFlatpak := strings.Contains(p, "/flatpak/")
 	if isFlatpak {
-		discordName := name[len("com.discordapp."):]
-		if discordName != "Discord" { //
+		discordName := strings.ToLower(name[len("com.discordapp."):])
+		if discordName != "discord" { //
 			// DiscordCanary -> discord-canary
-			discordName = strings.ToLower(discordName[:7] + "-" + discordName[7:])
+			discordName = discordName[:7] + "-" + discordName[7:]
 		}
 		p = path.Join(p, "current", "active", "files", discordName)
 	}
@@ -92,6 +95,7 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 		isSystemElectron = true
 		isPatched = ExistsFile(path.Join(p, "_app.asar.unpacked"))
 	} else {
+		fmt.Println("Tried to parse invalid Location:", p)
 		return nil
 	}
 
@@ -124,6 +128,7 @@ func FindDiscords() []any {
 
 			discordDir := path.Join(dir, name)
 			if discord := ParseDiscord(discordDir, ""); discord != nil {
+				fmt.Println("Found Discord install at ", discordDir)
 				discords = append(discords, discord)
 			}
 		}

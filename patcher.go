@@ -41,10 +41,13 @@ var PackageJson = []byte(`{
 
 func init() {
 	if dir := os.Getenv("VENCORD_USER_DATA_DIR"); dir != "" {
+		fmt.Println("Using VENCORD_USER_DATA_DIR")
 		FilesDir = path.Join(dir, "dist")
 	} else if dir = os.Getenv("DISCORD_USER_DATA_DIR"); dir != "" {
+		fmt.Println("Using DISCORD_USER_DATA_DIR/../VencordData")
 		FilesDir = path.Join(dir, "..", "VencordData", "dist")
 	} else {
+		fmt.Println("Using UserConfig")
 		FilesDir = path.Join(appdir.New("Vencord").UserConfig(), "dist")
 	}
 	FilesDirErr = os.MkdirAll(FilesDir, 0755)
@@ -76,7 +79,7 @@ func IsSafeToDelete(path string) error {
 	for _, file := range files {
 		name := file.Name()
 		if name != "package.json" && name != "index.js" {
-			return errors.New("Unexpected file '" + name + "'")
+			return errors.New("Found file '" + name + "' which doesn't belong to Vencord.")
 		}
 	}
 	return nil
@@ -129,11 +132,15 @@ func (di *DiscordInstall) Unpatch() {
 }
 
 func (di *DiscordInstall) patch() error {
-	if err := InstallLatestBuilds(); err != nil {
-		return nil // already shown dialog so don't return same error again
+	fmt.Println("Patching " + di.path + "...")
+	if LatestHash != InstalledHash {
+		if err := InstallLatestBuilds(); err != nil {
+			return nil // already shown dialog so don't return same error again
+		}
 	}
 
 	if di.isPatched {
+		fmt.Println(di.path, "is already patched. Unpatching first...")
 		if err := di.unpatch(); err != nil {
 			if errors.Is(err, os.ErrPermission) {
 				return err
@@ -143,6 +150,7 @@ func (di *DiscordInstall) patch() error {
 	}
 
 	if di.isSystemElectron {
+		fmt.Println("Detected as System Electron Install")
 		// hack:
 		// - Rename app.asar 		  -> _app.asar
 		// - Rename app.asar.unpacked -> _app.asar.unpacked
@@ -151,38 +159,49 @@ func (di *DiscordInstall) patch() error {
 		// Perhaps I could register a pacman hook to fix it
 		appAsar := path.Join(di.path, "app.asar")
 		_appAsar := path.Join(di.path, "_app.asar")
+		fmt.Println("Renaming", appAsar, "to", _appAsar)
 		if err := os.Rename(appAsar, _appAsar); err != nil {
 			return err
 		}
+		fmt.Println("Renaming", appAsar+".unpacked", "to", _appAsar+".unpacked")
 		err := os.Rename(appAsar+".unpacked", _appAsar+".unpacked")
 		if err != nil {
 			return err
 		}
+		fmt.Println("Writing files to", appAsar)
 		if err = writeFiles(appAsar); err != nil {
 			return err
 		}
 	} else {
 		for _, version := range di.versions {
+			fmt.Println("Writing files to", version)
 			if err := writeFiles(version); err != nil {
 				return err
 			}
 		}
 	}
+	fmt.Println("Successfully patched", di.path)
 	di.isPatched = true
 	return nil
 }
 
 func (di *DiscordInstall) unpatch() error {
+	fmt.Println("Unpatching " + di.path + "...")
+
 	if di.isSystemElectron {
+		fmt.Println("Detected as System Electron Install")
 		// See comment in Patch
 		appAsar := path.Join(di.path, "app.asar")
 		_appAsar := path.Join(di.path, "_app.asar")
+		fmt.Println("Deleting", appAsar)
 		if err := os.RemoveAll(appAsar); err != nil {
 			return err
 		}
+		fmt.Println("Renaming", _appAsar, "to", appAsar)
 		if err := os.Rename(_appAsar, appAsar); err != nil {
 			return err
 		}
+		fmt.Println("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
 		if err := os.Rename(_appAsar+".unpacked", appAsar+".unpacked"); err != nil {
 			return err
 		}
@@ -190,17 +209,21 @@ func (di *DiscordInstall) unpatch() error {
 		for _, version := range di.versions {
 			err := IsSafeToDelete(version)
 			if errors.Is(err, os.ErrPermission) {
+				fmt.Println("Permission to read", version, "denied")
 				return err
 			}
+			fmt.Println("Checking if", version, "is safe to delete:", Ternary(err == nil, "Yes", "No"))
 			if err != nil {
 				return errors.New("Deleting patch folder '" + version + "' is possibly unsafe. Please do it manually: " + err.Error())
 			}
+			fmt.Println("Deleting", version)
 			err = os.RemoveAll(version)
 			if err != nil {
 				return err
 			}
 		}
 	}
+	fmt.Println("Successfully unpatched", di.path)
 	di.isPatched = false
 	return nil
 }

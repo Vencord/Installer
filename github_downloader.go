@@ -86,6 +86,8 @@ func InitGithubDownloader() {
 		} else {
 			i := strings.LastIndex(ReleaseData.Name, " ") + 1
 			LatestHash = ReleaseData.Name[i:]
+			fmt.Println("Finished fetching GitHub Data")
+			fmt.Println("Latest hash is", LatestHash, "Local Install is", Ternary(LatestHash == InstalledHash, "up to date!", "outdated!"))
 		}
 	}()
 
@@ -97,11 +99,10 @@ func InitGithubDownloader() {
 	//goland:noinspection GoUnhandledErrorResult
 	defer f.Close()
 
-	fmt.Println("Found existing Vencord Install. Checking for hash")
+	fmt.Println("Found existing Vencord Install. Checking for hash...")
 	scanner := bufio.NewScanner(f)
 	if scanner.Scan() {
 		line := scanner.Text()
-		println(line)
 		if strings.HasPrefix(line, "// Vencord ") {
 			InstalledHash = line[11:]
 			fmt.Println("Existing hash is", InstalledHash)

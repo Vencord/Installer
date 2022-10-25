@@ -19,6 +19,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -52,8 +53,10 @@ func ArrayFilter[T any](arr []T, filter func(e T) bool) []T {
 }
 
 func ReadFile(path string) (string, error) {
+	fmt.Println("Reading", path)
 	f, err := os.Open(path)
 	if err != nil {
+		fmt.Println("Failed to read", err)
 		return "", err
 	}
 	//goland:noinspection GoUnhandledErrorResult
@@ -68,6 +71,7 @@ func ReadFile(path string) (string, error) {
 
 func ExistsFile(path string) bool {
 	_, err := os.Stat(path)
+	fmt.Println("Checking if", path, "exists:", Ternary(err == nil, "Yes", "No"))
 	return err == nil
 }
 
