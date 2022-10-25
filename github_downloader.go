@@ -176,6 +176,7 @@ func installLatestBuilds() (retErr error) {
 	}
 
 	wg.Wait()
+	_ = FixOwnership(FilesDir)
 
 	InstalledHash = LatestHash
 	g.Update()

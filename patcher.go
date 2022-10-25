@@ -52,9 +52,13 @@ func init() {
 		fmt.Println("Using UserConfig")
 		FilesDir = path.Join(appdir.New("Vencord").UserConfig(), "dist")
 	}
-	FilesDirErr = os.MkdirAll(FilesDir, 0755)
-	if FilesDirErr != nil {
-		fmt.Println("Failed to create", FilesDir, FilesDirErr)
+	if !ExistsFile(FilesDir) {
+		FilesDirErr = os.MkdirAll(FilesDir, 0755)
+		if FilesDirErr != nil {
+			fmt.Println("Failed to create", FilesDir, FilesDirErr)
+		} else {
+			FilesDirErr = FixOwnership(FilesDir)
+		}
 	}
 	Patcher = path.Join(FilesDir, "patcher.js")
 }

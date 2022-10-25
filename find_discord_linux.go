@@ -21,8 +21,11 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"os/user"
 	path "path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -37,28 +40,23 @@ func init() {
 	// the actual HOME
 	var sudoUser = os.Getenv("SUDO_USER")
 	if sudoUser != "" {
-		fmt.Println("VencordInstaller was run with sudo")
-		passwd, err := ReadFile("/etc/passwd")
-		if err != nil {
-			// TODO
-		}
-		for _, line := range strings.Fields(passwd) {
-			if strings.HasPrefix(line, sudoUser+":") {
-				Home = strings.Split(line, ":")[5]
-				fmt.Println("Found actual HOME at", Home)
+		fmt.Println("VencordInstaller was run with root privileges, actual user is", sudoUser)
+		fmt.Println("Looking up HOME of", sudoUser)
 
-				// Error = invalid key but that won't ever happen
-				_ = os.Setenv("HOME", Home)
-				break
-			}
+		u, err := user.Lookup(sudoUser)
+		if err != nil {
+			fmt.Println("Failed to lookup HOME", err)
+		} else {
+			fmt.Println("Actual HOME is", u.HomeDir)
+			_ = os.Setenv("HOME", u.HomeDir)
 		}
-		Home = os.Getenv("HOME")
 	} else {
 		if os.Getuid() == 0 {
 			panic("VencordInstaller was run as root but SUDO_USER is not set. Please rerun me as a normal user or with sudo")
 		}
 		Home = os.Getenv("HOME")
 	}
+	Home = os.Getenv("HOME")
 
 	DiscordDirs = []string{
 		"/usr/share",
@@ -134,4 +132,44 @@ func FindDiscords() []any {
 	}
 
 	return discords
+}
+
+// Not actually find_discord but no need to have this in the binary on Windows/Mac
+
+// FixOwnership fixes file ownership on Linux
+func FixOwnership(p string) error {
+	if os.Geteuid() != 0 {
+		return nil
+	}
+
+	fmt.Println("Fixing Ownership of", p)
+
+	sudoUser := os.Getenv("SUDO_USER")
+	if sudoUser == "" {
+		panic("SUDO_USER was empty. This point should never be reached")
+	}
+
+	fmt.Println("Looking up User", sudoUser)
+	u, err := user.Lookup(sudoUser)
+	if err != nil {
+		fmt.Println("Lookup failed:", err)
+		return err
+	}
+	fmt.Println("Lookup successful, Uid", u.Uid, "Gid", u.Gid)
+	// This conversion is safe because of the GOOS guard above
+	uid, _ := strconv.Atoi(u.Uid)
+	gid, _ := strconv.Atoi(u.Gid)
+
+	err = path.WalkDir(p, func(path string, d fs.DirEntry, err error) error {
+		if err == nil {
+			err = os.Chown(path, uid, gid)
+			fmt.Println("chown", u.Uid+":"+u.Gid, path+":", Ternary(err == nil, "Success!", "Failed"))
+		}
+		return err
+	})
+
+	if err != nil {
+		fmt.Println("Failed to fix ownership:", err)
+	}
+	return err
 }

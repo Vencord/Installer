@@ -67,3 +67,7 @@ func FindDiscords() []any {
 	}
 	return discords
 }
+
+func FixOwnership(_ string) error {
+	return nil
+}
