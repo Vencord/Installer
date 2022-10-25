@@ -41,7 +41,7 @@ func ParseDiscord(p, branch string) *DiscordInstall {
 	}
 
 	if branch == "" {
-		branch = getBranch(strings.TrimSuffix(p, ".app"))
+		branch = GetBranch(strings.TrimSuffix(p, ".app"))
 	}
 
 	app := path.Join(resources, "app")
