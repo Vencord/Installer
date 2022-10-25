@@ -20,7 +20,11 @@ sh -c "$(curl -s https://raw.githubusercontent.com/Vendicated/VencordInstaller/m
 
 ### Mac
 
-Download the latest Mac build from [GitHub Releases](https://github.com/Vendicated/VencordInstaller/releases/latest), unzip it and run VencordInstaller.app
+Download the latest Mac build from [GitHub Releases](https://github.com/Vendicated/VencordInstaller/releases/latest), unzip it, and run `VencordInstaller.app` 
+
+If you get a `VencordInstaller can't be opened` message, right-click `VencordInstaller.app` and click open.
+
+This error shows because the app isn't signed since I'm not paying 100 bucks for an Apple Developer license. 
 
 ### Building from source
 
