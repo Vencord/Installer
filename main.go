@@ -57,31 +57,31 @@ func (w *CondWidget) Build() {
 	}
 }
 
-func handlePatch() {
-	var choice string
+func getChosenInstall() *DiscordInstall {
+	var choice *DiscordInstall
 	if radioIdx == customChoiceIdx {
-		choice = customDir
+		choice = ParseDiscord(customDir, "")
+		if choice == nil {
+			g.Msgbox("Uh Oh!", "That doesn't seem to be a Discord install. Please make sure you select the base folder (blah/Discord, not blah/Discord/resources/app)").
+				Buttons(g.MsgboxButtonsOk)
+		}
 	} else {
-		choice = discords[radioIdx].(string)
+		choice = discords[radioIdx].(*DiscordInstall)
 	}
+	return choice
+}
 
-	// TODO
-	if len(choice) == -1 {
-		panic(2)
+func handlePatch() {
+	choice := getChosenInstall()
+	if choice != nil {
+		choice.Patch()
 	}
 }
 
 func handleUnpatch() {
-	var choice string
-	if radioIdx == customChoiceIdx {
-		choice = customDir
-	} else {
-		choice = discords[radioIdx].(string)
-	}
-
-	// TODO
-	if len(choice) == -1 {
-		panic(2)
+	choice := getChosenInstall()
+	if choice != nil {
+		choice.Unpatch()
 	}
 }
 
@@ -179,8 +179,12 @@ func renderInstaller() g.Widget {
 
 		g.Style().SetFontSize(20).To(
 			g.RangeBuilder("Discords", discords, func(i int, v any) g.Widget {
-				dir := v.(string)
-				return g.RadioButton(dir, radioIdx == i).
+				d := v.(*DiscordInstall)
+				text := d.path + " (" + d.branch + ")"
+				if d.isPatched {
+					text = "[PATCHED] " + text
+				}
+				return g.RadioButton(text, radioIdx == i).
 					OnChange(makeRadioOnChange(i))
 			}),
 
@@ -311,7 +315,7 @@ func loop() {
 							}),
 						),
 				),
-				g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me"),
+				g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me").Wrapped(true),
 				g.Dummy(0, 10),
 				g.Label("Installer Version: "+InstallerGitHash),
 				g.Label("Local Vencord Version: "+InstalledHash),

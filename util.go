@@ -21,6 +21,7 @@ package main
 import (
 	"io"
 	"os"
+	"strings"
 )
 
 func ArrayIncludes[T comparable](arr []T, v T) bool {
@@ -55,6 +56,9 @@ func ReadFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer f.Close()
+
 	b, err := io.ReadAll(f)
 	if err != nil {
 		return "", err
@@ -62,9 +66,26 @@ func ReadFile(path string) (string, error) {
 	return string(b), nil
 }
 
+func ExistsFile(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
 func Ternary[T any](b bool, ifTrue, ifFalse T) T {
 	if b {
 		return ifTrue
 	}
 	return ifFalse
+}
+
+var branches = []string{"canary", "development", "ptb"}
+
+func GetBranch(name string) string {
+	name = strings.ToLower(name)
+	for _, branch := range branches {
+		if strings.HasSuffix(name, branch) {
+			return branch
+		}
+	}
+	return "stable"
 }

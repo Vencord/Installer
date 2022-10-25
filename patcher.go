@@ -20,6 +20,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -62,6 +63,25 @@ type DiscordInstall struct {
 	isSystemElectron bool // Needs special care https://aur.archlinux.org/packages/discord_arch_electron
 }
 
+// IsSafeToDelete returns nil if path is safe to delete.
+// In other cases, the returned error should give more info
+func IsSafeToDelete(path string) error {
+	files, err := os.ReadDir(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			err = nil
+		}
+		return err
+	}
+	for _, file := range files {
+		name := file.Name()
+		if name != "package.json" && name != "index.js" {
+			return errors.New("Unexpected file '" + name + "'")
+		}
+	}
+	return nil
+}
+
 func writeFiles(dir string) error {
 	if err := os.RemoveAll(dir); err != nil {
 		return err
@@ -79,33 +99,47 @@ func writeFiles(dir string) error {
 	return os.WriteFile(path.Join(dir, "index.js"), []byte("require("+string(patcherPath)+")"), 0644)
 }
 
+func handleErr(err error, action string, retry func(g.DialogResult)) {
+	if errors.Is(err, os.ErrPermission) {
+		err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
+	}
+	g.Msgbox("Uh Oh!", "Failed to "+action+" this Install:\n"+err.Error()+"\n\nRetry?").
+		Buttons(g.MsgboxButtonsYesNo).
+		ResultCallback(retry)
+}
+
 func (di *DiscordInstall) Patch() {
 	if err := di.patch(); err != nil {
-		g.Msgbox("Uh Oh!", "Failed to patch this Install:\n"+err.Error()+"\n\nRetry?").
-			Buttons(g.MsgboxButtonsYesNo).
-			ResultCallback(func(retry g.DialogResult) {
-				if retry {
-					di.Patch()
-				}
-			})
+		handleErr(err, "patch", func(retry g.DialogResult) {
+			if retry {
+				di.Patch()
+			}
+		})
 	}
 }
 
 func (di *DiscordInstall) Unpatch() {
-	if err := di.patch(); err != nil {
-		g.Msgbox("Uh Oh!", "Failed to unpatch this Install:\n"+err.Error()+"\n\nRetry?").
-			Buttons(g.MsgboxButtonsYesNo).
-			ResultCallback(func(retry g.DialogResult) {
-				if retry {
-					di.Unpatch()
-				}
-			})
+	if err := di.unpatch(); err != nil {
+		handleErr(err, "unpatch", func(retry g.DialogResult) {
+			if retry {
+				di.Unpatch()
+			}
+		})
 	}
 }
 
 func (di *DiscordInstall) patch() error {
 	if err := InstallLatestBuilds(); err != nil {
 		return nil // already shown dialog so don't return same error again
+	}
+
+	if di.isPatched {
+		if err := di.unpatch(); err != nil {
+			if errors.Is(err, os.ErrPermission) {
+				return err
+			}
+			return errors.New("patch: Failed to unpatch already patched install '" + di.path + "':\n" + err.Error())
+		}
 	}
 
 	if di.isSystemElectron {
@@ -154,7 +188,14 @@ func (di *DiscordInstall) unpatch() error {
 		}
 	} else {
 		for _, version := range di.versions {
-			err := os.RemoveAll(version)
+			err := IsSafeToDelete(version)
+			if errors.Is(err, os.ErrPermission) {
+				return err
+			}
+			if err != nil {
+				return errors.New("Deleting patch folder '" + version + "' is possibly unsafe. Please do it manually: " + err.Error())
+			}
+			err = os.RemoveAll(version)
 			if err != nil {
 				return err
 			}

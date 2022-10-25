@@ -23,7 +23,13 @@ import "image/color"
 // InstallerGitHash is replaced by the linker with short sha
 var InstallerGitHash = "Unknown"
 
-var BranchNames = []string{
+var (
+	DiscordGreen = color.RGBA{R: 0x2D, G: 0x7C, B: 0x46, A: 0xFF}
+	DiscordRed   = color.RGBA{R: 0xEC, G: 0x41, B: 0x44, A: 0xFF}
+	DiscordBlue  = color.RGBA{R: 0x58, G: 0x65, B: 0xF2, A: 0xFF}
+)
+
+var LinuxDiscordNames = []string{
 	"Discord",
 	"DiscordPTB",
 	"DiscordCanary",
@@ -41,9 +47,3 @@ var BranchNames = []string{
 	"com.discordapp.DiscordCanary",
 	"com.discordapp.DiscordDevelopment",
 }
-
-var (
-	DiscordGreen = color.RGBA{R: 0x2D, G: 0x7C, B: 0x46, A: 0xFF}
-	DiscordRed   = color.RGBA{R: 0xEC, G: 0x41, B: 0x44, A: 0xFF}
-	DiscordBlue  = color.RGBA{R: 0x58, G: 0x65, B: 0xF2, A: 0xFF}
-)

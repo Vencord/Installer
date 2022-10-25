@@ -18,6 +18,50 @@
 
 package main
 
+import (
+	"path"
+	"strings"
+)
+
+var macosNames = map[string]string{
+	"stable": "Discord.app",
+	"ptb":    "Discord PTB.app",
+	"canary": "Discord Canary.app",
+	"dev":    "Discord Development.app",
+}
+
+func ParseDiscord(p, branch string) *DiscordInstall {
+	if !ExistsFile(p) {
+		return nil
+	}
+
+	resources := path.Join(p, "/Contents/Resources")
+	if !ExistsFile(resources) {
+		return nil
+	}
+
+	if branch == "" {
+		branch = getBranch(strings.TrimSuffix(p, ".app"))
+	}
+
+	app := path.Join(resources, "app")
+	return &DiscordInstall{
+		path:             p,
+		branch:           branch,
+		versions:         []string{app},
+		isPatched:        ExistsFile(app),
+		isFlatpak:        false,
+		isSystemElectron: false,
+	}
+}
+
 func FindDiscords() []any {
-	return nil
+	var discords []any
+	for branch, dirname := range macosNames {
+		p := "/Applications/" + dirname
+		if discord := ParseDiscord(p, branch); discord != nil {
+			discords = append(discords, discord)
+		}
+	}
+	return discords
 }

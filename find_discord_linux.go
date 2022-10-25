@@ -63,26 +63,66 @@ func init() {
 	}
 }
 
-// FindDiscords actually returns []string but gui wants any
+func ParseDiscord(p, _ string) *DiscordInstall {
+	name := path.Base(p)
+
+	isFlatpak := strings.Contains(p, "/flatpak/")
+	if isFlatpak {
+		discordName := name[len("com.discordapp."):]
+		if discordName != "Discord" { //
+			// DiscordCanary -> discord-canary
+			discordName = strings.ToLower(discordName[:7] + "-" + discordName[7:])
+		}
+		p = path.Join(p, "current", "active", "files", discordName)
+	}
+
+	resources := path.Join(p, "resources")
+	app := path.Join(resources, "app")
+
+	isPatched, isSystemElectron := false, false
+
+	if ExistsFile(resources) { // normal install
+		isPatched = ExistsFile(app)
+	} else if ExistsFile(path.Join(p, "app.asar")) { // System electron doesn't have resources folder
+		isSystemElectron = true
+		isPatched = ExistsFile(path.Join(p, "_app.asar.unpacked"))
+	} else {
+		return nil
+	}
+
+	return &DiscordInstall{
+		path:             p,
+		branch:           GetBranch(name),
+		versions:         []string{app},
+		isPatched:        isPatched,
+		isFlatpak:        isFlatpak,
+		isSystemElectron: isSystemElectron,
+	}
+}
+
 func FindDiscords() []any {
 	var discords []any
-	for _, discordDir := range DiscordDirs {
-		entries, err := os.ReadDir(discordDir)
+	for _, dir := range DiscordDirs {
+		children, err := os.ReadDir(dir)
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				continue
-			} else {
-				// handle maybe?
+			if !errors.Is(err, os.ErrNotExist) {
+				fmt.Println("Error during readdir "+dir+":", err)
 			}
+			continue
 		}
-		for _, entry := range entries {
-			name := entry.Name()
-			if !entry.IsDir() || !ArrayIncludes(BranchNames, name) {
+
+		for _, child := range children {
+			name := child.Name()
+			if !child.IsDir() || !ArrayIncludes(LinuxDiscordNames, name) {
 				continue
 			}
-			discords = append(discords, path.Join(discordDir, name))
+
+			discordDir := path.Join(dir, name)
+			if discord := ParseDiscord(discordDir, ""); discord != nil {
+				discords = append(discords, discord)
+			}
 		}
 	}
-	fmt.Println(discords)
+
 	return discords
 }
