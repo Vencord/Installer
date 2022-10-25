@@ -4,6 +4,8 @@ Vencord Installer allows you to install [Vencord, a Discord Desktop client mod](
 
 This installer is still in testing, so use at your own Risk.
 
+![image](https://user-images.githubusercontent.com/45497981/197824700-5c77bcf3-f8e8-4b5f-95e8-76a17cd40d85.png)
+
 ## Usage
 
 ### Windows
@@ -12,7 +14,9 @@ Download the latest VencordInstaller.exe from [GitHub Releases](https://github.c
 
 ### Linux
 
-curl https://raw.githubusercontent.com/Vendicated/VencordInstaller/main/install.sh | sh
+```sh
+sh -c "$(curl -s https://raw.githubusercontent.com/Vendicated/VencordInstaller/main/install.sh)"
+```
 
 ### Mac
 
@@ -35,4 +39,4 @@ go build
 ```
 
 You might want to pass some flags to this command to get a better build.
-See [the GitHub workflow(https://github.com/Vendicated/VencordInstaller/blob/main/.github/workflows/release.yml)] for what flags I pass or if you wan't more precise instructions
+See [the GitHub workflow](https://github.com/Vendicated/VencordInstaller/blob/main/.github/workflows/release.yml) for what flags I pass or if you wan't more precise instructions
