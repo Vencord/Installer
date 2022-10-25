@@ -8,7 +8,7 @@ trap "rm -rf '$outfile'" EXIT
 echo "Downloading Installer..."
 echo
 
-curl https://github.com/Vendicated/VencordInstaller/releases/latest/download/VencordInstaller.linux \
+curl -sS https://github.com/Vendicated/VencordInstaller/releases/latest/download/VencordInstaller.linux \
   --output "$outfile" \
   --location
 
