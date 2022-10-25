@@ -31,6 +31,7 @@ import (
 	"github.com/ProtonMail/go-appdir"
 )
 
+var BaseDir string
 var FilesDir string
 var FilesDirErr error
 var Patcher string
@@ -44,20 +45,21 @@ var PackageJson = []byte(`{
 func init() {
 	if dir := os.Getenv("VENCORD_USER_DATA_DIR"); dir != "" {
 		fmt.Println("Using VENCORD_USER_DATA_DIR")
-		FilesDir = path.Join(dir, "dist")
+		BaseDir = dir
 	} else if dir = os.Getenv("DISCORD_USER_DATA_DIR"); dir != "" {
 		fmt.Println("Using DISCORD_USER_DATA_DIR/../VencordData")
-		FilesDir = path.Join(dir, "..", "VencordData", "dist")
+		BaseDir = path.Join(dir, "..", "VencordData")
 	} else {
 		fmt.Println("Using UserConfig")
-		FilesDir = path.Join(appdir.New("Vencord").UserConfig(), "dist")
+		BaseDir = appdir.New("Vencord").UserConfig()
 	}
+	FilesDir = path.Join(BaseDir, "dist")
 	if !ExistsFile(FilesDir) {
 		FilesDirErr = os.MkdirAll(FilesDir, 0755)
 		if FilesDirErr != nil {
 			fmt.Println("Failed to create", FilesDir, FilesDirErr)
 		} else {
-			FilesDirErr = FixOwnership(FilesDir)
+			FilesDirErr = FixOwnership(BaseDir)
 		}
 	}
 	Patcher = path.Join(FilesDir, "patcher.js")
