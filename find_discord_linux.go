@@ -36,7 +36,6 @@ func init() {
 	// Thankfully, sudo sets the SUDO_USER env variable, so use that to look up
 	// the actual HOME
 	var sudoUser = os.Getenv("SUDO_USER")
-	fmt.Println(sudoUser)
 	if sudoUser != "" {
 		fmt.Println("VencordInstaller was run with sudo")
 		passwd, err := ReadFile("/etc/passwd")

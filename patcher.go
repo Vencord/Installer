@@ -23,7 +23,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	path "path/filepath"
+	"strings"
 
 	g "github.com/AllenDang/giu"
 	"github.com/ProtonMail/go-appdir"
@@ -182,6 +184,42 @@ func (di *DiscordInstall) patch() error {
 	}
 	fmt.Println("Successfully patched", di.path)
 	di.isPatched = true
+
+	if di.isFlatpak {
+		pathElements := strings.Split(di.path, "/")
+		var name string
+		for _, e := range pathElements {
+			if strings.HasPrefix(e, "com.discordapp") {
+				name = e
+				break
+			}
+		}
+
+		fmt.Println("This is a flatpak. Trying to grant the Flatpak access to", FilesDir+"...")
+
+		isSystemFlatpak := strings.HasSuffix(di.path, "/var")
+		var args []string
+		if !isSystemFlatpak {
+			args = append(args, "--user")
+		}
+		args = append(args, "override", name, "--filesystem='"+FilesDir+"'")
+		fullCmd := "flatpak " + strings.Join(args, " ")
+
+		fmt.Println("Running", fullCmd)
+
+		var err error
+		if !isSystemFlatpak && os.Getuid() == 0 {
+			// We are operating on a user flatpak but are root
+			actualUser := os.Getenv("SUDO_USER")
+			fmt.Println("This is a user install but we are root. Using su to run as", actualUser)
+			err = exec.Command("su", "-", actualUser, "-c", "sh", "-c", fullCmd).Run()
+		} else {
+			err = exec.Command("flatpak", args...).Run()
+		}
+		if err != nil {
+			return errors.New("Failed to grant Discord Flatpak access to " + FilesDir + ": " + err.Error())
+		}
+	}
 	return nil
 }
 
