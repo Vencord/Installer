@@ -20,26 +20,17 @@ jobs:
         with:
           go-version: "1.19"
 
-      - id: go-cache-paths
-        run: |
-          echo "go_build=$(go env GOCACHE)" >> $GITHUB_ENV
-          echo "go_mod=$(go env GOMODCACHE)" >> $GITHUB_ENV
-
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Go Build Cache
-        uses: actions/cache@v3
+      - uses: actions/cache@v3
         with:
-          path: ${{ env.go_build }}
-          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
-
-      - name: Go Mod Cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.go_mod }}
-          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
-
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Install Linux dependencies
         run: |
@@ -82,17 +73,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Go Build Cache
-        uses: actions/cache@v3
+      - uses: actions/cache@v3
         with:
-          path: ${{ env.go_build }}
-          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
-
-      - name: Go Mod Cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.go_mod }}
-          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+          path: |
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Install dependencies
         run: brew install pkg-config sdl2
@@ -132,25 +120,17 @@ jobs:
         with:
           go-version: "1.19"
 
-      - id: go-cache-paths
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "go_build=$(go env GOCACHE)"
-          Add-Content -Path $env:GITHUB_ENV -Value "go_mod=$(go env GOMODCACHE)"
-
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Go Build Cache
-        uses: actions/cache@v3
+      - uses: actions/cache@v3
         with:
-          path: ${{ env.go_build }}
-          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
-
-      - name: Go Mod Cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.go_mod }}
-          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+          path: |
+            ~\AppData\Local\go-build
+            ~\go\pkg\mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
@@ -220,6 +200,7 @@ jobs:
         with:
           name: ${{ env.release_tag }}
           prerelease: false
+          draft: false
           files: |
             linux/VencordInstaller.linux
             macos/VencordInstaller.MacOS.zip
