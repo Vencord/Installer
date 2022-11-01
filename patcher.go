@@ -119,11 +119,11 @@ func handleErr(err error, action string, retry func(g.DialogResult)) {
 		ResultCallback(retry)
 }
 
-func (di *DiscordInstall) Patch() {
-	if err := di.patch(); err != nil {
+func (di *DiscordInstall) Patch(canaryHack bool) {
+	if err := di.patch(canaryHack); err != nil {
 		handleErr(err, "patch", func(retry g.DialogResult) {
 			if retry {
-				di.Patch()
+				di.Patch(canaryHack)
 			}
 		})
 	}
@@ -139,7 +139,28 @@ func (di *DiscordInstall) Unpatch() {
 	}
 }
 
-func (di *DiscordInstall) patch() error {
+func patchRenames(dir string, isSystemElectron bool) error {
+	appAsar := path.Join(dir, "app.asar")
+	_appAsar := path.Join(dir, "_app.asar")
+	fmt.Println("Renaming", appAsar, "to", _appAsar)
+	if err := os.Rename(appAsar, _appAsar); err != nil {
+		return err
+	}
+	if isSystemElectron {
+		fmt.Println("Renaming", appAsar+".unpacked", "to", _appAsar+".unpacked")
+		err := os.Rename(appAsar+".unpacked", _appAsar+".unpacked")
+		if err != nil {
+			return err
+		}
+	}
+	fmt.Println("Writing files to", appAsar)
+	if err := writeFiles(appAsar); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (di *DiscordInstall) patch(canaryHack bool) error {
 	fmt.Println("Patching " + di.path + "...")
 	if LatestHash != InstalledHash {
 		if err := InstallLatestBuilds(); err != nil {
@@ -158,33 +179,26 @@ func (di *DiscordInstall) patch() error {
 	}
 
 	if di.isSystemElectron {
-		fmt.Println("Detected as System Electron Install")
 		// hack:
 		// - Rename app.asar 		  -> _app.asar
 		// - Rename app.asar.unpacked -> _app.asar.unpacked
 		// - Make app.asar folder with patch files
 		// This breaks pacman but shrug. Someone with this setup should be smart enough to fix it
 		// Perhaps I could register a pacman hook to fix it
-		appAsar := path.Join(di.path, "app.asar")
-		_appAsar := path.Join(di.path, "_app.asar")
-		fmt.Println("Renaming", appAsar, "to", _appAsar)
-		if err := os.Rename(appAsar, _appAsar); err != nil {
-			return err
-		}
-		fmt.Println("Renaming", appAsar+".unpacked", "to", _appAsar+".unpacked")
-		err := os.Rename(appAsar+".unpacked", _appAsar+".unpacked")
-		if err != nil {
-			return err
-		}
-		fmt.Println("Writing files to", appAsar)
-		if err = writeFiles(appAsar); err != nil {
+		if err := patchRenames(di.path, true); err != nil {
 			return err
 		}
 	} else {
 		for _, version := range di.versions {
-			fmt.Println("Writing files to", version)
-			if err := writeFiles(version); err != nil {
-				return err
+			if canaryHack {
+				if err := patchRenames(path.Join(version, ".."), false); err != nil {
+					return err
+				}
+			} else {
+				fmt.Println("Writing files to", version)
+				if err := writeFiles(version); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -235,41 +249,57 @@ func (di *DiscordInstall) patch() error {
 	return nil
 }
 
+func unpatchRenames(dir string, isSystemElectron bool) error {
+	appAsar := path.Join(dir, "app.asar")
+	_appAsar := path.Join(dir, "_app.asar")
+	fmt.Println("Deleting", appAsar)
+	if err := os.RemoveAll(appAsar); err != nil {
+		return err
+	}
+	fmt.Println("Renaming", _appAsar, "to", appAsar)
+	if err := os.Rename(_appAsar, appAsar); err != nil {
+		return err
+	}
+	if isSystemElectron {
+		fmt.Println("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
+		if err := os.Rename(_appAsar+".unpacked", appAsar+".unpacked"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (di *DiscordInstall) unpatch() error {
 	fmt.Println("Unpatching " + di.path + "...")
 
 	if di.isSystemElectron {
 		fmt.Println("Detected as System Electron Install")
 		// See comment in Patch
-		appAsar := path.Join(di.path, "app.asar")
-		_appAsar := path.Join(di.path, "_app.asar")
-		fmt.Println("Deleting", appAsar)
-		if err := os.RemoveAll(appAsar); err != nil {
-			return err
-		}
-		fmt.Println("Renaming", _appAsar, "to", appAsar)
-		if err := os.Rename(_appAsar, appAsar); err != nil {
-			return err
-		}
-		fmt.Println("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
-		if err := os.Rename(_appAsar+".unpacked", appAsar+".unpacked"); err != nil {
+		if err := unpatchRenames(di.path, true); err != nil {
 			return err
 		}
 	} else {
 		for _, version := range di.versions {
-			err := IsSafeToDelete(version)
-			if errors.Is(err, os.ErrPermission) {
-				fmt.Println("Permission to read", version, "denied")
-				return err
-			}
-			fmt.Println("Checking if", version, "is safe to delete:", Ternary(err == nil, "Yes", "No"))
-			if err != nil {
-				return errors.New("Deleting patch folder '" + version + "' is possibly unsafe. Please do it manually: " + err.Error())
-			}
-			fmt.Println("Deleting", version)
-			err = os.RemoveAll(version)
-			if err != nil {
-				return err
+			isCanaryHack := IsDirectory(path.Join(version, "..", "app.asar"))
+			if isCanaryHack {
+				if err := unpatchRenames(path.Join(version, ".."), false); err != nil {
+					return err
+				}
+			} else {
+				err := IsSafeToDelete(version)
+				if errors.Is(err, os.ErrPermission) {
+					fmt.Println("Permission to read", version, "denied")
+					return err
+				}
+				fmt.Println("Checking if", version, "is safe to delete:", Ternary(err == nil, "Yes", "No"))
+				if err != nil {
+					return errors.New("Deleting patch folder '" + version + "' is possibly unsafe. Please do it manually: " + err.Error())
+				}
+				fmt.Println("Deleting", version)
+				err = os.RemoveAll(version)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

@@ -75,6 +75,16 @@ func ExistsFile(path string) bool {
 	return err == nil
 }
 
+func IsDirectory(path string) bool {
+	s, err := os.Stat(path)
+	if err != nil {
+		fmt.Println("Error while checking if", path, "is directory:", err)
+		return false
+	}
+	fmt.Println("Checking if", path, "is directory:", Ternary(s.IsDir(), "Yes", "No"))
+	return s.IsDir()
+}
+
 func Ternary[T any](b bool, ifTrue, ifFalse T) T {
 	if b {
 		return ifTrue

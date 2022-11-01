@@ -74,7 +74,14 @@ func getChosenInstall() *DiscordInstall {
 func handlePatch() {
 	choice := getChosenInstall()
 	if choice != nil {
-		choice.Patch()
+		choice.Patch(false)
+	}
+}
+
+func handlePatchCanary() {
+	choice := getChosenInstall()
+	if choice != nil {
+		choice.Patch(true)
 	}
 }
 
@@ -249,7 +256,16 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Patch").
 							OnClick(handlePatch).
-							Size(w/3, 50),
+							Size(w*0.243, 50),
+						g.Tooltip("Patch the selected Discord Install"),
+					),
+				g.Style().
+					SetColor(g.StyleColorButton, DiscordGreen).
+					SetDisabled(GithubError != nil).
+					To(
+						g.Button("Patch (Fix for Canary / PTB)").
+							OnClick(handlePatchCanary).
+							Size(w*0.243, 50),
 						g.Tooltip("Patch the selected Discord Install"),
 					),
 				g.Style().
@@ -258,7 +274,7 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Unpatch").
 							OnClick(handleUnpatch).
-							Size(w/3, 50),
+							Size(w*0.243, 50),
 						g.Tooltip("Unpatch the selected Discord Install"),
 					),
 				g.Style().
@@ -269,7 +285,7 @@ func renderInstaller() g.Widget {
 							OnClick(func() {
 								_ = InstallLatestBuilds()
 							}).
-							Size(w/3, 50),
+							Size(w*0.243, 50),
 						g.Tooltip("Update your local Vencord files"),
 					),
 			),
