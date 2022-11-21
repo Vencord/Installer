@@ -22,13 +22,13 @@ Download the latest Mac build from [GitHub Releases](https://github.com/Vendicat
 
 If you get a `VencordInstaller can't be opened` message, right-click `VencordInstaller.app` and click open.
 
-This error shows because the app isn't signed since I'm not paying 100 bucks for an Apple Developer license. 
+This error shows because the app isn't signed since I'm not willing to pay 100 bucks a year for an Apple Developer license.
 
 ### Building from source
 
 You need the go compiler and gcc (MinGW on Windows).
 
-On Linux you also need some dependencies:
+On Linux, you also need some dependencies:
 
 ```sh
 apt install -y pkg-config libsdl2-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libglx-dev libgl1-mesa-dev libxxf86vm-dev
@@ -41,4 +41,4 @@ go build
 ```
 
 You might want to pass some flags to this command to get a better build.
-See [the GitHub workflow](https://github.com/Vendicated/VencordInstaller/blob/main/.github/workflows/release.yml) for what flags I pass or if you wan't more precise instructions
+See [the GitHub workflow](https://github.com/Vendicated/VencordInstaller/blob/main/.github/workflows/release.yml) for what flags I pass or if you want more precise instructions
