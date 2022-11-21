@@ -26,7 +26,7 @@ This error shows because the app isn't signed, since I'm not paying 100 bucks fo
 
 ### Building from source
 
-You need the go compiler and gcc.
+You need the go compiler and gcc ([VS Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) on Windows)
 
 On Linux, you also need some dependencies:
 
