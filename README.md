@@ -26,7 +26,7 @@ This error shows because the app isn't signed since I'm not paying 100 bucks for
 
 ### Building from source
 
-You need the go compiler and gcc (MinGW on Windows).
+You need the go compiler and gcc.
 
 On Linux you also need some dependencies:
 
