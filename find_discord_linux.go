@@ -63,6 +63,7 @@ func init() {
 		"/usr/lib64",
 		"/opt",
 		path.Join(Home, ".local/share"),
+		path.Join(Home, ".dvm"),
 		"/var/lib/flatpak/app",
 		path.Join(Home, "/.local/share/flatpak/app"),
 	}
