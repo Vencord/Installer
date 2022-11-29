@@ -35,10 +35,12 @@ var (
 )
 
 func init() {
-	// If ran via sudo, the HOME environment variable will be that of root.
-	// Thankfully, sudo sets the SUDO_USER env variable, so use that to look up
-	// the actual HOME
+	// If ran as root, the HOME environment variable will be that of root.
+	// SUDO_USER and DOAS_USER tell us the actual user
 	var sudoUser = os.Getenv("SUDO_USER")
+	if sudoUser == "" {
+		sudoUser = os.Getenv("DOAS_USER")
+	}
 	if sudoUser != "" {
 		fmt.Println("VencordInstaller was run with root privileges, actual user is", sudoUser)
 		fmt.Println("Looking up HOME of", sudoUser)
@@ -50,11 +52,8 @@ func init() {
 			fmt.Println("Actual HOME is", u.HomeDir)
 			_ = os.Setenv("HOME", u.HomeDir)
 		}
-	} else {
-		if os.Getuid() == 0 {
-			panic("VencordInstaller was run as root but SUDO_USER is not set. Please rerun me as a normal user or with sudo")
-		}
-		Home = os.Getenv("HOME")
+	} else if os.Getuid() == 0 {
+		panic("VencordInstaller was run as root but neither SUDO_USER nor DOAS_USER are set. Please rerun me as a normal user, with sudo/doas, or manually set SUDO_USER to your username")
 	}
 	Home = os.Getenv("HOME")
 

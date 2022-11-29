@@ -29,7 +29,7 @@ if [ "$opt" = y ] || [ "$opt" = yes ]; then
     sudo "$outfile"
   elif command -v doas >/dev/null; then
     echo "Running with doas"
-    doas sh -c "SUDO_USER=$(whoami) '$outfile'"
+    doas "$outfile"
   else
     echo "Didn't find sudo or doas, falling back to su"
     su -c "SUDO_USER=$(whoami) '$outfile'"
