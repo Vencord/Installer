@@ -249,21 +249,24 @@ func (di *DiscordInstall) patch(canaryHack bool) error {
 	return nil
 }
 
-func unpatchRenames(dir string, isSystemElectron bool) error {
+func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 	appAsar := path.Join(dir, "app.asar")
 	_appAsar := path.Join(dir, "_app.asar")
 	fmt.Println("Deleting", appAsar)
 	if err := os.RemoveAll(appAsar); err != nil {
-		return err
+		fmt.Println(err)
+		errOut = err
 	}
 	fmt.Println("Renaming", _appAsar, "to", appAsar)
 	if err := os.Rename(_appAsar, appAsar); err != nil {
-		return err
+		fmt.Println(err)
+		errOut = err
 	}
 	if isSystemElectron {
 		fmt.Println("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
 		if err := os.Rename(_appAsar+".unpacked", appAsar+".unpacked"); err != nil {
-			return err
+			fmt.Println(err)
+			errOut = err
 		}
 	}
 	return nil
