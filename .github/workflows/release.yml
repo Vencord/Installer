@@ -35,25 +35,30 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt update
-          sudo apt install -y pkg-config libsdl2-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libglx-dev libgl1-mesa-dev libxxf86vm-dev
+          sudo apt install -y pkg-config libsdl2-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libglx-dev libgl1-mesa-dev libxxf86vm-dev libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules
 
       - name: Install Go dependencies
         run: go get -v
 
       - name: Build
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'"
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'"  
+
+      - name: Build Wayland
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'" --tags wayland -o VencordInstaller-wayland
 
       - name: Update executable
         run: |
           chmod +x VencordInstaller
-          mv VencordInstaller VencordInstaller.linux
+          mv VencordInstaller VencordInstaller-x11
+          mv VencordInstaller VencordInstaller-wayland
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: VencordInstaller.linux
-          path: VencordInstaller.linux
-
+          name: VencordInstaller-linux
+          path: |
+            VencordInstaller-x11
+            VencordInstaller-wayland
 
 
   build-mac:
@@ -107,7 +112,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: VencordInstaller.macos
+          name: VencordInstaller-macos
           path: VencordInstaller.MacOS.zip
 
 
@@ -161,7 +166,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: VencordInstaller.windows
+          name: VencordInstaller-windows
           path: VencordInstaller.exe
 
 
@@ -175,17 +180,17 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          name: VencordInstaller.linux
+          name: VencordInstaller-linux
           path: linux
 
       - uses: actions/download-artifact@v3
         with:
-          name: VencordInstaller.macos
+          name: VencordInstaller-macos
           path: macos
 
       - uses: actions/download-artifact@v3
         with:
-          name: VencordInstaller.windows
+          name: VencordInstaller-windows
           path: windows
 
       - name: Get some values needed for the release
@@ -202,6 +207,6 @@ jobs:
           prerelease: false
           draft: false
           files: |
-            linux/VencordInstaller.linux
+            linux/VencordInstaller-*
             macos/VencordInstaller.MacOS.zip
             windows/VencordInstaller.exe

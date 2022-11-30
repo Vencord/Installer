@@ -6,9 +6,16 @@ outfile=$(mktemp)
 trap "rm -rf '$outfile'" EXIT
 
 echo "Downloading Installer..."
-echo
 
-curl -sS https://github.com/Vendicated/VencordInstaller/releases/latest/download/VencordInstaller.linux \
+kind=x11
+if [ -z "$DISPLAY" ] && [ -n "$WAYLAND_DISPLAY" ]; then
+  echo "Wayland detected"
+  kind=wayland
+else
+  echo "X11 detected"
+fi
+
+curl -sS https://github.com/Vendicated/VencordInstaller/releases/latest/download/VencordInstaller-$kind \
   --output "$outfile" \
   --location
 
