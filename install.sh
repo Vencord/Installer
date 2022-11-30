@@ -30,7 +30,7 @@ read -r runAsRoot
 
 opt="$(echo "$runAsRoot" | tr "[:upper:]" "[:lower:]")"
 
-if [ "$opt" = y ] || [ "$opt" = yes ]; then
+if [ -z "$opt" ] || [ "$opt" = y ] || [ "$opt" = yes ]; then
   if command -v sudo >/dev/null; then
     echo "Running with sudo"
     sudo "$outfile"
