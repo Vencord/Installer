@@ -205,7 +205,7 @@ func renderInstaller() g.Widget {
 			SetFontSize(20).
 			To(
 				g.InputText(&customDir).Hint("The custom location").
-					Size(w).
+					Size(w-16).
 					Flags(g.InputTextFlagsCallbackCompletion).
 					OnChange(onCustomInputChanged).
 					// this library has its own autocomplete but it's broken
@@ -256,7 +256,7 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Patch").
 							OnClick(handlePatch).
-							Size(w*0.243, 50),
+							Size((w-40)*0.25, 50),
 						g.Tooltip("Patch the selected Discord Install"),
 					),
 				g.Style().
@@ -265,7 +265,7 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Patch (Fix for Canary / PTB)").
 							OnClick(handlePatchCanary).
-							Size(w*0.243, 50),
+							Size((w-40)*0.25, 50),
 						g.Tooltip("Patch the selected Discord Install"),
 					),
 				g.Style().
@@ -274,7 +274,7 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Unpatch").
 							OnClick(handleUnpatch).
-							Size(w*0.243, 50),
+							Size((w-40)*0.25, 50),
 						g.Tooltip("Unpatch the selected Discord Install"),
 					),
 				g.Style().
@@ -285,7 +285,7 @@ func renderInstaller() g.Widget {
 							OnClick(func() {
 								_ = InstallLatestBuilds()
 							}).
-							Size(w*0.243, 50),
+							Size((w-40)*0.25, 50),
 						g.Tooltip("Update your local Vencord files"),
 					),
 			),
