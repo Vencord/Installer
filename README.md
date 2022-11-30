@@ -31,13 +31,23 @@ You need the go compiler and gcc (MinGW on Windows).
 On Linux, you also need some dependencies:
 
 ```sh
-apt install -y pkg-config libsdl2-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libglx-dev libgl1-mesa-dev libxxf86vm-dev
+apt install -y pkg-config libsdl2-dev libglx-dev libgl1-mesa-dev
+
+# X11
+apt install -y xorg-dev
+
+# Wayland
+apt install -y libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules
 ```
 
 Then just run
 
 ```sh
+# X11
 go build
+
+# Wayland
+go build --tags wayland
 ```
 
 You might want to pass some flags to this command to get a better build.
