@@ -40,6 +40,9 @@ func init() {
 	var sudoUser = os.Getenv("SUDO_USER")
 	if sudoUser == "" {
 		sudoUser = os.Getenv("DOAS_USER")
+		if sudoUser != "" {
+			_ = os.Setenv("SUDO_USER", sudoUser)
+		}
 	}
 	if sudoUser != "" {
 		fmt.Println("VencordInstaller was run with root privileges, actual user is", sudoUser)
