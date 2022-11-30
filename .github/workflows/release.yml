@@ -41,16 +41,14 @@ jobs:
         run: go get -v
 
       - name: Build
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'"  
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'" -o VencordInstaller-x11
 
       - name: Build Wayland
         run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'" --tags wayland -o VencordInstaller-wayland
 
       - name: Update executable
         run: |
-          chmod +x VencordInstaller
-          mv VencordInstaller VencordInstaller-x11
-          mv VencordInstaller VencordInstaller-wayland
+          chmod +x VencordInstaller-*
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
