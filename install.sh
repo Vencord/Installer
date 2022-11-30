@@ -7,12 +7,14 @@ trap "rm -rf '$outfile'" EXIT
 
 echo "Downloading Installer..."
 
-kind=x11
-if [ -z "$DISPLAY" ] && [ -n "$WAYLAND_DISPLAY" ]; then
-  echo "Wayland detected"
-  kind=wayland
-else
+rootenv=
+kind=wayland
+if [ -z "$WAYLAND_DISPLAY" ]; then
   echo "X11 detected"
+  kind=x11
+else
+  echo "Wayland detected"
+  rootenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR WAYLAND_DISPLAY=$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
 fi
 
 curl -sS https://github.com/Vendicated/VencordInstaller/releases/latest/download/VencordInstaller-$kind \
@@ -33,10 +35,10 @@ opt="$(echo "$runAsRoot" | tr "[:upper:]" "[:lower:]")"
 if [ -z "$opt" ] || [ "$opt" = y ] || [ "$opt" = yes ]; then
   if command -v sudo >/dev/null; then
     echo "Running with sudo"
-    sudo "$outfile"
+    sudo env $rootenv "$outfile"
   elif command -v doas >/dev/null; then
     echo "Running with doas"
-    doas "$outfile"
+    doas env $rootenv "$outfile"
   else
     echo "Didn't find sudo or doas, falling back to su"
     su -c "SUDO_USER=$(whoami) '$outfile'"
