@@ -43,10 +43,10 @@ apt install -y libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-mod
 Then just run
 
 ```sh
-# X11
+# Windows / MacOs / Linux X11
 go build
 
-# Wayland
+# Linux Wayland
 go build --tags wayland
 ```
 
