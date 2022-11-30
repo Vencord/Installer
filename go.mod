@@ -17,7 +17,7 @@ require (
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect
 	github.com/stretchr/testify v1.7.2 // indirect
-	golang.org/x/image v0.0.0-20220601225756-64ec528b34cd // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/image v0.1.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 	gopkg.in/eapache/queue.v1 v1.1.0 // indirect
 )
