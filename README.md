@@ -13,7 +13,7 @@ Download the latest VencordInstaller.exe from [GitHub Releases](https://github.c
 ### Linux
 
 ```sh
-sh -c "$(curl -s https://raw.githubusercontent.com/Vendicated/VencordInstaller/main/install.sh)"
+sh -c "$(curl -sS https://raw.githubusercontent.com/Vendicated/VencordInstaller/main/install.sh)"
 ```
 
 ### Mac
