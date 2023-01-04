@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+if [ "$(id -u)" -eq 0 ]; then
+    echo "Run me as normal user, not root!"
+    exit 1
+fi
+
 outfile=$(mktemp)
 # shellcheck disable=SC2064
 trap "rm -rf '$outfile'" EXIT
