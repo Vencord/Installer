@@ -115,13 +115,7 @@ func InitGithubDownloader() {
 func InstallLatestBuilds() (err error) {
 	err = installLatestBuilds()
 	if err != nil {
-		g.Msgbox("Uh Oh!", "Failed to install the latest Vencord builds from GitHub:\n"+err.Error()+"\n\nRetry?").
-			Buttons(g.MsgboxButtonsYesNo).
-			ResultCallback(func(retry g.DialogResult) {
-				if retry {
-					_ = InstallLatestBuilds()
-				}
-			})
+		ShowModal("Uh Oh!", "Failed to install the latest Vencord builds from GitHub:\n"+err.Error())
 	}
 	return
 }
@@ -134,7 +128,8 @@ func installLatestBuilds() (retErr error) {
 	for _, ass := range ReleaseData.Assets {
 		if strings.HasPrefix(ass.Name, "patcher.js") ||
 			strings.HasPrefix(ass.Name, "preload.js") ||
-			strings.HasPrefix(ass.Name, "renderer.js") {
+			strings.HasPrefix(ass.Name, "renderer.js") ||
+			strings.HasPrefix(ass.Name, "renderer.css") {
 			wg.Add(1)
 			ass := ass // Need to do this to not have the variable be overwritten halfway through
 			go func() {
@@ -176,6 +171,7 @@ func installLatestBuilds() (retErr error) {
 	}
 
 	wg.Wait()
+	fmt.Println("Done!")
 	_ = FixOwnership(FilesDir)
 
 	InstalledHash = LatestHash

@@ -21,6 +21,7 @@ package main
 import (
 	"os"
 	path "path/filepath"
+	"strconv"
 	"strings"
 
 	g "github.com/AllenDang/giu"
@@ -39,6 +40,10 @@ var (
 	autoCompleteIdx        int
 	lastAutoComplete       string
 	didAutoComplete        bool
+
+	modalId      = 0
+	modalTitle   = "Oh No :("
+	modalMessage = "You should never see this"
 
 	win *g.MasterWindow
 )
@@ -62,8 +67,7 @@ func getChosenInstall() *DiscordInstall {
 	if radioIdx == customChoiceIdx {
 		choice = ParseDiscord(customDir, "")
 		if choice == nil {
-			g.Msgbox("Uh Oh!", "That doesn't seem to be a Discord install. Please make sure you select the base folder (blah/Discord, not blah/Discord/resources/app)").
-				Buttons(g.MsgboxButtonsOk)
+			ShowModal("Hey now...", "That doesn't seem to be a Discord install.\nPlease make sure you select the base folder\n(blah/Discord, not blah/Discord/resources/app)")
 		}
 	} else {
 		choice = discords[radioIdx].(*DiscordInstall)
@@ -170,12 +174,47 @@ func renderFilesDirErr() g.Widget {
 	}
 }
 
+func Tooltip(label string) g.Widget {
+	return g.Style().
+		SetStyle(g.StyleVarWindowPadding, 10, 8).
+		SetStyleFloat(g.StyleVarWindowRounding, 8).
+		To(
+			g.Tooltip(label),
+		)
+}
+
+func InfoModal(id, title, description string) g.Widget {
+	return g.Style().
+		SetStyle(g.StyleVarWindowPadding, 30, 30).
+		SetStyleFloat(g.StyleVarWindowRounding, 12).
+		To(
+			g.PopupModal(id).
+				Flags(g.WindowFlagsNoTitleBar | Ternary(strings.HasPrefix(id, "#modal"), g.WindowFlagsAlwaysAutoResize, 0)).
+				Layout(
+					g.Align(g.AlignCenter).To(
+						g.Style().SetFontSize(30).To(
+							g.Label(title),
+						),
+						g.Style().SetFontSize(20).To(
+							g.Label(description),
+						),
+						g.Dummy(0, 20),
+						g.Button("Ok").
+							OnClick(func() {
+								g.CloseCurrentPopup()
+							}).
+							Size(100, 30),
+					),
+				),
+		)
+}
+
 func renderInstaller() g.Widget {
 	candidates := makeAutoComplete()
 	wi, _ := win.GetSize()
-	w := float32(wi)
+	w := float32(wi) - 96
 
-	return g.Layout{
+	layout := g.Layout{
 		g.Dummy(0, 20),
 		g.Separator(),
 		g.Dummy(0, 5),
@@ -205,7 +244,7 @@ func renderInstaller() g.Widget {
 			SetFontSize(20).
 			To(
 				g.InputText(&customDir).Hint("The custom location").
-					Size(w-16).
+					Size(w - 16).
 					Flags(g.InputTextFlagsCallbackCompletion).
 					OnChange(onCustomInputChanged).
 					// this library has its own autocomplete but it's broken
@@ -254,28 +293,28 @@ func renderInstaller() g.Widget {
 					SetColor(g.StyleColorButton, DiscordGreen).
 					SetDisabled(GithubError != nil).
 					To(
-						g.Button("Patch").
+						g.Button("Install").
 							OnClick(handlePatch).
 							Size((w-40)*0.25, 50),
-						g.Tooltip("Patch the selected Discord Install"),
+						Tooltip("Patch the selected Discord Install"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordGreen).
 					SetDisabled(GithubError != nil).
 					To(
-						g.Button("Patch (Fix for Canary / PTB)").
+						g.Button("Install (Canary Fix)").
 							OnClick(handlePatchCanary).
 							Size((w-40)*0.25, 50),
-						g.Tooltip("Patch the selected Discord Install"),
+						Tooltip("Use this when patching canary"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordRed).
 					SetDisabled(GithubError != nil).
 					To(
-						g.Button("Unpatch").
+						g.Button("Uninstall").
 							OnClick(handleUnpatch).
 							Size((w-40)*0.25, 50),
-						g.Tooltip("Unpatch the selected Discord Install"),
+						Tooltip("Unpatch the selected Discord Install"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordBlue).
@@ -283,20 +322,29 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button(Ternary(GithubError == nil && LatestHash == InstalledHash, "Re-Download Vencord", "Update")).
 							OnClick(func() {
-								_ = InstallLatestBuilds()
+								if err := InstallLatestBuilds(); err == nil {
+									g.OpenPopup("#downloaded")
+								}
 							}).
 							Size((w-40)*0.25, 50),
-						g.Tooltip("Update your local Vencord files"),
+						Tooltip("Update your local Vencord files"),
 					),
 			),
 		),
 
 		g.PrepareMsgbox(),
+		InfoModal("#downloaded", "Successfully Downloaded", "The Vencord files were successfully downloaded!"),
+		InfoModal("#patched", "Successfully Patched", "You must now fully close Discord (from the tray).\nThen, verify Vencord installed successfully by looking for its category in Discord Settings"),
+		InfoModal("#unpatched", "Successfully Unpatched", "You must now fully close Discord (from the tray)"),
+		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 	}
+
+	return layout
 }
 
 func loop() {
-	// Todo: Figure out how to add padding around window
+	g.PushWindowPadding(48, 48)
+
 	g.SingleWindow().
 		RegisterKeyboardShortcuts(
 			g.WindowShortcut{Key: g.KeyUp, Callback: func() {
@@ -358,6 +406,8 @@ func loop() {
 				elseWidget: renderInstaller,
 			},
 		)
+
+	g.PopStyle()
 }
 
 func main() {
@@ -367,6 +417,6 @@ func main() {
 	discords = FindDiscords()
 	customChoiceIdx = len(discords)
 
-	win = g.NewMasterWindow("Vencord Installer", 1200, 800, g.MasterWindowFlags(0))
+	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
 	win.Run(loop)
 }

@@ -110,32 +110,27 @@ func writeFiles(dir string) error {
 	return os.WriteFile(path.Join(dir, "index.js"), []byte("require("+string(patcherPath)+")"), 0644)
 }
 
-func handleErr(err error, action string, retry func(g.DialogResult)) {
+func handleErr(err error, action string) {
 	if errors.Is(err, os.ErrPermission) {
 		err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
 	}
-	g.Msgbox("Uh Oh!", "Failed to "+action+" this Install:\n"+err.Error()+"\n\nRetry?").
-		Buttons(g.MsgboxButtonsYesNo).
-		ResultCallback(retry)
+
+	ShowModal("Failed to "+action+" this Install", err.Error())
 }
 
 func (di *DiscordInstall) Patch(canaryHack bool) {
 	if err := di.patch(canaryHack); err != nil {
-		handleErr(err, "patch", func(retry g.DialogResult) {
-			if retry {
-				di.Patch(canaryHack)
-			}
-		})
+		handleErr(err, "patch")
+	} else {
+		g.OpenPopup("#patched")
 	}
 }
 
 func (di *DiscordInstall) Unpatch() {
 	if err := di.unpatch(); err != nil {
-		handleErr(err, "unpatch", func(retry g.DialogResult) {
-			if retry {
-				di.Unpatch()
-			}
-		})
+		handleErr(err, "unpatch")
+	} else {
+		g.OpenPopup("#unpatched")
 	}
 }
 
@@ -269,7 +264,7 @@ func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 			errOut = err
 		}
 	}
-	return nil
+	return
 }
 
 func (di *DiscordInstall) unpatch() error {
