@@ -21,6 +21,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	g "github.com/AllenDang/giu"
 	"os"
 	path "path/filepath"
 	"strings"
@@ -95,4 +96,18 @@ func FindDiscords() []any {
 
 func FixOwnership(_ string) error {
 	return nil
+}
+
+// https://github.com/Vencord/Installer/issues/9
+
+func CheckScuffedInstall() bool {
+	username := os.Getenv("USERNAME")
+	programData := os.Getenv("PROGRAMDATA")
+	for _, discordName := range windowsNames {
+		if ExistsFile(path.Join(programData, username, discordName)) || ExistsFile(path.Join(programData, username, discordName)) {
+			g.OpenPopup("#scuffed-install")
+			return true
+		}
+	}
+	return false
 }

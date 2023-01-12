@@ -176,3 +176,7 @@ func FixOwnership(p string) error {
 	}
 	return err
 }
+
+func CheckScuffedInstall() bool {
+	return false
+}

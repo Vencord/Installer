@@ -78,14 +78,7 @@ func getChosenInstall() *DiscordInstall {
 func handlePatch() {
 	choice := getChosenInstall()
 	if choice != nil {
-		choice.Patch(false)
-	}
-}
-
-func handlePatchCanary() {
-	choice := getChosenInstall()
-	if choice != nil {
-		choice.Patch(true)
+		choice.Patch()
 	}
 }
 
@@ -184,19 +177,20 @@ func Tooltip(label string) g.Widget {
 }
 
 func InfoModal(id, title, description string) g.Widget {
+	isDynamic := strings.HasPrefix(id, "#modal")
 	return g.Style().
 		SetStyle(g.StyleVarWindowPadding, 30, 30).
 		SetStyleFloat(g.StyleVarWindowRounding, 12).
 		To(
 			g.PopupModal(id).
-				Flags(g.WindowFlagsNoTitleBar | Ternary(strings.HasPrefix(id, "#modal"), g.WindowFlagsAlwaysAutoResize, 0)).
+				Flags(g.WindowFlagsNoTitleBar | Ternary(isDynamic, g.WindowFlagsAlwaysAutoResize, 0)).
 				Layout(
 					g.Align(g.AlignCenter).To(
 						g.Style().SetFontSize(30).To(
 							g.Label(title),
 						),
 						g.Style().SetFontSize(20).To(
-							g.Label(description),
+							g.Label(description).Wrapped(isDynamic),
 						),
 						g.Dummy(0, 20),
 						g.Button("Ok").
@@ -295,17 +289,8 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Install").
 							OnClick(handlePatch).
-							Size((w-40)*0.25, 50),
+							Size((w-40)/3, 50),
 						Tooltip("Patch the selected Discord Install"),
-					),
-				g.Style().
-					SetColor(g.StyleColorButton, DiscordGreen).
-					SetDisabled(GithubError != nil).
-					To(
-						g.Button("Install (Canary Fix)").
-							OnClick(handlePatchCanary).
-							Size((w-40)*0.25, 50),
-						Tooltip("Use this when patching canary"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordRed).
@@ -313,7 +298,7 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Uninstall").
 							OnClick(handleUnpatch).
-							Size((w-40)*0.25, 50),
+							Size((w-40)/3, 50),
 						Tooltip("Unpatch the selected Discord Install"),
 					),
 				g.Style().
@@ -326,16 +311,16 @@ func renderInstaller() g.Widget {
 									g.OpenPopup("#downloaded")
 								}
 							}).
-							Size((w-40)*0.25, 50),
+							Size((w-40)/3, 50),
 						Tooltip("Update your local Vencord files"),
 					),
 			),
 		),
 
-		g.PrepareMsgbox(),
 		InfoModal("#downloaded", "Successfully Downloaded", "The Vencord files were successfully downloaded!"),
 		InfoModal("#patched", "Successfully Patched", "You must now fully close Discord (from the tray).\nThen, verify Vencord installed successfully by looking for its category in Discord Settings"),
 		InfoModal("#unpatched", "Successfully Unpatched", "You must now fully close Discord (from the tray)"),
+		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\nPlease reinstall Discord before proceeding!\nOtherwise, Vencord will likely not work."),
 		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 	}
 

@@ -118,8 +118,11 @@ func handleErr(err error, action string) {
 	ShowModal("Failed to "+action+" this Install", err.Error())
 }
 
-func (di *DiscordInstall) Patch(canaryHack bool) {
-	if err := di.patch(canaryHack); err != nil {
+func (di *DiscordInstall) Patch() {
+	if CheckScuffedInstall() {
+		return
+	}
+	if err := di.patch(); err != nil {
 		handleErr(err, "patch")
 	} else {
 		g.OpenPopup("#patched")
@@ -155,7 +158,7 @@ func patchRenames(dir string, isSystemElectron bool) error {
 	return nil
 }
 
-func (di *DiscordInstall) patch(canaryHack bool) error {
+func (di *DiscordInstall) patch() error {
 	fmt.Println("Patching " + di.path + "...")
 	if LatestHash != InstalledHash {
 		if err := InstallLatestBuilds(); err != nil {
@@ -185,15 +188,8 @@ func (di *DiscordInstall) patch(canaryHack bool) error {
 		}
 	} else {
 		for _, version := range di.versions {
-			if canaryHack {
-				if err := patchRenames(path.Join(version, ".."), false); err != nil {
-					return err
-				}
-			} else {
-				fmt.Println("Writing files to", version)
-				if err := writeFiles(version); err != nil {
-					return err
-				}
+			if err := patchRenames(path.Join(version, ".."), false); err != nil {
+				return err
 			}
 		}
 	}

@@ -71,3 +71,7 @@ func FindDiscords() []any {
 func FixOwnership(_ string) error {
 	return nil
 }
+
+func CheckScuffedInstall() bool {
+	return false
+}

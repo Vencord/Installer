@@ -20,7 +20,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -35,41 +34,6 @@ func ArrayIncludes[T comparable](arr []T, v T) bool {
 		}
 	}
 	return false
-}
-
-func ArrayMap[T any, R any](arr []T, mapper func(e T) R) []R {
-	out := make([]R, len(arr))
-	for i, e := range arr {
-		out[i] = mapper(e)
-	}
-	return out
-}
-
-func ArrayFilter[T any](arr []T, filter func(e T) bool) []T {
-	var out []T
-	for _, e := range arr {
-		if filter(e) {
-			out = append(out, e)
-		}
-	}
-	return out
-}
-
-func ReadFile(path string) (string, error) {
-	fmt.Println("Reading", path)
-	f, err := os.Open(path)
-	if err != nil {
-		fmt.Println("Failed to read", err)
-		return "", err
-	}
-	//goland:noinspection GoUnhandledErrorResult
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
 }
 
 func ExistsFile(path string) bool {
