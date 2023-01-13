@@ -20,8 +20,10 @@ package main
 
 import "image/color"
 
-// InstallerGitHash is replaced by the linker with short sha
+// these are replaced by the linker
+
 var InstallerGitHash = "Unknown"
+var InstallerTag = "Unknown"
 
 var (
 	DiscordGreen = color.RGBA{R: 0x2D, G: 0x7C, B: 0x46, A: 0xFF}

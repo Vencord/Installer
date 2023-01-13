@@ -303,7 +303,7 @@ func renderInstaller() g.Widget {
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordBlue).
-					SetDisabled(GithubError != nil).
+					SetDisabled(IsDevInstall || GithubError != nil).
 					To(
 						g.Button(Ternary(GithubError == nil && LatestHash == InstalledHash, "Re-Download Vencord", "Update")).
 							OnClick(func() {
@@ -354,7 +354,7 @@ func loop() {
 
 			g.Style().SetFontSize(20).To(
 				g.Row(
-					g.Label("Files will be downloaded to: "+FilesDir),
+					g.Label(Ternary(IsDevInstall, "Dev Install: ", "Files will be downloaded to: ")+FilesDir),
 					g.Style().
 						SetColor(g.StyleColorButton, DiscordBlue).
 						SetStyle(g.StyleVarFramePadding, 4, 4).
@@ -364,13 +364,18 @@ func loop() {
 							}),
 						),
 				),
-				g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me").Wrapped(true),
+				&CondWidget{!IsDevInstall, func() g.Widget {
+					return g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me").Wrapped(true)
+				}, nil},
 				g.Dummy(0, 10),
-				g.Label("Installer Version: "+InstallerGitHash),
+				g.Label("Installer Version: "+InstallerTag+" ("+InstallerGitHash+")"),
 				g.Label("Local Vencord Version: "+InstalledHash),
 				&CondWidget{
 					GithubError == nil,
 					func() g.Widget {
+						if IsDevInstall {
+							return g.Label("Not updating Vencord due to being in DevMode")
+						}
 						return g.Label("Latest Vencord Version: " + LatestHash)
 					}, func() g.Widget {
 						return g.Style().

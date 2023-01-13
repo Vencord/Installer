@@ -41,10 +41,10 @@ jobs:
         run: go get -v
 
       - name: Build
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'" -o VencordInstaller-x11
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller-x11
 
       - name: Build Wayland
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'" --tags wayland -o VencordInstaller-wayland
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' 'main.InstallerTag=${{ github.ref_name }}'" --tags wayland -o VencordInstaller-wayland
 
       - name: Update executable
         run: |
@@ -92,7 +92,7 @@ jobs:
         run: go get -v
 
       - name: Build
-        run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'"
+        run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' 'main.InstallerTag=${{ github.ref_name }}'"
 
       - name: Update executable
         run: |
@@ -159,7 +159,7 @@ jobs:
           export GOROOT=/mingw64/lib/go
           export GOPATH=/mingw64
           go-winres make --product-version "git-tag"
-          CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -v -tags static -ldflags "-s -w -H=windowsgui -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)'"
+          CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -v -tags static -ldflags "-s -w -H=windowsgui -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' 'main.InstallerTag=${{ github.ref_name }}'"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -191,17 +191,12 @@ jobs:
           name: VencordInstaller-windows
           path: windows
 
-      - name: Get some values needed for the release
-        id: release_values
-        run: |
-          echo "release_tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
       - name: Create the release
         uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ env.release_tag }}
+          name: ${{ github.ref_name }}
           prerelease: false
           draft: false
           files: |

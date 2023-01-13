@@ -49,8 +49,15 @@ var GithubError error
 
 var InstalledHash = "None"
 var LatestHash = "Unknown"
+var IsDevInstall bool
 
 func InitGithubDownloader() {
+	IsDevInstall = os.Getenv("VENCORD_DEV_INSTALL") == "1"
+	fmt.Println("Is Dev Install: ", IsDevInstall)
+	if IsDevInstall {
+		return
+	}
+
 	go func() {
 		// Make sure UI updates once the request either finished or failed
 		defer g.Update()
@@ -113,6 +120,10 @@ func InitGithubDownloader() {
 }
 
 func InstallLatestBuilds() (err error) {
+	if IsDevInstall {
+		return
+	}
+
 	err = installLatestBuilds()
 	if err != nil {
 		ShowModal("Uh Oh!", "Failed to install the latest Vencord builds from GitHub:\n"+err.Error())
