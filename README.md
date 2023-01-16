@@ -8,7 +8,10 @@ Vencord Installer allows you to install [Vencord, a Discord Desktop client mod](
 
 ### Windows
 
-Download the latest VencordInstaller.exe from [GitHub Releases](https://github.com/Vendicated/VencordInstaller/releases/latest) and run it
+> **Warning**
+**Do not** run the installer as Admin
+
+Download [VencordInstaller.exe](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.exe) and run it
 
 ### Linux
 
@@ -16,13 +19,13 @@ Download the latest VencordInstaller.exe from [GitHub Releases](https://github.c
 sh -c "$(curl -sS https://raw.githubusercontent.com/Vendicated/VencordInstaller/main/install.sh)"
 ```
 
-### Mac
+### MacOs
 
-Download the latest Mac build from [GitHub Releases](https://github.com/Vendicated/VencordInstaller/releases/latest), unzip it, and run `VencordInstaller.app` 
+Download the latest [MacOs build](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.MacOS.zip), unzip it, and run `VencordInstaller.app` 
 
-If you get a `VencordInstaller can't be opened` message, right-click `VencordInstaller.app` and click open.
+If you get a `VencordInstaller can't be opened` warning, right-click `VencordInstaller.app` and click open.
 
-This error shows because the app isn't signed since I'm not willing to pay 100 bucks a year for an Apple Developer license.
+This warning shows because the app isn't signed since I'm not willing to pay 100 bucks a year for an Apple Developer license.
 
 ### Building from source
 
