@@ -48,6 +48,8 @@ apt install -y libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-mod
 Then just run
 
 ```sh
+go mod tidy
+
 # Windows / MacOs / Linux X11
 go build
 
