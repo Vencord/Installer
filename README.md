@@ -27,6 +27,8 @@ If you get a `VencordInstaller can't be opened` warning, right-click `VencordIns
 
 This warning shows because the app isn't signed since I'm not willing to pay 100 bucks a year for an Apple Developer license.
 
+___
+
 ### Building from source
 
 You need the go compiler and gcc (MinGW on Windows).
