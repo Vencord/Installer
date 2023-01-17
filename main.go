@@ -403,8 +403,12 @@ func loop() {
 func main() {
 	// this init function depends on patcher init, so using the automatic init won't work
 	InitGithubDownloader()
-
 	discords = FindDiscords()
+
+	if CliMain() {
+		return
+	}
+
 	customChoiceIdx = len(discords)
 
 	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)

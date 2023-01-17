@@ -46,21 +46,28 @@ const releaseUrl = "https://api.github.com/repos/Vendicated/Vencord/releases/lat
 
 var ReleaseData GithubRelease
 var GithubError error
+var GithubDoneChan chan bool
 
 var InstalledHash = "None"
 var LatestHash = "Unknown"
 var IsDevInstall bool
 
 func InitGithubDownloader() {
+	GithubDoneChan = make(chan bool, 1)
+
 	IsDevInstall = os.Getenv("VENCORD_DEV_INSTALL") == "1"
 	fmt.Println("Is Dev Install: ", IsDevInstall)
 	if IsDevInstall {
+		GithubDoneChan <- true
 		return
 	}
 
 	go func() {
 		// Make sure UI updates once the request either finished or failed
-		defer g.Update()
+		defer func() {
+			g.Update()
+			GithubDoneChan <- GithubError == nil
+		}()
 
 		fmt.Println("Fetching", releaseUrl)
 		req, err := http.NewRequest("GET", releaseUrl, nil)
