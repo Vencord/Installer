@@ -1,3 +1,5 @@
+//go:build cli
+
 package main
 
 import (
@@ -5,7 +7,12 @@ import (
 	"fmt"
 )
 
-func CliMain() bool {
+var discords []any
+
+func main() {
+	InitGithubDownloader()
+	discords = FindDiscords()
+
 	var installFlag = flag.Bool("install", false, "Run the CLI in install mode")
 	var uninstallFlag = flag.Bool("uninstall", false, "Run the CLI in uninstall mode")
 	var updateFlag = flag.Bool("update", false, "Run the CLI in update mode")
@@ -14,24 +21,19 @@ func CliMain() bool {
 	if *installFlag || *updateFlag {
 		if !<-GithubDoneChan {
 			fmt.Println("Not", Ternary(*installFlag, "installing", "updating"), "as fetching release data failed")
-			return true
+			return
 		}
 	}
 
 	if *installFlag {
 		_ = PromptDiscord("patch").patch()
-		return true
-	}
-	if *uninstallFlag {
+	} else if *uninstallFlag {
 		_ = PromptDiscord("unpatch").unpatch()
-		return true
-	}
-	if *updateFlag {
+	} else if *updateFlag {
 		_ = installLatestBuilds()
-		return true
+	} else {
+		flag.Usage()
 	}
-
-	return false
 }
 
 func PromptDiscord(action string) *DiscordInstall {
@@ -67,4 +69,13 @@ func PromptDiscord(action string) *DiscordInstall {
 
 		fmt.Println("That wasn't a valid choice")
 	}
+}
+
+func InstallLatestBuilds() error {
+	return installLatestBuilds()
+}
+
+func HandleScuffedInstall() {
+	fmt.Println("Hold On!")
+	fmt.Println("You have a broken Discord Install.\nPlease reinstall Discord before proceeding!\nOtherwise, Vencord will likely not work.")
 }

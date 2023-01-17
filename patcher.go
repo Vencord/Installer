@@ -27,7 +27,6 @@ import (
 	path "path/filepath"
 	"strings"
 
-	g "github.com/AllenDang/giu"
 	"github.com/ProtonMail/go-appdir"
 )
 
@@ -108,33 +107,6 @@ func writeFiles(dir string) error {
 
 	patcherPath, _ := json.Marshal(Patcher)
 	return os.WriteFile(path.Join(dir, "index.js"), []byte("require("+string(patcherPath)+")"), 0644)
-}
-
-func handleErr(err error, action string) {
-	if errors.Is(err, os.ErrPermission) {
-		err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
-	}
-
-	ShowModal("Failed to "+action+" this Install", err.Error())
-}
-
-func (di *DiscordInstall) Patch() {
-	if CheckScuffedInstall() {
-		return
-	}
-	if err := di.patch(); err != nil {
-		handleErr(err, "patch")
-	} else {
-		g.OpenPopup("#patched")
-	}
-}
-
-func (di *DiscordInstall) Unpatch() {
-	if err := di.unpatch(); err != nil {
-		handleErr(err, "unpatch")
-	} else {
-		g.OpenPopup("#unpatched")
-	}
 }
 
 func patchRenames(dir string, isSystemElectron bool) error {

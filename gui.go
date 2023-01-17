@@ -1,31 +1,15 @@
-/*
- * This part is file of VencordInstaller
- * Copyright (c) 2022 Vendicated
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+//go:build gui || (!gui && !cli)
 
 package main
 
 import (
+	"errors"
+	g "github.com/AllenDang/giu"
+	"github.com/AllenDang/imgui-go"
 	"os"
 	path "path/filepath"
 	"strconv"
 	"strings"
-
-	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/imgui-go"
 )
 
 var (
@@ -47,6 +31,21 @@ var (
 
 	win *g.MasterWindow
 )
+
+func main() {
+	InitGithubDownloader()
+	discords = FindDiscords()
+
+	customChoiceIdx = len(discords)
+
+	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
+	win.Run(loop)
+
+	go func() {
+		<-GithubDoneChan
+		g.Update()
+	}()
+}
 
 type CondWidget struct {
 	predicate  bool
@@ -75,6 +74,18 @@ func getChosenInstall() *DiscordInstall {
 	return choice
 }
 
+func InstallLatestBuilds() (err error) {
+	if IsDevInstall {
+		return
+	}
+
+	err = installLatestBuilds()
+	if err != nil {
+		ShowModal("Uh Oh!", "Failed to install the latest Vencord builds from GitHub:\n"+err.Error())
+	}
+	return
+}
+
 func handlePatch() {
 	choice := getChosenInstall()
 	if choice != nil {
@@ -86,6 +97,37 @@ func handleUnpatch() {
 	choice := getChosenInstall()
 	if choice != nil {
 		choice.Unpatch()
+	}
+}
+
+func handleErr(err error, action string) {
+	if errors.Is(err, os.ErrPermission) {
+		err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
+	}
+
+	ShowModal("Failed to "+action+" this Install", err.Error())
+}
+
+func HandleScuffedInstall() {
+	g.OpenPopup("#scuffed-install")
+}
+
+func (di *DiscordInstall) Patch() {
+	if CheckScuffedInstall() {
+		return
+	}
+	if err := di.patch(); err != nil {
+		handleErr(err, "patch")
+	} else {
+		g.OpenPopup("#patched")
+	}
+}
+
+func (di *DiscordInstall) Unpatch() {
+	if err := di.unpatch(); err != nil {
+		handleErr(err, "unpatch")
+	} else {
+		g.OpenPopup("#unpatched")
 	}
 }
 
@@ -201,6 +243,13 @@ func InfoModal(id, title, description string) g.Widget {
 					),
 				),
 		)
+}
+
+func ShowModal(title, desc string) {
+	modalTitle = title
+	modalMessage = desc
+	modalId++
+	g.OpenPopup("#modal" + strconv.Itoa(modalId))
 }
 
 func renderInstaller() g.Widget {
@@ -398,19 +447,4 @@ func loop() {
 		)
 
 	g.PopStyle()
-}
-
-func main() {
-	// this init function depends on patcher init, so using the automatic init won't work
-	InitGithubDownloader()
-	discords = FindDiscords()
-
-	if CliMain() {
-		return
-	}
-
-	customChoiceIdx = len(discords)
-
-	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
-	win.Run(loop)
 }

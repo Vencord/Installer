@@ -21,10 +21,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
-
-	g "github.com/AllenDang/giu"
 )
 
 func ArrayIncludes[T comparable](arr []T, v T) bool {
@@ -69,11 +66,4 @@ func GetBranch(name string) string {
 		}
 	}
 	return "stable"
-}
-
-func ShowModal(title, desc string) {
-	modalTitle = title
-	modalMessage = desc
-	modalId++
-	g.OpenPopup("#modal" + strconv.Itoa(modalId))
 }

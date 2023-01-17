@@ -21,7 +21,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	g "github.com/AllenDang/giu"
 	"os"
 	path "path/filepath"
 	"strings"
@@ -105,7 +104,7 @@ func CheckScuffedInstall() bool {
 	programData := os.Getenv("PROGRAMDATA")
 	for _, discordName := range windowsNames {
 		if ExistsFile(path.Join(programData, username, discordName)) || ExistsFile(path.Join(programData, username, discordName)) {
-			g.OpenPopup("#scuffed-install")
+			HandleScuffedInstall()
 			return true
 		}
 	}

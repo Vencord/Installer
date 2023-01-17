@@ -30,8 +30,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	g "github.com/AllenDang/giu"
 )
 
 type GithubRelease struct {
@@ -65,7 +63,6 @@ func InitGithubDownloader() {
 	go func() {
 		// Make sure UI updates once the request either finished or failed
 		defer func() {
-			g.Update()
 			GithubDoneChan <- GithubError == nil
 		}()
 
@@ -126,18 +123,6 @@ func InitGithubDownloader() {
 	}
 }
 
-func InstallLatestBuilds() (err error) {
-	if IsDevInstall {
-		return
-	}
-
-	err = installLatestBuilds()
-	if err != nil {
-		ShowModal("Uh Oh!", "Failed to install the latest Vencord builds from GitHub:\n"+err.Error())
-	}
-	return
-}
-
 func installLatestBuilds() (retErr error) {
 	fmt.Println("Installing latest builds...")
 
@@ -193,6 +178,5 @@ func installLatestBuilds() (retErr error) {
 	_ = FixOwnership(FilesDir)
 
 	InstalledHash = LatestHash
-	g.Update()
 	return
 }
