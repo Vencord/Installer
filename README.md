@@ -33,9 +33,9 @@ ___
 
 ### Building from source
 
-You need the go compiler and gcc (MinGW on Windows).
+You need the go compiler
 
-On Linux, you also need some dependencies:
+To build the gui (you can build the cli without these), you also need gcc (MinGW on Windows) and the following additional dependencies if on Linux:
 
 ```sh
 apt install -y pkg-config libsdl2-dev libglx-dev libgl1-mesa-dev
