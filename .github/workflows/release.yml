@@ -40,11 +40,14 @@ jobs:
       - name: Install Go dependencies
         run: go get -v
 
-      - name: Build
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller-x11
+      - name: Build X11 Gui
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags "static gui" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller-x11
 
-      - name: Build Wayland
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" --tags wayland -o VencordInstaller-wayland
+      - name: Build Wayland Gui
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags "static wayland gui" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller-wayland
+
+      - name: Build Cli
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstalleCli-linux
 
       - name: Update executable
         run: |
@@ -57,6 +60,7 @@ jobs:
           path: |
             VencordInstaller-x11
             VencordInstaller-wayland
+            VencordInstalleCli-linux
 
 
   build-mac:
@@ -153,19 +157,36 @@ jobs:
           go get -v
           go install github.com/tc-hib/go-winres@latest
 
-      - name: Build
+      - name: Build Gui
         shell: msys2 {0}
         run: |
           export GOROOT=/mingw64/lib/go
           export GOPATH=/mingw64
           go-winres make --product-version "git-tag"
-          CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -v -tags static -ldflags "-s -w -H=windowsgui -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'"
+          CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -v -tags static -ldflags "-s -w -H=windowsgui -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller.exe
+
+      - name: Build amd64 Cli
+        shell: msys2 {0}
+        run: |
+          export GOROOT=/mingw64/lib/go
+          export GOPATH=/mingw64
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-amd64.exe
+
+      - name: Build i386 Cli
+        shell: msys2 {0}
+        run: |
+          export GOROOT=/mingw64/lib/go
+          export GOPATH=/mingw64
+          CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -v -tags "static cli" -ldflags "-s -w -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-i386.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: VencordInstaller-windows
-          path: VencordInstaller.exe
+          path: |
+            VencordInstaller.exe
+            VencordInstallerCli-amd64.exe
+            VencordInstallerCli-i386.exe
 
 
   release:
@@ -202,4 +223,4 @@ jobs:
           files: |
             linux/VencordInstaller-*
             macos/VencordInstaller.MacOS.zip
-            windows/VencordInstaller.exe
+            windows/VencordInstall*.exe

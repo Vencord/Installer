@@ -25,6 +25,8 @@ func main() {
 		}
 	}
 
+	fmt.Println("Vencord Installer cli", InstallerTag, "("+InstallerGitHash+")")
+
 	if *installFlag {
 		_ = PromptDiscord("patch").patch()
 	} else if *uninstallFlag {

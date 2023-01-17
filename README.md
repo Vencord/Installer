@@ -13,6 +13,8 @@ Vencord Installer allows you to install [Vencord, a Discord Desktop client mod](
 
 Download [VencordInstaller.exe](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.exe) and run it
 
+Alternatively, if you are on Windows 7, 32bit or the installer doesn't open for other reasons, [download the CLI from releases](https://github.com/Vencord/Installer/releases/latest/) and run it via the terminal
+
 ### Linux
 
 ```sh
@@ -52,6 +54,8 @@ go mod tidy
 
 # Windows / MacOs / Linux X11
 go build
+# or build the Cli
+go build --tags cli
 
 # Linux Wayland
 go build --tags wayland
