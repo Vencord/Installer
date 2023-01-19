@@ -251,15 +251,17 @@ func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 	if err := os.Rename(appAsar, appAsarTmp); err != nil {
 		fmt.Println(err)
 		errOut = err
+	} else {
+		renamesDone = append(renamesDone, []string{appAsar, appAsarTmp})
 	}
-	renamesDone = append(renamesDone, []string{appAsar, appAsarTmp})
 
 	fmt.Println("Renaming", _appAsar, "to", appAsar)
 	if err := os.Rename(_appAsar, appAsar); err != nil {
 		fmt.Println(err)
 		errOut = err
+	} else {
+		renamesDone = append(renamesDone, []string{_appAsar, appAsar})
 	}
-	renamesDone = append(renamesDone, []string{_appAsar, appAsar})
 
 	if isSystemElectron {
 		fmt.Println("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
