@@ -110,24 +110,43 @@ func writeFiles(dir string) error {
 	return os.WriteFile(path.Join(dir, "index.js"), []byte("require("+string(patcherPath)+")"), 0644)
 }
 
-func patchRenames(dir string, isSystemElectron bool) error {
+func patchRenames(dir string, isSystemElectron bool) (err error) {
 	appAsar := path.Join(dir, "app.asar")
 	_appAsar := path.Join(dir, "_app.asar")
+
+	var renamesDone [][]string
+	defer func() {
+		if err != nil && len(renamesDone) > 0 {
+			fmt.Println("Failed to patch. Undoing partial patch")
+			for _, rename := range renamesDone {
+				if innerErr := os.Rename(rename[1], rename[0]); innerErr != nil {
+					fmt.Println("Failed to undo partial patch. This install is probably bricked.", innerErr)
+				}
+			}
+		}
+	}()
+
 	fmt.Println("Renaming", appAsar, "to", _appAsar)
 	if err := os.Rename(appAsar, _appAsar); err != nil {
 		return err
 	}
+	renamesDone = append(renamesDone, []string{appAsar, _appAsar})
+
 	if isSystemElectron {
-		fmt.Println("Renaming", appAsar+".unpacked", "to", _appAsar+".unpacked")
-		err := os.Rename(appAsar+".unpacked", _appAsar+".unpacked")
+		from, to := appAsar+".unpacked", _appAsar+".unpacked"
+		fmt.Println("Renaming", from, "to", to)
+		err := os.Rename(from, to)
 		if err != nil {
 			return err
 		}
+		renamesDone = append(renamesDone, []string{from, to})
 	}
+
 	fmt.Println("Writing files to", appAsar)
 	if err := writeFiles(appAsar); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -150,12 +169,6 @@ func (di *DiscordInstall) patch() error {
 	}
 
 	if di.isSystemElectron {
-		// hack:
-		// - Rename app.asar 		  -> _app.asar
-		// - Rename app.asar.unpacked -> _app.asar.unpacked
-		// - Make app.asar folder with patch files
-		// This breaks pacman but shrug. Someone with this setup should be smart enough to fix it
-		// Perhaps I could register a pacman hook to fix it
 		if err := patchRenames(di.path, true); err != nil {
 			return err
 		}
@@ -215,17 +228,39 @@ func (di *DiscordInstall) patch() error {
 
 func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 	appAsar := path.Join(dir, "app.asar")
+	appAsarTmp := path.Join(dir, "app.asar.tmp")
 	_appAsar := path.Join(dir, "_app.asar")
+
+	var renamesDone [][]string
+	defer func() {
+		if errOut != nil && len(renamesDone) > 0 {
+			fmt.Println("Failed to unpatch. Undoing partial unpatch")
+			for _, rename := range renamesDone {
+				if innerErr := os.Rename(rename[1], rename[0]); innerErr != nil {
+					fmt.Println("Failed to undo partial unpatch. This install is probably bricked.", innerErr)
+				}
+			}
+		} else if errOut == nil {
+			if innerErr := os.RemoveAll(appAsarTmp); innerErr != nil {
+				fmt.Println("Failed to delete temporary app.asar (patch folder) backup. This is whatever but you might want to delete it manually.", innerErr)
+			}
+		}
+	}()
+
 	fmt.Println("Deleting", appAsar)
-	if err := os.RemoveAll(appAsar); err != nil {
+	if err := os.Rename(appAsar, appAsarTmp); err != nil {
 		fmt.Println(err)
 		errOut = err
 	}
+	renamesDone = append(renamesDone, []string{appAsar, appAsarTmp})
+
 	fmt.Println("Renaming", _appAsar, "to", appAsar)
 	if err := os.Rename(_appAsar, appAsar); err != nil {
 		fmt.Println(err)
 		errOut = err
 	}
+	renamesDone = append(renamesDone, []string{_appAsar, appAsar})
+
 	if isSystemElectron {
 		fmt.Println("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
 		if err := os.Rename(_appAsar+".unpacked", appAsar+".unpacked"); err != nil {
