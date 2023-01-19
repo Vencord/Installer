@@ -8,6 +8,7 @@ import (
 	"github.com/AllenDang/imgui-go"
 	"os"
 	path "path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -103,7 +104,7 @@ func handleUnpatch() {
 }
 
 func handleOpenAsar() {
-	if acceptedOpenAsar {
+	if acceptedOpenAsar || getChosenInstall().IsOpenAsar() {
 		handleOpenAsarConfirmed()
 		return
 	}
@@ -118,12 +119,14 @@ func handleOpenAsarConfirmed() {
 			if err := choice.UninstallOpenAsar(); err != nil {
 				handleErr(err, "uninstall OpenAsar from")
 			} else {
+				g.OpenPopup("#openasar-unpatched")
 				g.Update()
 			}
 		} else {
 			if err := choice.InstallOpenAsar(); err != nil {
 				handleErr(err, "install OpenAsar on")
 			} else {
+				g.OpenPopup("#openasar-patched")
 				g.Update()
 			}
 		}
@@ -132,7 +135,11 @@ func handleOpenAsarConfirmed() {
 
 func handleErr(err error, action string) {
 	if errors.Is(err, os.ErrPermission) {
-		err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
+		if runtime.GOOS != "windows" {
+			err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
+		} else {
+			err = errors.New("Permission denied. Make sure your Discord is fully closed (from the tray)!")
+		}
 	}
 
 	ShowModal("Failed to "+action+" this Install", err.Error())
@@ -275,7 +282,6 @@ func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
 									g.Button("Accept").
 										OnClick(func() {
 											acceptedOpenAsar = true
-											handleOpenAsarConfirmed()
 											g.CloseCurrentPopup()
 										}).
 										Size(100, 30),
@@ -444,7 +450,10 @@ func renderInstaller() g.Widget {
 		RawInfoModal("#openasar-confirm", "OpenAsar", "OpenAsar is an open-source alternative of Discord desktop's app.asar.\n"+
 			"Vencord is in no way affiliated with OpenAsar.\n"+
 			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
-			"no support will be provided, join the OpenAsar Server instead!", true),
+			"no support will be provided, join the OpenAsar Server instead!\n\n"+
+			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", true),
+		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "You must now fully close Discord (from the tray)"),
+		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "You must now fully close Discord (from the tray)"),
 		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 	}
 

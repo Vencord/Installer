@@ -121,6 +121,8 @@ func patchRenames(dir string, isSystemElectron bool) (err error) {
 			for _, rename := range renamesDone {
 				if innerErr := os.Rename(rename[1], rename[0]); innerErr != nil {
 					fmt.Println("Failed to undo partial patch. This install is probably bricked.", innerErr)
+				} else {
+					fmt.Println("Successfully undid all changes")
 				}
 			}
 		}
@@ -238,6 +240,8 @@ func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 			for _, rename := range renamesDone {
 				if innerErr := os.Rename(rename[1], rename[0]); innerErr != nil {
 					fmt.Println("Failed to undo partial unpatch. This install is probably bricked.", innerErr)
+				} else {
+					fmt.Println("Successfully undid all changes")
 				}
 			}
 		} else if errOut == nil {
