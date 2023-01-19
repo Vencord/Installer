@@ -1,5 +1,4 @@
-# Based heavily on https://github.com/Cumcord/Impregnate/blob/9a0136038c746af7c8c68b9a24aca5dd937e5c88/.github/workflows/release.yml
-# Thanks a lot Alyxia!
+# Based partially on Alyxia's work, thanks so much!
 
 name: Release
 on:
@@ -47,7 +46,7 @@ jobs:
         run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags "static wayland gui" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller-wayland
 
       - name: Build Cli
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstalleCli-linux
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-linux
 
       - name: Update executable
         run: |
