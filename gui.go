@@ -29,6 +29,8 @@ var (
 	modalTitle   = "Oh No :("
 	modalMessage = "You should never see this"
 
+	acceptedOpenAsar bool
+
 	win *g.MasterWindow
 )
 
@@ -97,6 +99,34 @@ func handleUnpatch() {
 	choice := getChosenInstall()
 	if choice != nil {
 		choice.Unpatch()
+	}
+}
+
+func handleOpenAsar() {
+	if acceptedOpenAsar {
+		handleOpenAsarConfirmed()
+		return
+	}
+
+	g.OpenPopup("#openasar-confirm")
+}
+
+func handleOpenAsarConfirmed() {
+	choice := getChosenInstall()
+	if choice != nil {
+		if choice.IsOpenAsar() {
+			if err := choice.UninstallOpenAsar(); err != nil {
+				handleErr(err, "uninstall OpenAsar from")
+			} else {
+				g.Update()
+			}
+		} else {
+			if err := choice.InstallOpenAsar(); err != nil {
+				handleErr(err, "install OpenAsar on")
+			} else {
+				g.Update()
+			}
+		}
 	}
 }
 
@@ -219,6 +249,10 @@ func Tooltip(label string) g.Widget {
 }
 
 func InfoModal(id, title, description string) g.Widget {
+	return RawInfoModal(id, title, description, false)
+}
+
+func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
 	isDynamic := strings.HasPrefix(id, "#modal")
 	return g.Style().
 		SetStyle(g.StyleVarWindowPadding, 30, 30).
@@ -235,11 +269,31 @@ func InfoModal(id, title, description string) g.Widget {
 							g.Label(description).Wrapped(isDynamic),
 						),
 						g.Dummy(0, 20),
-						g.Button("Ok").
-							OnClick(func() {
-								g.CloseCurrentPopup()
-							}).
-							Size(100, 30),
+						&CondWidget{isOpenAsar,
+							func() g.Widget {
+								return g.Row(
+									g.Button("Accept").
+										OnClick(func() {
+											acceptedOpenAsar = true
+											handleOpenAsarConfirmed()
+											g.CloseCurrentPopup()
+										}).
+										Size(100, 30),
+									g.Button("Cancel").
+										OnClick(func() {
+											g.CloseCurrentPopup()
+										}).
+										Size(100, 30),
+								)
+							},
+							func() g.Widget {
+								return g.Button("Ok").
+									OnClick(func() {
+										g.CloseCurrentPopup()
+									}).
+									Size(100, 30)
+							},
+						},
 					),
 				),
 		)
@@ -256,6 +310,12 @@ func renderInstaller() g.Widget {
 	candidates := makeAutoComplete()
 	wi, _ := win.GetSize()
 	w := float32(wi) - 96
+
+	var currentDiscord *DiscordInstall
+	if radioIdx != customChoiceIdx {
+		currentDiscord = discords[radioIdx].(*DiscordInstall)
+	}
+	var isOpenAsar = currentDiscord != nil && currentDiscord.IsOpenAsar()
 
 	layout := g.Layout{
 		g.Dummy(0, 20),
@@ -338,8 +398,16 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Install").
 							OnClick(handlePatch).
-							Size((w-40)/3, 50),
+							Size((w-40)/4, 50),
 						Tooltip("Patch the selected Discord Install"),
+					),
+				g.Style().
+					SetColor(g.StyleColorButton, Ternary(isOpenAsar, DiscordRed, DiscordGreen)).
+					To(
+						g.Button(Ternary(isOpenAsar, "Uninstall OpenAsar", Ternary(currentDiscord != nil, "Install OpenAsar", "(Un-)Install OpenAsar"))).
+							OnClick(handleOpenAsar).
+							Size((w-40)/4, 50),
+						Tooltip("Manage OpenAsar"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordRed).
@@ -347,7 +415,7 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Uninstall").
 							OnClick(handleUnpatch).
-							Size((w-40)/3, 50),
+							Size((w-40)/4, 50),
 						Tooltip("Unpatch the selected Discord Install"),
 					),
 				g.Style().
@@ -360,16 +428,23 @@ func renderInstaller() g.Widget {
 									g.OpenPopup("#downloaded")
 								}
 							}).
-							Size((w-40)/3, 50),
+							Size((w-40)/4, 50),
 						Tooltip("Update your local Vencord files"),
 					),
 			),
 		),
 
 		InfoModal("#downloaded", "Successfully Downloaded", "The Vencord files were successfully downloaded!"),
-		InfoModal("#patched", "Successfully Patched", "You must now fully close Discord (from the tray).\nThen, verify Vencord installed successfully by looking for its category in Discord Settings"),
+		InfoModal("#patched", "Successfully Patched", "You must now fully close Discord (from the tray).\n"+
+			"Then, verify Vencord installed successfully by looking for its category in Discord Settings"),
 		InfoModal("#unpatched", "Successfully Unpatched", "You must now fully close Discord (from the tray)"),
-		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\nPlease reinstall Discord before proceeding!\nOtherwise, Vencord will likely not work."),
+		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
+			"Please reinstall Discord before proceeding!\n"+
+			"Otherwise, Vencord will likely not work.\n"),
+		RawInfoModal("#openasar-confirm", "OpenAsar", "OpenAsar is an open-source alternative of Discord desktop's app.asar.\n"+
+			"Vencord is in no way affiliated with OpenAsar.\n"+
+			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
+			"no support will be provided, join the OpenAsar Server instead!", true),
 		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 	}
 

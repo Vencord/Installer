@@ -13,9 +13,11 @@ func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
 
-	var installFlag = flag.Bool("install", false, "Run the CLI in install mode")
-	var uninstallFlag = flag.Bool("uninstall", false, "Run the CLI in uninstall mode")
-	var updateFlag = flag.Bool("update", false, "Run the CLI in update mode")
+	var installFlag = flag.Bool("install", false, "Install Vencord on a Discord install")
+	var uninstallFlag = flag.Bool("uninstall", false, "Uninstall Vencord from a Discord install")
+	var installOpenAsar = flag.Bool("install-openasar", false, "Install OpenAsar on a Discord install")
+	var uninstallOpenAsar = flag.Bool("install-openasar", false, "Uninstall OpenAsar from a Discord install")
+	var updateFlag = flag.Bool("update", false, "Update your local Vencord files")
 	flag.Parse()
 
 	if *installFlag || *updateFlag {
@@ -27,14 +29,33 @@ func main() {
 
 	fmt.Println("Vencord Installer cli", InstallerTag, "("+InstallerGitHash+")")
 
+	var err error
 	if *installFlag {
 		_ = PromptDiscord("patch").patch()
 	} else if *uninstallFlag {
 		_ = PromptDiscord("unpatch").unpatch()
 	} else if *updateFlag {
 		_ = installLatestBuilds()
+	} else if *installOpenAsar {
+		discord := PromptDiscord("patch")
+		if !discord.IsOpenAsar() {
+			err = discord.InstallOpenAsar()
+		} else {
+			err = errors.New("OpenAsar already installed")
+		}
+	} else if *uninstallOpenAsar {
+		discord := PromptDiscord("patch")
+		if discord.IsOpenAsar() {
+			err = discord.UninstallOpenAsar()
+		} else {
+			err = errors.New("OpenAsar not installed")
+		}
 	} else {
 		flag.Usage()
+	}
+
+	if err != nil {
+		fmt.Println(err)
 	}
 }
 

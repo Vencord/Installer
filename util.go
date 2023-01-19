@@ -67,3 +67,7 @@ func GetBranch(name string) string {
 	}
 	return "stable"
 }
+
+func Ptr[T any](v T) *T {
+	return &v
+}
