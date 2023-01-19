@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 )
@@ -16,7 +17,7 @@ func main() {
 	var installFlag = flag.Bool("install", false, "Install Vencord on a Discord install")
 	var uninstallFlag = flag.Bool("uninstall", false, "Uninstall Vencord from a Discord install")
 	var installOpenAsar = flag.Bool("install-openasar", false, "Install OpenAsar on a Discord install")
-	var uninstallOpenAsar = flag.Bool("install-openasar", false, "Uninstall OpenAsar from a Discord install")
+	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
 	var updateFlag = flag.Bool("update", false, "Update your local Vencord files")
 	flag.Parse()
 
