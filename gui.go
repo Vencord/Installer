@@ -275,6 +275,17 @@ func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
 						g.Style().SetFontSize(20).To(
 							g.Label(description).Wrapped(isDynamic),
 						),
+						&CondWidget{id == "#scuffed-install", func() g.Widget {
+							return g.Column(
+								g.Dummy(0, 10),
+								g.Button("Take me there!").OnClick(func() {
+									// this issue only exists on windows so using Windows specific path is oki
+									username := os.Getenv("USERNAME")
+									programData := os.Getenv("PROGRAMDATA")
+									g.OpenURL("file://" + path.Join(programData, username))
+								}).Size(200, 30),
+							)
+						}, nil},
 						g.Dummy(0, 20),
 						&CondWidget{isOpenAsar,
 							func() g.Widget {
@@ -445,8 +456,11 @@ func renderInstaller() g.Widget {
 			"Then, verify Vencord installed successfully by looking for its category in Discord Settings"),
 		InfoModal("#unpatched", "Successfully Unpatched", "You must now fully close Discord (from the tray)"),
 		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
-			"Please reinstall Discord before proceeding!\n"+
-			"Otherwise, Vencord will likely not work.\n"),
+			"Sometimes Discord decides to install to the wrong location for some reason!\n"+
+			"You need to fix this before patching, otherwise Vencord will likely not work.\n\n"+
+			"Use the below button to jump there and delete any folder called Discord or Squirrel.\n"+
+			"If the folder is now empty, feel free to go back a step and delete that folder too.\n"+
+			"Then see if Discord still starts. If not, reinstall it"),
 		RawInfoModal("#openasar-confirm", "OpenAsar", "OpenAsar is an open-source alternative of Discord desktop's app.asar.\n"+
 			"Vencord is in no way affiliated with OpenAsar.\n"+
 			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
