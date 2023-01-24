@@ -45,6 +45,10 @@ func init() {
 		}
 	}
 	if sudoUser != "" {
+		if sudoUser == "root" {
+			panic("VencordInstaller must not be run as the root user. Please rerun as normal user. Use sudo or doas to run as root.")
+		}
+
 		fmt.Println("VencordInstaller was run with root privileges, actual user is", sudoUser)
 		fmt.Println("Looking up HOME of", sudoUser)
 
