@@ -59,7 +59,7 @@ jobs:
           path: |
             VencordInstaller-x11
             VencordInstaller-wayland
-            VencordInstalleCli-linux
+            VencordInstallerCli-linux
 
 
   build-mac:
