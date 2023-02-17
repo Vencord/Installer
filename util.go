@@ -19,9 +19,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
+	"syscall"
 )
 
 func ArrayIncludes[T comparable](arr []T, v T) bool {
@@ -70,4 +73,22 @@ func GetBranch(name string) string {
 
 func Ptr[T any](v T) *T {
 	return &v
+}
+
+func CheckIfErrIsCauseItsBusyRn(err error) error {
+	if runtime.GOOS != "windows" {
+		return err
+	}
+
+	// bruhhhh
+	if linkError, ok := err.(*os.LinkError); ok {
+		if errno, ok := linkError.Err.(syscall.Errno); ok && errno == 32 /* ERROR_SHARING_VIOLATION */ {
+			return errors.New(
+				"Cannot patch because Discord's files are used by a different process." +
+					"\nMake sure you close Discord before trying to patch!",
+			)
+		}
+	}
+
+	return err
 }

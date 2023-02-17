@@ -22,12 +22,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ProtonMail/go-appdir"
 	"os"
 	"os/exec"
 	path "path/filepath"
 	"strings"
-
-	"github.com/ProtonMail/go-appdir"
 )
 
 var BaseDir string
@@ -130,6 +129,8 @@ func patchRenames(dir string, isSystemElectron bool) (err error) {
 
 	fmt.Println("Renaming", appAsar, "to", _appAsar)
 	if err := os.Rename(appAsar, _appAsar); err != nil {
+		err = CheckIfErrIsCauseItsBusyRn(err)
+		fmt.Println(err)
 		return err
 	}
 	renamesDone = append(renamesDone, []string{appAsar, _appAsar})
@@ -253,6 +254,7 @@ func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 
 	fmt.Println("Deleting", appAsar)
 	if err := os.Rename(appAsar, appAsarTmp); err != nil {
+		err = CheckIfErrIsCauseItsBusyRn(err)
 		fmt.Println(err)
 		errOut = err
 	} else {
@@ -261,6 +263,7 @@ func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 
 	fmt.Println("Renaming", _appAsar, "to", appAsar)
 	if err := os.Rename(_appAsar, appAsar); err != nil {
+		err = CheckIfErrIsCauseItsBusyRn(err)
 		fmt.Println(err)
 		errOut = err
 	} else {
