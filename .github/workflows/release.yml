@@ -5,6 +5,7 @@ on:
   push:
     tags:
       - v*
+  workflow_dispatch:
 
 env:
   FORCE_COLOR: true
