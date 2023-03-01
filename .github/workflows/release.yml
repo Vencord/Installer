@@ -40,13 +40,13 @@ jobs:
         run: go get -v
 
       - name: Build X11 Gui
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags "static gui" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller-x11
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags "static gui" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}' -extldflags=-static" -o VencordInstaller-x11
 
       - name: Build Wayland Gui
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags "static wayland gui" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller-wayland
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -tags "static wayland gui" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}' -extldflags=-static" -o VencordInstaller-wayland
 
       - name: Build Cli
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-linux
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}' -extldflags=-static" -o VencordInstallerCli-linux
 
       - name: Update executable
         run: |
@@ -95,7 +95,7 @@ jobs:
         run: go get -v
 
       - name: Build
-        run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'"
+        run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}' -extldflags=-static"
 
       - name: Update executable
         run: |
