@@ -33,14 +33,13 @@ import (
 )
 
 type GithubRelease struct {
-	Name   string `json:"name"`
-	Assets []struct {
+	Name    string `json:"name"`
+	TagName string `json:"tag_name"`
+	Assets  []struct {
 		Name        string `json:"name"`
 		DownloadURL string `json:"browser_download_url"`
 	} `json:"assets"`
 }
-
-const releaseUrl = "https://api.github.com/repos/Vendicated/Vencord/releases/latest"
 
 var ReleaseData GithubRelease
 var GithubError error
@@ -49,6 +48,42 @@ var GithubDoneChan chan bool
 var InstalledHash = "None"
 var LatestHash = "Unknown"
 var IsDevInstall bool
+
+func GetGithubRelease(url string) (*GithubRelease, error) {
+	fmt.Println("Fetching", url)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("Failed to create Request", err)
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("User-Agent", UserAgent)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("Failed to send Request", err)
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode >= 300 {
+		err = errors.New(res.Status)
+		fmt.Println("Github returned Non-OK status", GithubError)
+		return nil, err
+	}
+
+	var data GithubRelease
+
+	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
+		fmt.Println("Failed to decode GitHub JSON Response", err)
+		return nil, err
+	}
+
+	return &data, nil
+}
 
 func InitGithubDownloader() {
 	GithubDoneChan = make(chan bool, 1)
@@ -66,40 +101,18 @@ func InitGithubDownloader() {
 			GithubDoneChan <- GithubError == nil
 		}()
 
-		fmt.Println("Fetching", releaseUrl)
-		req, err := http.NewRequest("GET", releaseUrl, nil)
+		data, err := GetGithubRelease(ReleaseUrl)
 		if err != nil {
-			fmt.Println("Failed to create Request", err)
 			GithubError = err
 			return
 		}
 
-		req.Header.Set("Accept", "application/vnd.github+json")
-		req.Header.Set("User-Agent", "VencordInstaller/"+InstallerGitHash+" (https://github.com/Vendicated/VencordInstaller)")
+		ReleaseData = *data
 
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			fmt.Println("Failed to send Request", err)
-			GithubError = err
-			return
-		}
-
-		defer res.Body.Close()
-
-		if res.StatusCode >= 300 {
-			GithubError = errors.New(res.Status)
-			fmt.Println("Github returned Non-OK status", GithubError)
-			return
-		}
-
-		if GithubError = json.NewDecoder(res.Body).Decode(&ReleaseData); GithubError != nil {
-			fmt.Println("Failed to decode GitHub JSON Response", GithubError)
-		} else {
-			i := strings.LastIndex(ReleaseData.Name, " ") + 1
-			LatestHash = ReleaseData.Name[i:]
-			fmt.Println("Finished fetching GitHub Data")
-			fmt.Println("Latest hash is", LatestHash, "Local Install is", Ternary(LatestHash == InstalledHash, "up to date!", "outdated!"))
-		}
+		i := strings.LastIndex(data.Name, " ") + 1
+		LatestHash = data.Name[i:]
+		fmt.Println("Finished fetching GitHub Data")
+		fmt.Println("Latest hash is", LatestHash, "Local Install is", Ternary(LatestHash == InstalledHash, "up to date!", "outdated!"))
 	}()
 
 	// Check hash of installed version if exists

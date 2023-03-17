@@ -25,10 +25,16 @@ import "image/color"
 var InstallerGitHash = "Unknown"
 var InstallerTag = "Unknown"
 
+const ReleaseUrl = "https://api.github.com/repos/Vendicated/Vencord/releases/latest"
+const InstallerReleaseUrl = "https://api.github.com/repos/Vencord/Installer/releases/latest"
+
+var UserAgent = "VencordInstaller/" + InstallerGitHash + " (https://github.com/Vendicated/VencordInstaller)"
+
 var (
-	DiscordGreen = color.RGBA{R: 0x2D, G: 0x7C, B: 0x46, A: 0xFF}
-	DiscordRed   = color.RGBA{R: 0xEC, G: 0x41, B: 0x44, A: 0xFF}
-	DiscordBlue  = color.RGBA{R: 0x58, G: 0x65, B: 0xF2, A: 0xFF}
+	DiscordGreen  = color.RGBA{R: 0x2D, G: 0x7C, B: 0x46, A: 0xFF}
+	DiscordRed    = color.RGBA{R: 0xEC, G: 0x41, B: 0x44, A: 0xFF}
+	DiscordBlue   = color.RGBA{R: 0x58, G: 0x65, B: 0xF2, A: 0xFF}
+	DiscordYellow = color.RGBA{R: 0xf0, G: 0xb2, B: 0x32, A: 0xff}
 )
 
 var LinuxDiscordNames = []string{

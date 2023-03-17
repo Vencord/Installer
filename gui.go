@@ -6,6 +6,7 @@ import (
 	"errors"
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/imgui-go"
+	"image/color"
 	"os"
 	path "path/filepath"
 	"runtime"
@@ -41,13 +42,18 @@ func main() {
 
 	customChoiceIdx = len(discords)
 
-	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
-	win.Run(loop)
-
 	go func() {
 		<-GithubDoneChan
 		g.Update()
 	}()
+
+	go func() {
+		CheckSelfUpdate()
+		g.Update()
+	}()
+
+	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
+	win.Run(loop)
 }
 
 type CondWidget struct {
@@ -474,6 +480,25 @@ func renderInstaller() g.Widget {
 	return layout
 }
 
+func renderErrorCard(col color.Color, message string) g.Widget {
+	return g.Style().
+		SetColor(g.StyleColorChildBg, col).
+		SetStyleFloat(g.StyleVarAlpha, 0.9).
+		SetStyle(g.StyleVarWindowPadding, 10, 10).
+		SetStyleFloat(g.StyleVarChildRounding, 5).
+		To(
+			g.Child().
+				Size(g.Auto, 40).
+				Layout(
+					g.Row(
+						g.Style().SetColor(g.StyleColorText, color.Black).To(
+							g.Markdown(&message),
+						),
+					),
+				),
+		)
+}
+
 func loop() {
 	g.PushWindowPadding(48, 48)
 
@@ -515,7 +540,7 @@ func loop() {
 					return g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me").Wrapped(true)
 				}, nil},
 				g.Dummy(0, 10),
-				g.Label("Installer Version: "+InstallerTag+" ("+InstallerGitHash+")"),
+				g.Label("Installer Version: "+InstallerTag+" ("+InstallerGitHash+")"+Ternary(IsInstallerOutdated, " - OUTDATED", "")),
 				g.Label("Local Vencord Version: "+InstalledHash),
 				&CondWidget{
 					GithubError == nil,
@@ -525,15 +550,15 @@ func loop() {
 						}
 						return g.Label("Latest Vencord Version: " + LatestHash)
 					}, func() g.Widget {
-						return g.Style().
-							SetColor(g.StyleColorText, DiscordRed).
-							To(
-								g.Align(g.AlignCenter).To(
-									g.Label("Failed to fetch Info from GitHub: "+GithubError.Error()),
-									g.Label("Resolve this error, then restart me!"),
-								),
-							)
+						return renderErrorCard(DiscordRed, "Failed to fetch Info from GitHub: "+GithubError.Error())
 					},
+				},
+				&CondWidget{
+					IsInstallerOutdated,
+					func() g.Widget {
+						return renderErrorCard(DiscordYellow, "This Installer is outdated!"+GetInstallerDownloadMarkdown())
+					},
+					nil,
 				},
 			),
 
