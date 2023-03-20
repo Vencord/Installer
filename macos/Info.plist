@@ -3,7 +3,7 @@
 <plist version="1.0">
     <dict>
         <key>LSMinimumSystemVersion</key>
-    	<string>10.15.7</string>
+    	<string>10.15</string>
 
         <key>CFBundleExecutable</key>
         <string>VencordInstaller</string>
