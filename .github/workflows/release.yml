@@ -190,7 +190,7 @@ jobs:
         with:
           name: VencordInstaller-windows
           path: |
-            nsis/installer.exe
+            nsis/nsis-installer.exe
             VencordInstaller.exe
             VencordInstallerCli-amd64.exe
             VencordInstallerCli-i386.exe
@@ -231,3 +231,4 @@ jobs:
             linux/VencordInstalle*
             macos/VencordInstaller.MacOS.zip
             windows/VencordInstalle*.exe
+            windows/nsis-installer.exe

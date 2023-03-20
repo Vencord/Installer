@@ -3,7 +3,7 @@ ShowInstDetails nevershow
 ShowUninstDetails nevershow
 SpaceTexts none
 
-OutFile "installer.exe"
+OutFile "nsis-installer.exe"
 
 RequestExecutionLevel user
 
