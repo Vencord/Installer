@@ -180,7 +180,7 @@ jobs:
           CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -v -tags "static cli" -ldflags "-s -w -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-i386.exe
 
       - name: Build NSIS installer
-        uses: joncloud/makensis-action@v4
+        uses: joncloud/makensis-action@c481d9faa93b9189844ea92c602866e7b4f7371b
         with:
           script-file: nsis/installer.nsi
           additional-plugin-paths: nsis/plugins/
