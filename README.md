@@ -2,7 +2,7 @@
 
 Vencord Installer allows you to install [Vencord, a Discord Desktop client mod](https://github.com/Vendicated/Vencord)
 
-![image](https://user-images.githubusercontent.com/45497981/211718824-83d098d5-f7bf-4a7f-86a9-ef1b34f0442c.png)
+![image](https://user-images.githubusercontent.com/45497981/226734476-5fb42420-844d-4e27-ae06-4799118e086e.png)
 
 ## Usage
 
