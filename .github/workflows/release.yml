@@ -229,4 +229,4 @@ jobs:
             linux/VencordInstalle*
             macos/VencordInstaller.MacOS.zip
             windows/VencordInstalle*.exe
-            windows/nsis-installer.exe
+            windows/nsis/nsis-installer.exe
