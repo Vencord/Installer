@@ -24,9 +24,9 @@ iwr "https://raw.githubusercontent.com/Vencord/Installer/main/install.ps1" | iex
 sh -c "$(curl -sS https://raw.githubusercontent.com/Vendicated/VencordInstaller/main/install.sh)"
 ```
 
-### MacOs
+### MacOS
 
-Download the latest [MacOs build](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.MacOS.zip), unzip it, and run `VencordInstaller.app` 
+Download the latest [MacOS build](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.MacOS.zip), unzip it, and run `VencordInstaller.app` 
 
 If you get a `VencordInstaller can't be opened` warning, right-click `VencordInstaller.app` and click open.
 
@@ -55,7 +55,7 @@ Then just run
 ```sh
 go mod tidy
 
-# Windows / MacOs / Linux X11
+# Windows / MacOS / Linux X11
 go build
 # or build the Cli
 go build --tags cli
