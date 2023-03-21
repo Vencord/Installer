@@ -19,27 +19,19 @@ Write-Output "1) Graphical - More user friendly but may not work on old GPUs or 
 Write-Output "2) Terminal - Choose this option if the graphical installer does not work"
 Write-Output "Q) Quit without doing anything"
 Write-Output ""
-
 $choice = Read-Host "Please choose by typing a number or Q"
 
-if ($choice -eq "q") {
-	Exit
-}
-
-if ($choice -ne 1 -and $choice -ne 2) {
-	Write-Output "Invalid choice $choice. Exiting..."
-	Exit
-}
-
-
-$link = if ($choice -eq 1) {
-	$DOWNLOAD_GUI
-} else {
-	$DOWNLOAD_CLI
+switch ($choice) {
+	1 { $link = $DOWNLOAD_GUI }
+	2 { $link = $DOWNLOAD_CLI }
+	q { Exit }
+	default {
+		Write-Output "Invalid choice $choice. Exiting..."
+		Exit
+	}	
 }
 
 $outfile = "$env:TEMP\$(([uri]$link).Segments[-1])"
-
 
 Write-Output "Downloading installer to $outfile"
 
