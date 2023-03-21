@@ -19,7 +19,6 @@ FunctionEnd
 
 Section "install"
     SetDetailsPrint none
-    SpiderBanner::Show /CENTER /MODERN
 
     SetOutPath $INSTDIR
 
