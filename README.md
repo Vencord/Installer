@@ -13,7 +13,10 @@ Vencord Installer allows you to install [Vencord, a Discord Desktop client mod](
 
 Download [VencordInstaller.exe](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.exe) and run it
 
-Alternatively, if you are on Windows 7, 32bit or the installer doesn't open for other reasons, [download the CLI from releases](https://github.com/Vencord/Installer/releases/latest/) and run it via the terminal
+Alternatively, or if the above doesn't work for you, open Powershell and run
+```ps1
+iwr "https://raw.githubusercontent.com/Vencord/Installer/main/install.ps1" | iex
+```
 
 ### Linux
 
