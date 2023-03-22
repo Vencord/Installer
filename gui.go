@@ -145,7 +145,7 @@ func handleErr(err error, action string) {
 		case "windows":
 			err = errors.New("Permission denied. Make sure your Discord is fully closed (from the tray)!")
 		case "darwin":
-			err = errors.New("Permission denied. Please grant the installer Full Disk Access in macOs settings, or use the CLI installer.")
+			err = errors.New("Permission denied. Please grant the installer Full Disk Access in the system settings (privacy & security page).")
 		default:
 			err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
 		}
