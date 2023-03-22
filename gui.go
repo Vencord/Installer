@@ -141,10 +141,13 @@ func handleOpenAsarConfirmed() {
 
 func handleErr(err error, action string) {
 	if errors.Is(err, os.ErrPermission) {
-		if runtime.GOOS != "windows" {
-			err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
-		} else {
+		switch os := runtime.GOOS; os {
+		case "windows":
 			err = errors.New("Permission denied. Make sure your Discord is fully closed (from the tray)!")
+		case "darwin":
+			err = errors.New("Permission denied. Please grant the installer Full Disk Access in macOs settings, or use the CLI installer.")
+		default:
+			err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
 		}
 	}
 
