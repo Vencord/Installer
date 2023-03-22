@@ -6,7 +6,7 @@ $isAdmin = [bool]([Security.Principal.WindowsIdentity]::GetCurrent().Groups -mat
 
 if ($isAdmin) {
 	Write-Output "Do not run me as Administrator! Exiting..."
-	Exit
+	Break
 }
 
 
@@ -24,10 +24,10 @@ $choice = Read-Host "Please choose by typing a number or Q"
 switch ($choice) {
 	1 { $link = $DOWNLOAD_GUI }
 	2 { $link = $DOWNLOAD_CLI }
-	q { Exit }
+	q { Break }
 	default {
 		Write-Output "Invalid choice $choice. Exiting..."
-		Exit
+		Break
 	}	
 }
 
@@ -57,10 +57,10 @@ if ($choice -eq 2) {
 		3 { $flag = "-uninstall" }
 		4 { $flag = "-uninstall-openasar" }
 		5 { $flag = "-update" }
-		q { Exit }
+		q { Break }
 		default {
 			Write-Output "Invalid choice $choice. Exiting..."
-			Exit
+			Break
 		}
 	}
 }
