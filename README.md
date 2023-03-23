@@ -15,7 +15,7 @@ Download [VencordInstaller.exe](https://github.com/Vencord/Installer/releases/la
 
 Alternatively, or if the above doesn't work for you, open Powershell and run
 ```ps1
-iwr "https://raw.githubusercontent.com/Vencord/Installer/main/install.ps1" | iex
+iwr "https://raw.githubusercontent.com/Vencord/Installer/main/install.ps1" -UseBasicParsing | iex
 ```
 
 ### Linux
