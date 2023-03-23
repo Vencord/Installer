@@ -164,19 +164,12 @@ jobs:
           go-winres make --product-version "git-tag"
           CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -v -tags static -ldflags "-s -w -H=windowsgui -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller.exe
 
-      - name: Build amd64 Cli
-        shell: msys2 {0}
-        run: |
-          export GOROOT=/mingw64/lib/go
-          export GOPATH=/mingw64
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-amd64.exe
-
       - name: Build i386 Cli
         shell: msys2 {0}
         run: |
           export GOROOT=/mingw64/lib/go
           export GOPATH=/mingw64
-          CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -v -tags "static cli" -ldflags "-s -w -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-i386.exe
+          CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -v -tags "static cli" -ldflags "-s -w -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli.exe
 
       - name: Build NSIS installer
         uses: joncloud/makensis-action@c481d9faa93b9189844ea92c602866e7b4f7371b # v4
@@ -190,8 +183,7 @@ jobs:
           path: |
             nsis/nsis-installer.exe
             VencordInstaller.exe
-            VencordInstallerCli-amd64.exe
-            VencordInstallerCli-i386.exe
+            VencordInstallerCli.exe
 
 
   release:
