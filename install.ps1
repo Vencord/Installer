@@ -1,4 +1,4 @@
-$DOWNLOAD_CLI = "https://github.com/Vencord/Installer/releases/latest/download/VencordInstallerCli-i386.exe"
+$DOWNLOAD_CLI = "https://github.com/Vencord/Installer/releases/latest/download/VencordInstallerCli.exe"
 $DOWNLOAD_GUI = "https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.exe"
 
 # I stole this from somewhere idk how it works
