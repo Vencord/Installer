@@ -25,7 +25,7 @@ func main() {
 	if *dir != "" && **client != "" {
 		return "", errors.New("the dir and client switches are mutally exclusive")
 	}
-	if *client && !(*client == "default" || *client == "stable" || *client == "ptb" || *client == "canary" ||) {
+	if *client && ! *client == "default" || *client == "stable" || *client == "ptb" || *client == "canary" ||) {
 		return "", errors.New("the client switchs needs to be bound to one of these switches : [default|stable|ptb|canary]")
 	}
 	if *installFlag || *updateFlag {
