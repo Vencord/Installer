@@ -20,7 +20,7 @@ func main() {
 	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
 	var updateFlag = flag.Bool("update", false, "Update your local Vencord files")
 	var dir = flag.string("dir", false, " Select the location of your Discord client")
-	var client = flag.string("client", false, "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
+	var client = flag.string("client", "default", "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
 	flag.Parse()
 	if *dir != "" && **client != "" {
 		return "", errors.New("the dir and client switches are mutally exclusive")
@@ -67,39 +67,52 @@ func main() {
 	}
 }
 
-func PromptDiscord(action string) *DiscordInstall {
-	fmt.Println("Please choose a Discord install to", action)
-	for i, discord := range discords {
-		install := discord.(*DiscordInstall)
-		fmt.Printf("[%d] %s%s (%s)\n", i+1, Ternary(install.isPatched, "(PATCHED) ", ""), install.path, install.branch)
-	}
-	fmt.Printf("[%d] Custom Location\n", len(discords)+1)
+func PromptDiscord(action string, client *DiscordInstall, dir string) *DiscordInstall {
+    if client != nil {
+        return client
+    }
+    fmt.Println("Please choose a Discord install to", action)
+    for i, discord := range discords {
+        install := discord.(*DiscordInstall)
+        fmt.Printf("[%d] %s%s (%s)\n", i+1, Ternary(install.isPatched, "(PATCHED) ", ""), install.path, install.branch)
+    }
+    if dir != "" {
+        fmt.Printf("[%d] %s\n", len(discords)+1, dir)
+    } else {
+        fmt.Printf("[%d] Custom Location\n", len(discords)+1)
+    }
 
-	var choice int
-	for {
-		fmt.Printf("> ")
-		if _, err := fmt.Scan(&choice); err != nil {
-			fmt.Println("That wasn't a valid choice")
-			continue
-		}
+    var choice int
+    for {
+        fmt.Printf("> ")
+        if _, err := fmt.Scan(&choice); err != nil {
+            fmt.Println("That wasn't a valid choice")
+            continue
+        }
 
-		choice--
-		if choice >= 0 && choice < len(discords) {
-			return discords[choice].(*DiscordInstall)
-		}
+        choice--
+        if choice >= 0 && choice < len(discords) {
+            return discords[choice].(*DiscordInstall)
+        }
 
-		if choice == len(discords) {
-			var custom string
-			fmt.Print("Custom Discord Install: ")
-			if _, err := fmt.Scan(&custom); err == nil {
-				if discord := ParseDiscord(custom, ""); discord != nil {
-					return discord
-				}
-			}
-		}
+        if choice == len(discords) {
+            if dir != "" {
+                if discord := ParseDiscord(dir, ""); discord != nil {
+                    return discord
+                }
+            } else {
+                var custom string
+                fmt.Print("Custom Discord Install: ")
+                if _, err := fmt.Scan(&custom); err == nil {
+                    if discord := ParseDiscord(custom, ""); discord != nil {
+                        return discord
+                    }
+                }
+            }
+        }
 
-		fmt.Println("That wasn't a valid choice")
-	}
+        fmt.Println("That wasn't a valid choice")
+    }
 }
 
 func InstallLatestBuilds() error {
