@@ -22,10 +22,10 @@ func main() {
 	var dir = flag.string("dir", false, " Select the location of your Discord client")
 	var client = flag.string("client", false, "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
 	flag.Parse()
-	if dir != "" && client != "" {
+	if *dir != "" && **client != "" {
 		return "", errors.New("the dir and client switches are mutally exclusive")
 	}
-	if *client && !(client == "default" || *lient == "stable" || client == "ptb" || client == "canary" ||){
+	if *client && !(*client == "default" || *client == "stable" || *client == "ptb" || *client == "canary" ||) {
 		return "", errors.New("the client switchs needs to be bound to one of these switches : [default|stable|ptb|canary]")
 	}
 	if *installFlag || *updateFlag {
