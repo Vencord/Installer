@@ -22,7 +22,9 @@ func main() {
 	var dir = flag.string("dir", false, " Select the location of your Discord client")
 	var client = flag.string("client", false, "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
 	flag.Parse()
-
+	if *dir && *client {
+		return "", errors.New("the dir and client switches are mutally exclusive")
+	}
 	if *installFlag || *updateFlag {
 		if !<-GithubDoneChan {
 			fmt.Println("Not", Ternary(*installFlag, "installing", "updating"), "as fetching release data failed")
