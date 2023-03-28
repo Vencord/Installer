@@ -9,17 +9,20 @@ if ($isAdmin) {
 	Return
 }
 
-
-Write-Output "=============================="
-Write-Output "|      Vencord Installer     |"
-Write-Output "=============================="
-Write-Output ""
-Write-Output "Which installer version do you want to use?"
-Write-Output "1) Graphical - More user friendly but may not work on old GPUs or 32bit"
-Write-Output "2) Terminal - Choose this option if the graphical installer does not work"
-Write-Output "Q) Quit without doing anything"
-Write-Output ""
-$choice = Read-Host "Please choose by typing a number or Q"
+if ([Environment]::Is64BitOperatingSystem -and [System.Environment]::OSVersion.Version.Major -ge 10) {
+	Write-Output "=============================="
+	Write-Output "|      Vencord Installer     |"
+	Write-Output "=============================="
+	Write-Output ""
+	Write-Output "Which installer version do you want to use?"
+	Write-Output "1) Graphical - More user friendly but may not work on old/low-end GPUs"
+	Write-Output "2) Terminal - Choose this option if the graphical installer does not work"
+	Write-Output "Q) Quit without doing anything"
+	Write-Output ""
+	$choice = Read-Host "Please choose by typing a number or Q"
+} else {
+	$choice = 2
+}
 
 switch ($choice) {
 	1 { $link = $DOWNLOAD_GUI }
@@ -39,7 +42,6 @@ Invoke-WebRequest -Uri "$link" -OutFile "$outfile"
 
 Write-Output ""
 
-$flag = ""
 if ($choice -eq 2) {
 	Write-Output "What do you want to do?"
 	Write-Output "1) Install Vencord"
@@ -63,9 +65,12 @@ if ($choice -eq 2) {
 			Return
 		}
 	}
+
+	Start-Process -Wait -FilePath "$outfile" -ArgumentList "$flag"
+} else {
+	Start-Process -Wait -FilePath "$outfile"
 }
 
-Start-Process -Wait -FilePath "$outfile" -ArgumentList "$flag"
 
 # Cleanup
 Remove-Item -Force "$outfile"
