@@ -66,9 +66,9 @@ if ($choice -eq 2) {
 		}
 	}
 
-	Start-Process -Wait -FilePath "$outfile" -ArgumentList "$flag"
+	Start-Process -Wait -NoNewWindow -FilePath "$outfile" -ArgumentList "$flag" 
 } else {
-	Start-Process -Wait -FilePath "$outfile"
+	Start-Process -Wait -NoNewWindow -FilePath "$outfile"
 }
 
 
