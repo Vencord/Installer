@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 )
 
 var discords []any
@@ -19,14 +20,14 @@ func main() {
 	var installOpenAsar = flag.Bool("install-openasar", false, "Install OpenAsar on a Discord install")
 	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
 	var updateFlag = flag.Bool("update", false, "Update your local Vencord files")
-	var dir = flag.string("dir", false, " Select the location of your Discord client")
-	var client = flag.string("client", "default", "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
+	var dir = flag.String("dir", "", " Select the location of your Discord client")
+	var client = flag.String("client", "default", "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
 	flag.Parse()
-	if *dir != "" && **client != "" {
-		return "", errors.New("the dir and client switches are mutally exclusive")
+	if *dir != "" && *client != "" {
+		log.Fatal("the dir and client switches are mutally exclusive")
 	}
 	if *client && (*client != "default" || *client != "stable" || *client != "ptb" || *client != "canary") {
-		return "", errors.New("the client switchs needs to be bound to one of these switches : [default|stable|ptb|canary]")
+		log.Fatal("the client switchs needs to be bound to one of these switches : [default|stable|ptb|canary]")
 	}
 	if *installFlag || *updateFlag {
 		if !<-GithubDoneChan {
