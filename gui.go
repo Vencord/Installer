@@ -3,12 +3,16 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"errors"
 	"fmt"
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/imgui-go"
 	"image"
 	"image/color"
+	// png decoder for icon
+	_ "image/png"
 	"os"
 	path "path/filepath"
 	"runtime"
@@ -38,6 +42,9 @@ var (
 	win *g.MasterWindow
 )
 
+//go:embed winres/icon.png
+var iconBytes []byte
+
 func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
@@ -55,9 +62,11 @@ func main() {
 	}()
 
 	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
-	icon, err := g.LoadImage("winres/icon.png")
+
+	icon, _, err := image.Decode(bytes.NewReader(iconBytes))
 	if err != nil {
 		fmt.Println("Failed to load application icon", err)
+		fmt.Println(iconBytes, len(iconBytes))
 	} else {
 		win.SetIcon([]image.Image{icon})
 	}
