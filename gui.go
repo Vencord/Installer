@@ -4,8 +4,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/imgui-go"
+	"image"
 	"image/color"
 	"os"
 	path "path/filepath"
@@ -53,6 +55,12 @@ func main() {
 	}()
 
 	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
+	icon, err := g.LoadImage("winres/icon.png")
+	if err != nil {
+		fmt.Println("Failed to load application icon", err)
+	} else {
+		win.SetIcon([]image.Image{icon})
+	}
 	win.Run(loop)
 }
 

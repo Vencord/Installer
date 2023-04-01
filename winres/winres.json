@@ -2,19 +2,14 @@
   "RT_GROUP_ICON": {
     "APP": {
       "0000": [
-        "icon.png",
-        "icon16.png"
+        "icon.png"
       ]
     }
   },
   "RT_MANIFEST": {
     "#1": {
       "0409": {
-        "identity": {
-          "name": "VencordInstaller",
-          "version": ""
-        },
-        "description": "Vencord Installer yes",
+        "description": "An Installer for the Vencord Discord Mod",
         "minimum-os": "win10",
         "execution-level": "as invoker",
         "dpi-awareness": "system"
@@ -27,9 +22,9 @@
         "info": {
           "0409": {
             "Comments": "Comments",
-            "CompanyName": "Vendicated",
+            "CompanyName": "Vencord",
             "FileDescription": "Vencord Installer",
-            "LegalCopyright": "© 2022 Vendicated - GPL3.0",
+            "LegalCopyright": "© 2023 Vendicated and Contributors - GPL3.0",
             "ProductName": "Vencord Installer",
             "ProductVersion": ""
           }
