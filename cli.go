@@ -7,9 +7,18 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"slices"
 )
 
 var discords []any
+
+func isAllowedClient(client string) bool {
+	ignoredClients := []string{"", "default", "stable", "ptb", "canary"}
+	if slices.Contains(ignoredClients, client) {
+		return false
+	}
+	return true
+}
 
 func main() {
 	InitGithubDownloader()
@@ -26,7 +35,7 @@ func main() {
 	if *dir != "" && *client != "" {
 		log.Fatal("the dir and client switches are mutally exclusive")
 	}
-	if *client && (*client != "default" || *client != "stable" || *client != "ptb" || *client != "canary") {
+	if isAllowedClient(*client) {
 		log.Fatal("the client switchs needs to be bound to one of these switches : [default|stable|ptb|canary]")
 	}
 	if *installFlag || *updateFlag {
