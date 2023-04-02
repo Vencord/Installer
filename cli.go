@@ -7,7 +7,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"slices"
+
+	"golang.org/x/exp/slices"
 )
 
 var discords []any
