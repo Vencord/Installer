@@ -454,7 +454,6 @@ func renderInstaller() g.Widget {
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordRed).
-					SetDisabled(GithubError != nil).
 					To(
 						g.Button("Uninstall").
 							OnClick(handleUnpatch).
