@@ -58,7 +58,6 @@ func GetGithubRelease(url string) (*GithubRelease, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", UserAgent)
 
 	res, err := http.DefaultClient.Do(req)
