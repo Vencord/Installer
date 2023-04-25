@@ -24,9 +24,9 @@ iwr "https://raw.githubusercontent.com/Vencord/Installer/main/install.ps1" -UseB
 sh -c "$(curl -sS https://raw.githubusercontent.com/Vendicated/VencordInstaller/main/install.sh)"
 ```
 
-### MacOs
+### macOS
 
-Download the latest [MacOs build](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.MacOS.zip), unzip it, and run `VencordInstaller.app` 
+Download the latest [macOS build](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.MacOS.zip), unzip it, and run `VencordInstaller.app` 
 
 If you get a `VencordInstaller can't be opened` warning, right-click `VencordInstaller.app` and click open.
 
