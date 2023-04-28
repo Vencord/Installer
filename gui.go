@@ -1,4 +1,9 @@
 //go:build gui || (!gui && !cli)
+/*
+ * SPDX-License-Identifier: GPL-3.0
+ * Vencord Installer, a cross platform gui/cli app for installing Vencord
+ * Copyright (c) 2023 Vendicated and Vencord contributors
+ */
 
 package main
 
