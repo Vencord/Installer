@@ -66,11 +66,11 @@ func main() {
 		g.Update()
 	}()
 
-	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
+	win = g.NewMasterWindow("Installateur Vencord", 1200, 800, 0)
 
 	icon, _, err := image.Decode(bytes.NewReader(iconBytes))
 	if err != nil {
-		fmt.Println("Failed to load application icon", err)
+		fmt.Println("Erreur lors du chargement de l'icone", err)
 		fmt.Println(iconBytes, len(iconBytes))
 	} else {
 		win.SetIcon([]image.Image{icon})
@@ -97,7 +97,7 @@ func getChosenInstall() *DiscordInstall {
 	if radioIdx == customChoiceIdx {
 		choice = ParseDiscord(customDir, "")
 		if choice == nil {
-			ShowModal("Hey now...", "That doesn't seem to be a Discord install.\nPlease make sure you select the base folder\n(blah/Discord, not blah/Discord/resources/app)")
+			ShowModal("Alors...", "Cela ne ressemble pas a une installation Discord...\nMerci de vérifier que vous avez selectionné le dossier de base, par exemple\n(blah/Discord, et pas blah/Discord/resources/app)")
 		}
 	} else {
 		choice = discords[radioIdx].(*DiscordInstall)
@@ -112,7 +112,7 @@ func InstallLatestBuilds() (err error) {
 
 	err = installLatestBuilds()
 	if err != nil {
-		ShowModal("Uh Oh!", "Failed to install the latest Vencord builds from GitHub:\n"+err.Error())
+		ShowModal("Aie! ", "Erreur lors de l'installation des derniers builds de Vencord depuis Github :\n"+err.Error())
 	}
 	return
 }
@@ -145,14 +145,14 @@ func handleOpenAsarConfirmed() {
 	if choice != nil {
 		if choice.IsOpenAsar() {
 			if err := choice.UninstallOpenAsar(); err != nil {
-				handleErr(err, "uninstall OpenAsar from")
+				handleErr(err, "désinstaller OpenAsar de")
 			} else {
 				g.OpenPopup("#openasar-unpatched")
 				g.Update()
 			}
 		} else {
 			if err := choice.InstallOpenAsar(); err != nil {
-				handleErr(err, "install OpenAsar on")
+				handleErr(err, "installer OpenAsar dans")
 			} else {
 				g.OpenPopup("#openasar-patched")
 				g.Update()
@@ -165,15 +165,14 @@ func handleErr(err error, action string) {
 	if errors.Is(err, os.ErrPermission) {
 		switch os := runtime.GOOS; os {
 		case "windows":
-			err = errors.New("Permission denied. Make sure your Discord is fully closed (from the tray)!")
+			err = errors.New("Permission refusée. Essayez de fermer Discord depuis le gestionnaire des tâches et de réessayer.")
 		case "darwin":
-			err = errors.New("Permission denied. Please grant the installer Full Disk Access in the system settings (privacy & security page).")
+			err = errors.New("Permission refusée. Merci de donner les permissions nécessaires à l'application, en autorisant l'accès complet au disque dans les paramètres de votre système (page sécuritée).")
 		default:
-			err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
-		}
+			err = errors.New("Permission refusée. Essayez de lancer l'application en tant qu'administrateur.")
 	}
 
-	ShowModal("Failed to "+action+" this Install", err.Error())
+	ShowModal("Erreur lors de "+action+" de cette installation", err.Error())
 }
 
 func HandleScuffedInstall() {
@@ -270,8 +269,8 @@ func renderFilesDirErr() g.Widget {
 			SetFontSize(30).
 			To(
 				g.Align(g.AlignCenter).To(
-					g.Label("Error: Failed to create: "+FilesDirErr.Error()),
-					g.Label("Resolve this error, then restart me!"),
+					g.Label("Erreur lors de la création de : "+FilesDirErr.Error()),
+					g.Label("Merci de régler le problème et de réessayer."),
 				),
 			),
 	}
@@ -321,13 +320,13 @@ func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
 						&CondWidget{isOpenAsar,
 							func() g.Widget {
 								return g.Row(
-									g.Button("Accept").
+									g.Button("Accepter").
 										OnClick(func() {
 											acceptedOpenAsar = true
 											g.CloseCurrentPopup()
 										}).
 										Size(100, 30),
-									g.Button("Cancel").
+									g.Button("Annuler").
 										OnClick(func() {
 											g.CloseCurrentPopup()
 										}).
@@ -371,7 +370,7 @@ func renderInstaller() g.Widget {
 		g.Dummy(0, 5),
 
 		g.Style().SetFontSize(30).To(
-			g.Label("Please select an install to patch"),
+			g.Label("Merci de sélectionner votre installation de Discord"),
 		),
 
 		g.Style().SetFontSize(20).To(
@@ -379,13 +378,13 @@ func renderInstaller() g.Widget {
 				d := v.(*DiscordInstall)
 				text := d.path + " (" + d.branch + ")"
 				if d.isPatched {
-					text = "[PATCHED] " + text
+					text = "[PATCHÉE] " + text
 				}
 				return g.RadioButton(text, radioIdx == i).
 					OnChange(makeRadioOnChange(i))
 			}),
 
-			g.RadioButton("Custom Install Location", radioIdx == customChoiceIdx).
+			g.RadioButton("Emplacement personnalisé", radioIdx == customChoiceIdx).
 				OnChange(makeRadioOnChange(customChoiceIdx)),
 		),
 
@@ -394,7 +393,7 @@ func renderInstaller() g.Widget {
 			SetStyle(g.StyleVarFramePadding, 16, 16).
 			SetFontSize(20).
 			To(
-				g.InputText(&customDir).Hint("The custom location").
+				g.InputText(&customDir).Hint("L'emplacement personnalisé").
 					Size(w - 16).
 					Flags(g.InputTextFlagsCallbackCompletion).
 					OnChange(onCustomInputChanged).
@@ -444,60 +443,60 @@ func renderInstaller() g.Widget {
 					SetColor(g.StyleColorButton, DiscordGreen).
 					SetDisabled(GithubError != nil).
 					To(
-						g.Button("Install").
+						g.Button("Installer").
 							OnClick(handlePatch).
 							Size((w-40)/4, 50),
-						Tooltip("Patch the selected Discord Install"),
+						Tooltip("Patcher l'installation de Discord sélectionnée"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, Ternary(isOpenAsar, DiscordRed, DiscordGreen)).
 					To(
-						g.Button(Ternary(isOpenAsar, "Uninstall OpenAsar", Ternary(currentDiscord != nil, "Install OpenAsar", "(Un-)Install OpenAsar"))).
+						g.Button(Ternary(isOpenAsar, "Désinstaller OpenAsar", Ternary(currentDiscord != nil, "Installer OpenAsar", "(Dé-)Install OpenAsar"))).
 							OnClick(handleOpenAsar).
 							Size((w-40)/4, 50),
-						Tooltip("Manage OpenAsar"),
+						Tooltip("Modifier OpenAsar"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordRed).
 					To(
-						g.Button("Uninstall").
+						g.Button("Désinstaller").
 							OnClick(handleUnpatch).
 							Size((w-40)/4, 50),
-						Tooltip("Unpatch the selected Discord Install"),
+						Tooltip("Désinstaller Vencord de l'installation de Discord sélectionnée"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordBlue).
 					SetDisabled(IsDevInstall || GithubError != nil).
 					To(
-						g.Button(Ternary(GithubError == nil && LatestHash == InstalledHash, "Re-Download Vencord", "Update")).
+						g.Button(Ternary(GithubError == nil && LatestHash == InstalledHash, "Re-Télécharger Vencord", "Mise à jour")).
 							OnClick(func() {
 								if err := InstallLatestBuilds(); err == nil {
-									g.OpenPopup("#downloaded")
+									g.OpenPopup("téléchargé")
 								}
 							}).
 							Size((w-40)/4, 50),
-						Tooltip("Update your local Vencord files"),
+						Tooltip("Mettre à jour Vencord"),
 					),
 			),
 		),
 
-		InfoModal("#downloaded", "Successfully Downloaded", "The Vencord files were successfully downloaded!"),
-		InfoModal("#patched", "Successfully Patched", "You must now fully close Discord (from the tray).\n"+
-			"Then, verify Vencord installed successfully by looking for its category in Discord Settings"),
-		InfoModal("#unpatched", "Successfully Unpatched", "You must now fully close Discord (from the tray)"),
-		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
-			"Sometimes Discord decides to install to the wrong location for some reason!\n"+
-			"You need to fix this before patching, otherwise Vencord will likely not work.\n\n"+
-			"Use the below button to jump there and delete any folder called Discord or Squirrel.\n"+
-			"If the folder is now empty, feel free to go back a step and delete that folder too.\n"+
-			"Then see if Discord still starts. If not, reinstall it"),
-		RawInfoModal("#openasar-confirm", "OpenAsar", "OpenAsar is an open-source alternative of Discord desktop's app.asar.\n"+
-			"Vencord is in no way affiliated with OpenAsar.\n"+
-			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
-			"no support will be provided, join the OpenAsar Server instead!\n\n"+
-			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", true),
-		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "You must now fully close Discord (from the tray)"),
-		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "You must now fully close Discord (from the tray)"),
+		InfoModal("#downloaded", "Téléchargement réussi", "Vencord a été téléchargé avec succès !"),
+		InfoModal("#patched", "Patch réussi ! ", "Merci de quitter Discord depuis la barre des tâches\n"+
+			"Ensuite, relancez-le pour voir les changements, en allant dans Paramètres depuis les paramètres Discord, et en cherchant Vencord"),
+		InfoModal("#unpatched", "Dé-Patch réussi !", "Merci de quitter Discord depuis la barre des tâches\n"+
+		InfoModal("#scuffed-install", "Aie ! ", "Votre installation Discord est problématique...\n"+
+			"Parfois Discord décide de s'installer dans le mauvais dossier sans raison...\n"+
+			"Avant de poursuivre, vous devez régler ce problème, sans quoi Vencord ne marchera certainement pas...\n\n"+
+			"Cliquez sur le bouton ci dessous pour vous y rendre, et supprimez le dossier Discord et/ou Squirrel.\n"+
+			"Si le dossier est maintenant vide, supprimez complétement le dossier.\n"+
+			"Vérifiez que Discord ne s'éxécute pas, et réinstallez-le".),
+		RawInfoModal("#openasar-confirm", "OpenAsar", "OpenAsar est une alternative open-source au Luncher Discord app.asar.\n"+
+			"Vencord est en aucun cas affilié avec OpenAsar.\n"+
+			"Vous installer OpenAsar à vos propres risques \n"+
+			"Si vous rencontrez des problèmes avec OpenAsar, rendez vous sur leur serveur pour demandez de l'aide!\n\n"+
+			"Pour installer OpenAsar, cliquez sur Acceptez, puis sur 'Install OpenAsar' again.", true),
+		InfoModal("#openasar-patched", "OpenAsar installé ! ", "Redémarrez Discord depuis le gestionnaire des tâches pour voir les changements"),
+		InfoModal("#openasar-unpatched", "OpenAsar désinstallé ! ", "Redémarrez Discord depuis le gestionnaire des tâches"),
 		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 	}
 
@@ -542,7 +541,7 @@ func loop() {
 		Layout(
 			g.Align(g.AlignCenter).To(
 				g.Style().SetFontSize(40).To(
-					g.Label("Vencord Installer"),
+					g.Label("Installateur Vencord"),
 				),
 			),
 
@@ -550,37 +549,37 @@ func loop() {
 
 			g.Style().SetFontSize(20).To(
 				g.Row(
-					g.Label(Ternary(IsDevInstall, "Dev Install: ", "Files will be downloaded to: ")+FilesDir),
+					g.Label(Ternary(IsDevInstall, "Dev Install: ", "Les fichiers vont être installés ici: ")+FilesDir),
 					g.Style().
 						SetColor(g.StyleColorButton, DiscordBlue).
 						SetStyle(g.StyleVarFramePadding, 4, 4).
 						To(
-							g.Button("Open Directory").OnClick(func() {
+							g.Button("Ouvrir le dossier").OnClick(func() {
 								g.OpenURL("file://" + FilesDir)
 							}),
 						),
 				),
 				&CondWidget{!IsDevInstall, func() g.Widget {
-					return g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me").Wrapped(true)
+					return g.Label("Pour changer l'emplacement, modifiez la variable d'environnement 'VENCORD_USER_DATA_DIR' et redémarrez l'installateur").Wrapped(true)
 				}, nil},
 				g.Dummy(0, 10),
-				g.Label("Installer Version: "+InstallerTag+" ("+InstallerGitHash+")"+Ternary(IsInstallerOutdated, " - OUTDATED", "")),
-				g.Label("Local Vencord Version: "+InstalledHash),
+				g.Label("Emplacement de l'installation: "+InstallerTag+" ("+InstallerGitHash+")"+Ternary(IsInstallerOutdated, " - PLUS À JOUR", "")),
+				g.Label("Version Locale de Vencord "+InstalledHash),
 				&CondWidget{
 					GithubError == nil,
 					func() g.Widget {
 						if IsDevInstall {
-							return g.Label("Not updating Vencord due to being in DevMode")
+							return g.Label("Pas de mise à jour pour les installations de développement")
 						}
-						return g.Label("Latest Vencord Version: " + LatestHash)
+						return g.Label("Dernière Version de Vencord " + LatestHash)
 					}, func() g.Widget {
-						return renderErrorCard(DiscordRed, "Failed to fetch Info from GitHub: "+GithubError.Error())
+						return renderErrorCard(DiscordRed, "Erreur lors de la récupération des donnéees depuis Github "+GithubError.Error())
 					},
 				},
 				&CondWidget{
 					IsInstallerOutdated,
 					func() g.Widget {
-						return renderErrorCard(DiscordYellow, "This Installer is outdated!"+GetInstallerDownloadMarkdown())
+						return renderErrorCard(DiscordYellow, "Cet installateur n'est pas à jour! "+GetInstallerDownloadMarkdown())
 					},
 					nil,
 				},
