@@ -1,6 +1,6 @@
 # Vencord Installer
 
-Vencord Installer allows you to install [Vencord, a Discord Desktop client mod](https://github.com/Vendicated/Vencord)
+The Vencord Installer allows you to install [Vencord, the cutest Discord Desktop client mod](https://github.com/Vendicated/Vencord)
 
 ![image](https://user-images.githubusercontent.com/45497981/226734476-5fb42420-844d-4e27-ae06-4799118e086e.png)
 
@@ -13,12 +13,17 @@ Vencord Installer allows you to install [Vencord, a Discord Desktop client mod](
 
 Download [VencordInstaller.exe](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.exe) and run it
 
-Alternatively, or if the above doesn't work for you, open Powershell and run
+If the above doesn't work/open, for example because you're using Windows 7, 32 bit, or have a bad GPU, you can instead use our terminal based installer.
+
+To do so, open Powershell, run the following command, then follow along with the instructions/prompts
+
 ```ps1
 iwr "https://raw.githubusercontent.com/Vencord/Installer/main/install.ps1" -UseBasicParsing | iex
 ```
 
 ### Linux
+
+Run the following command in your terminal and follow along with the instructions/prompts
 
 ```sh
 sh -c "$(curl -sS https://raw.githubusercontent.com/Vendicated/VencordInstaller/main/install.sh)"
@@ -34,34 +39,55 @@ This warning shows because the app isn't signed since I'm not willing to pay 100
 
 ___
 
-### Building from source
+## Building from source
 
-You need the go compiler
+### Prerequisites 
 
-To build the gui (you can build the cli without these), you also need gcc (MinGW on Windows) and the following additional dependencies if on Linux:
+You need to install the [Go programming language](https://go.dev/doc/install) and GCC, the GNU Compiler Collection (MinGW on Windows)
 
+<details>
+<summary>Additionally, if you're using Linux, you have to install some additional dependencies:</summary>
+
+#### Base dependencies
 ```sh
 apt install -y pkg-config libsdl2-dev libglx-dev libgl1-mesa-dev
+```
 
-# X11
+#### X11 dependencies
+```sh
 apt install -y xorg-dev
+```
 
-# Wayland
+#### Wayland dependencies
+```sh
 apt install -y libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules
 ```
 
-Then just run
+</details>
+
+### Building
+
+#### Install dependencies
 
 ```sh
 go mod tidy
+```
 
-# Windows / MacOs / Linux X11
+#### Build the GUI
+
+##### Windows / Mac / Linux X11
+```sh
 go build
-# or build the Cli
-go build --tags cli
+```
 
-# Linux Wayland
+##### Linux Wayland
+```sh
 go build --tags wayland
+```
+
+#### Build the CLI
+```
+go build --tags cli
 ```
 
 You might want to pass some flags to this command to get a better build.
