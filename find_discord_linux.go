@@ -94,7 +94,7 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 	return &DiscordInstall{
 		path:             p,
 		branch:           GetBranch(name),
-		versions:         []string{app},
+		appPath:          app,
 		isPatched:        isPatched,
 		isFlatpak:        isFlatpak,
 		isSystemElectron: isSystemElectron,

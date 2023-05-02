@@ -52,9 +52,9 @@ func init() {
 }
 
 type DiscordInstall struct {
-	path             string   // the base path
-	branch           string   // canary / stable / ...
-	versions         []string // List of paths to folders to patch, 1 on linux/mac, might be more on Windows
+	path             string // the base path
+	branch           string // canary / stable / ...
+	appPath          string // List of app folder to patch
 	isPatched        bool
 	isFlatpak        bool
 	isSystemElectron bool // Needs special care https://aur.archlinux.org/packages/discord_arch_electron
@@ -164,10 +164,8 @@ func (di *DiscordInstall) patch() error {
 			return err
 		}
 	} else {
-		for _, version := range di.versions {
-			if err := patchRenames(path.Join(version, ".."), false); err != nil {
-				return err
-			}
+		if err := patchRenames(path.Join(di.appPath, ".."), false); err != nil {
+			return err
 		}
 	}
 	fmt.Println("Successfully patched", di.path)
@@ -278,27 +276,25 @@ func (di *DiscordInstall) unpatch() error {
 			return err
 		}
 	} else {
-		for _, version := range di.versions {
-			isCanaryHack := IsDirectory(path.Join(version, "..", "app.asar"))
-			if isCanaryHack {
-				if err := unpatchRenames(path.Join(version, ".."), false); err != nil {
-					return err
-				}
-			} else {
-				err := IsSafeToDelete(version)
-				if errors.Is(err, os.ErrPermission) {
-					fmt.Println("Permission to read", version, "denied")
-					return err
-				}
-				fmt.Println("Checking if", version, "is safe to delete:", Ternary(err == nil, "Yes", "No"))
-				if err != nil {
-					return errors.New("Deleting patch folder '" + version + "' is possibly unsafe. Please do it manually: " + err.Error())
-				}
-				fmt.Println("Deleting", version)
-				err = os.RemoveAll(version)
-				if err != nil {
-					return err
-				}
+		isCanaryHack := IsDirectory(path.Join(di.appPath, "..", "app.asar"))
+		if isCanaryHack {
+			if err := unpatchRenames(path.Join(di.appPath, ".."), false); err != nil {
+				return err
+			}
+		} else {
+			err := IsSafeToDelete(di.appPath)
+			if errors.Is(err, os.ErrPermission) {
+				fmt.Println("Permission to read", di.appPath, "denied")
+				return err
+			}
+			fmt.Println("Checking if", di.appPath, "is safe to delete:", Ternary(err == nil, "Yes", "No"))
+			if err != nil {
+				return errors.New("Deleting patch folder '" + di.appPath + "' is possibly unsafe. Please do it manually: " + err.Error())
+			}
+			fmt.Println("Deleting", di.appPath)
+			err = os.RemoveAll(di.appPath)
+			if err != nil {
+				return err
 			}
 		}
 	}

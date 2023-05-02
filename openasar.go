@@ -44,57 +44,52 @@ func (di *DiscordInstall) IsOpenAsar() (retBool bool) {
 		di.isOpenAsar = &retBool
 	}()
 
-	for _, version := range di.versions {
-		fmt.Println(version, path.Join(version, ".."))
-		asarFile, err := FindAsarFile(path.Join(version, ".."))
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
+	asarFile, err := FindAsarFile(path.Join(di.appPath, ".."))
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
 
-		b, err := io.ReadAll(asarFile)
-		_ = asarFile.Close()
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
+	b, err := io.ReadAll(asarFile)
+	_ = asarFile.Close()
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
 
-		if bytes.Contains(b, []byte("OpenAsar")) {
-			return true
-		}
+	if bytes.Contains(b, []byte("OpenAsar")) {
+		return true
 	}
 
 	return false
 }
 
 func (di *DiscordInstall) InstallOpenAsar() error {
-	for _, version := range di.versions {
-		dir := path.Join(version, "..")
-		asarFile, err := FindAsarFile(dir)
-		if err != nil {
-			return err
-		}
-		_ = asarFile.Close()
+	dir := path.Join(di.appPath, "..")
+	asarFile, err := FindAsarFile(dir)
+	if err != nil {
+		return err
+	}
+	_ = asarFile.Close()
 
-		if err = os.Rename(asarFile.Name(), path.Join(dir, "app.asar.original")); err != nil {
-			return err
-		}
+	if err = os.Rename(asarFile.Name(), path.Join(dir, "app.asar.original")); err != nil {
+		return err
+	}
 
-		res, err := http.Get(OpenAsarDownloadLink)
-		if err != nil {
-			return err
-		} else if res.StatusCode >= 300 {
-			return errors.New("Failed to fetch OpenAsar - " + strconv.Itoa(res.StatusCode) + ": " + res.Status)
-		}
+	res, err := http.Get(OpenAsarDownloadLink)
+	if err != nil {
+		return err
+	} else if res.StatusCode >= 300 {
+		return errors.New("Failed to fetch OpenAsar - " + strconv.Itoa(res.StatusCode) + ": " + res.Status)
+	}
 
-		outFile, err := os.Create(asarFile.Name())
-		if err != nil {
-			return err
-		}
+	outFile, err := os.Create(asarFile.Name())
+	if err != nil {
+		return err
+	}
 
-		if _, err = io.Copy(outFile, res.Body); err != nil {
-			return err
-		}
+	if _, err = io.Copy(outFile, res.Body); err != nil {
+		return err
 	}
 
 	di.isOpenAsar = Ptr(true)
@@ -102,22 +97,20 @@ func (di *DiscordInstall) InstallOpenAsar() error {
 }
 
 func (di *DiscordInstall) UninstallOpenAsar() error {
-	for _, version := range di.versions {
-		dir := path.Join(version, "..")
-		originalAsar := path.Join(dir, "app.asar.original")
-		if !ExistsFile(originalAsar) {
-			return errors.New("No app.asar.original. Reinstall Discord")
-		}
+	dir := path.Join(di.appPath, "..")
+	originalAsar := path.Join(dir, "app.asar.original")
+	if !ExistsFile(originalAsar) {
+		return errors.New("No app.asar.original. Reinstall Discord")
+	}
 
-		asarFile, err := FindAsarFile(dir)
-		if err != nil {
-			return err
-		}
-		_ = asarFile.Close()
+	asarFile, err := FindAsarFile(dir)
+	if err != nil {
+		return err
+	}
+	_ = asarFile.Close()
 
-		if err = os.Rename(originalAsar, asarFile.Name()); err != nil {
-			return err
-		}
+	if err = os.Rename(originalAsar, asarFile.Name()); err != nil {
+		return err
 	}
 
 	di.isOpenAsar = Ptr(false)
