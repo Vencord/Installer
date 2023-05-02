@@ -1,4 +1,5 @@
 //go:build gui || (!gui && !cli)
+
 /*
  * SPDX-License-Identifier: GPL-3.0
  * Vencord Installer, a cross platform gui/cli app for installing Vencord
@@ -450,14 +451,6 @@ func renderInstaller() g.Widget {
 						Tooltip("Patch the selected Discord Install"),
 					),
 				g.Style().
-					SetColor(g.StyleColorButton, Ternary(isOpenAsar, DiscordRed, DiscordGreen)).
-					To(
-						g.Button(Ternary(isOpenAsar, "Uninstall OpenAsar", Ternary(currentDiscord != nil, "Install OpenAsar", "(Un-)Install OpenAsar"))).
-							OnClick(handleOpenAsar).
-							Size((w-40)/4, 50),
-						Tooltip("Manage OpenAsar"),
-					),
-				g.Style().
 					SetColor(g.StyleColorButton, DiscordRed).
 					To(
 						g.Button("Uninstall").
@@ -477,6 +470,14 @@ func renderInstaller() g.Widget {
 							}).
 							Size((w-40)/4, 50),
 						Tooltip("Update your local Vencord files"),
+					),
+				g.Style().
+					SetColor(g.StyleColorButton, Ternary(isOpenAsar, DiscordRed, DiscordGreen)).
+					To(
+						g.Button(Ternary(isOpenAsar, "Uninstall OpenAsar", Ternary(currentDiscord != nil, "Install OpenAsar", "(Un-)Install OpenAsar"))).
+							OnClick(handleOpenAsar).
+							Size((w-40)/4, 50),
+						Tooltip("Manage OpenAsar"),
 					),
 			),
 		),
