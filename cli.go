@@ -7,18 +7,22 @@ import (
 	"flag"
 	"fmt"
 	"log"
-
-	"golang.org/x/exp/slices"
 )
 
 var discords []any
 
 func isAllowedClient(client string) bool {
 	ignoredClients := []string{"", "default", "stable", "ptb", "canary"}
-	if slices.Contains(ignoredClients, client) {
-		return false
+	return !contains(ignoredClients, client)
+}
+
+func contains(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
 	}
-	return true
+	return false
 }
 
 func main() {
@@ -30,15 +34,18 @@ func main() {
 	var installOpenAsar = flag.Bool("install-openasar", false, "Install OpenAsar on a Discord install")
 	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
 	var updateFlag = flag.Bool("update", false, "Update your local Vencord files")
-	var dir = flag.String("dir", "", " Select the location of your Discord client")
+	var dir = flag.String("dir", "", "Select the location of your Discord client")
 	var client = flag.String("client", "default", "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
 	flag.Parse()
-	if *dir != "" && *client != "" {
-		log.Fatal("the dir and client switches are mutally exclusive")
+
+	if *dir != "" && *client != "default" {
+		log.Fatal("The 'dir' and 'client' flags are mutually exclusive.")
 	}
-	if isAllowedClient(*client) {
-		log.Fatal("the client switchs needs to be bound to one of these switches : [default|stable|ptb|canary]")
+
+	if !isAllowedClient(*client) {
+		log.Fatal("The 'client' flag must be one of the following: [default|stable|ptb|canary]")
 	}
+
 	if *installFlag || *updateFlag {
 		if !<-GithubDoneChan {
 			fmt.Println("Not", Ternary(*installFlag, "installing", "updating"), "as fetching release data failed")
@@ -50,20 +57,20 @@ func main() {
 
 	var err error
 	if *installFlag {
-		_ = PromptDiscord("patch").patch()
+		PromptDiscord("patch", nil, *dir, *client).patch()
 	} else if *uninstallFlag {
-		_ = PromptDiscord("unpatch").unpatch()
+		PromptDiscord("unpatch", nil, *dir, *client).unpatch()
 	} else if *updateFlag {
-		_ = installLatestBuilds()
+		installLatestBuilds()
 	} else if *installOpenAsar {
-		discord := PromptDiscord("patch")
+		discord := PromptDiscord("patch", nil, *dir, *client)
 		if !discord.IsOpenAsar() {
 			err = discord.InstallOpenAsar()
 		} else {
 			err = errors.New("OpenAsar already installed")
 		}
 	} else if *uninstallOpenAsar {
-		discord := PromptDiscord("patch")
+		discord := PromptDiscord("patch", nil, *dir, *client)
 		if discord.IsOpenAsar() {
 			err = discord.UninstallOpenAsar()
 		} else {
@@ -78,15 +85,18 @@ func main() {
 	}
 }
 
-func PromptDiscord(action string, client *DiscordInstall, dir string) *DiscordInstall {
+func PromptDiscord(action string, client *DiscordInstall, dir string, branch string) *DiscordInstall {
 	if client != nil {
 		return client
 	}
+
 	fmt.Println("Please choose a Discord install to", action)
+
 	for i, discord := range discords {
 		install := discord.(*DiscordInstall)
 		fmt.Printf("[%d] %s%s (%s)\n", i+1, Ternary(install.isPatched, "(PATCHED) ", ""), install.path, install.branch)
 	}
+
 	if dir != "" {
 		fmt.Printf("[%d] %s\n", len(discords)+1, dir)
 	} else {
@@ -108,14 +118,14 @@ func PromptDiscord(action string, client *DiscordInstall, dir string) *DiscordIn
 
 		if choice == len(discords) {
 			if dir != "" {
-				if discord := ParseDiscord(dir, ""); discord != nil {
+				if discord := ParseDiscord(dir, branch); discord != nil {
 					return discord
 				}
 			} else {
 				var custom string
 				fmt.Print("Custom Discord Install: ")
 				if _, err := fmt.Scan(&custom); err == nil {
-					if discord := ParseDiscord(custom, ""); discord != nil {
+					if discord := ParseDiscord(custom, branch); discord != nil {
 						return discord
 					}
 				}
@@ -132,5 +142,7 @@ func InstallLatestBuilds() error {
 
 func HandleScuffedInstall() {
 	fmt.Println("Hold On!")
-	fmt.Println("You have a broken Discord Install.\nPlease reinstall Discord before proceeding!\nOtherwise, Vencord will likely not work.")
+	fmt.Println("You have a broken Discord Install.")
+	fmt.Println("Please reinstall Discord before proceeding!")
+	fmt.Println("Otherwise, Vencord will likely not work.")
 }
