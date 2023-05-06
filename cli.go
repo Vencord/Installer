@@ -86,8 +86,14 @@ func main() {
 }
 
 func PromptDiscord(action string, client *DiscordInstall, dir string, branch string) *DiscordInstall {
-	if client != nil {
-		return client
+
+	if branch != "" {
+		for _, discord := range discords {
+			install := discord.(*DiscordInstall)
+			if install.branch == branch {
+				return client
+			}
+		}
 	}
 
 	fmt.Println("Please choose a Discord install to", action)
