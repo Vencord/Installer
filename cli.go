@@ -13,7 +13,7 @@ var discords []any
 
 func isAllowedClient(client string) bool {
 	ignoredClients := []string{"", "default", "stable", "ptb", "canary"}
-	return !contains(ignoredClients, client)
+	return contains(ignoredClients, client)
 }
 
 func contains(slice []string, val string) bool {
@@ -35,7 +35,7 @@ func main() {
 	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
 	var updateFlag = flag.Bool("update", false, "Update your local Vencord files")
 	var dir = flag.String("dir", "", "Select the location of your Discord client")
-	var client = flag.String("client", "default", "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
+	var client = flag.String("client", "", "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
 	flag.Parse()
 
 	if *dir != "" && *client != "default" {
