@@ -38,7 +38,7 @@ func main() {
 	var client = flag.String("client", "", "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
 	flag.Parse()
 
-	if *dir != "" && *client != "default" {
+	if *dir != "" && *client != "" {
 		log.Fatal("The 'dir' and 'client' flags are mutually exclusive.")
 	}
 
