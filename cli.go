@@ -91,7 +91,7 @@ func PromptDiscord(action string, client *DiscordInstall, dir string, branch str
 		for _, discord := range discords {
 			install := discord.(*DiscordInstall)
 			if install.branch == branch {
-				return client
+				return install
 			}
 		}
 	}
