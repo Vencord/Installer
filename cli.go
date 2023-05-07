@@ -12,19 +12,13 @@ import (
 var discords []any
 
 func isAllowedClient(client string) bool {
-	ignoredClients := []string{"", "default", "stable", "ptb", "canary"}
-	return contains(ignoredClients, client)
-}
-
-func contains(slice []string, val string) bool {
-	for _, item := range slice {
-		if item == val {
-			return true
-		}
+	switch client {
+	case "", "default", "stable", "ptb", "canary":
+		return true
+	default:
+		return false
 	}
-	return false
 }
-
 func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
