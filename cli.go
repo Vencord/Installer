@@ -88,6 +88,7 @@ func PromptDiscord(action string, client *DiscordInstall, dir string, branch str
 				return install
 			}
 		}
+		log.Fatal("Discord" + branch + "is not installed on your pc")
 	}
 
 	fmt.Println("Please choose a Discord install to", action)
