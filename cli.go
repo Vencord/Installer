@@ -6,14 +6,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
+	"os"
 )
 
 var discords []any
 
 func isAllowedClient(client string) bool {
 	switch client {
-	case "", "default", "stable", "ptb", "canary":
+	case "", "stable", "ptb", "canary":
 		return true
 	default:
 		return false
@@ -34,11 +34,13 @@ func main() {
 	flag.Parse()
 
 	if *dir != "" && *client != "" {
-		log.Fatal("The 'dir' and 'client' flags are mutually exclusive.")
+		fmt.Println("The 'dir' and 'client' flags are mutually exclusive.")
+		os.Exit(1)
 	}
 
 	if !isAllowedClient(*client) {
-		log.Fatal("The 'client' flag must be one of the following: [default|stable|ptb|canary]")
+		fmt.Println("The 'client' flag must be one of the following: [stable|ptb|canary]")
+		os.Exit(1)
 	}
 
 	if *installFlag || *updateFlag {
@@ -52,11 +54,11 @@ func main() {
 
 	var err error
 	if *installFlag {
-		PromptDiscord("patch", *dir, *client).patch()
+		_ = PromptDiscord("patch", *dir, *client).patch()
 	} else if *uninstallFlag {
-		PromptDiscord("unpatch", *dir, *client).unpatch()
+		_ = PromptDiscord("unpatch", *dir, *client).unpatch()
 	} else if *updateFlag {
-		installLatestBuilds()
+		_ = installLatestBuilds()
 	} else if *installOpenAsar {
 		discord := PromptDiscord("patch", *dir, *client)
 		if !discord.IsOpenAsar() {
@@ -89,7 +91,12 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 				return install
 			}
 		}
-		log.Fatal("Discord" + branch + "is not installed on your pc")
+		fmt.Println("Discord" + branch + " is not installed on your pc")
+		os.Exit(1)
+	} else if *&dir != "" {
+		if discord := ParseDiscord(*&dir, branch); discord != nil {
+			return discord
+		}
 	}
 
 	fmt.Println("Please choose a Discord install to", action)
