@@ -19,6 +19,7 @@ func isAllowedClient(client string) bool {
 		return false
 	}
 }
+
 func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
@@ -51,20 +52,20 @@ func main() {
 
 	var err error
 	if *installFlag {
-		PromptDiscord("patch", nil, *dir, *client).patch()
+		PromptDiscord("patch", *dir, *client).patch()
 	} else if *uninstallFlag {
-		PromptDiscord("unpatch", nil, *dir, *client).unpatch()
+		PromptDiscord("unpatch", *dir, *client).unpatch()
 	} else if *updateFlag {
 		installLatestBuilds()
 	} else if *installOpenAsar {
-		discord := PromptDiscord("patch", nil, *dir, *client)
+		discord := PromptDiscord("patch", *dir, *client)
 		if !discord.IsOpenAsar() {
 			err = discord.InstallOpenAsar()
 		} else {
 			err = errors.New("OpenAsar already installed")
 		}
 	} else if *uninstallOpenAsar {
-		discord := PromptDiscord("patch", nil, *dir, *client)
+		discord := PromptDiscord("patch", *dir, *client)
 		if discord.IsOpenAsar() {
 			err = discord.UninstallOpenAsar()
 		} else {
@@ -79,7 +80,7 @@ func main() {
 	}
 }
 
-func PromptDiscord(action string, client *DiscordInstall, dir string, branch string) *DiscordInstall {
+func PromptDiscord(action, dir, branch string) *DiscordInstall {
 
 	if branch != "" {
 		for _, discord := range discords {
