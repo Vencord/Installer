@@ -96,6 +96,9 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 	} else if *&dir != "" {
 		if discord := ParseDiscord(*&dir, branch); discord != nil {
 			return discord
+		} else {
+			fmt.Println("The specified directory is not a valid Discord install")
+			os.Exit(1)
 		}
 	}
 
