@@ -93,7 +93,8 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		}
 		fmt.Println("Discord" + branch + " is not installed on your pc")
 		os.Exit(1)
-	} else if *&dir != "" {
+	}
+	if *&dir != "" {
 		if discord := ParseDiscord(*&dir, branch); discord != nil {
 			return discord
 		}
@@ -106,11 +107,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		fmt.Printf("[%d] %s%s (%s)\n", i+1, Ternary(install.isPatched, "(PATCHED) ", ""), install.path, install.branch)
 	}
 
-	if dir != "" {
-		fmt.Printf("[%d] %s\n", len(discords)+1, dir)
-	} else {
-		fmt.Printf("[%d] Custom Location\n", len(discords)+1)
-	}
+	fmt.Printf("[%d] Custom Location\n", len(discords)+1)
 
 	var choice int
 	for {
@@ -126,17 +123,11 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		}
 
 		if choice == len(discords) {
-			if dir != "" {
-				if discord := ParseDiscord(dir, branch); discord != nil {
+			var custom string
+			fmt.Print("Custom Discord Install: ")
+			if _, err := fmt.Scan(&custom); err == nil {
+				if discord := ParseDiscord(custom, branch); discord != nil {
 					return discord
-				}
-			} else {
-				var custom string
-				fmt.Print("Custom Discord Install: ")
-				if _, err := fmt.Scan(&custom); err == nil {
-					if discord := ParseDiscord(custom, branch); discord != nil {
-						return discord
-					}
 				}
 			}
 		}
