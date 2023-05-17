@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	path "path/filepath"
 	"strings"
 )
@@ -81,6 +82,13 @@ func FindDiscords() []any {
 		}
 	}
 	return discords
+}
+
+func PreparePatch(di *DiscordInstall) {
+	name := windowsNames[di.branch]
+	fmt.Println("Killing " + name + "...")
+
+	_ = exec.Command("powershell", "Stop-Process -Name "+name).Run()
 }
 
 func FixOwnership(_ string) error {

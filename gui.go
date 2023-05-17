@@ -164,7 +164,7 @@ func handleOpenAsarConfirmed() {
 
 func handleErr(err error, action string) {
 	if errors.Is(err, os.ErrPermission) {
-		switch os := runtime.GOOS; os {
+		switch runtime.GOOS {
 		case "windows":
 			err = errors.New("Permission denied. Make sure your Discord is fully closed (from the tray)!")
 		case "darwin":
@@ -483,9 +483,9 @@ func renderInstaller() g.Widget {
 		),
 
 		InfoModal("#downloaded", "Successfully Downloaded", "The Vencord files were successfully downloaded!"),
-		InfoModal("#patched", "Successfully Patched", "You must now fully close Discord (from the tray).\n"+
-			"Then, verify Vencord installed successfully by looking for its category in Discord Settings"),
-		InfoModal("#unpatched", "Successfully Unpatched", "You must now fully close Discord (from the tray)"),
+		InfoModal("#patched", "Successfully Patched", "If Discord is still open, fully close it first.\n"+
+			"Then, start it and verify Vencord installed successfully by looking for its category in Discord Settings"),
+		InfoModal("#unpatched", "Successfully Unpatched", "If Discord is still open, fully close it first. Then start it again, it should be back to stock!"),
 		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
 			"Sometimes Discord decides to install to the wrong location for some reason!\n"+
 			"You need to fix this before patching, otherwise Vencord will likely not work.\n\n"+
@@ -497,8 +497,8 @@ func renderInstaller() g.Widget {
 			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
 			"no support will be provided, join the OpenAsar Server instead!\n\n"+
 			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", true),
-		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "You must now fully close Discord (from the tray)"),
-		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "You must now fully close Discord (from the tray)"),
+		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
+		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
 		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 	}
 

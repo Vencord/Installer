@@ -129,7 +129,7 @@ func FindDiscords() []any {
 	return discords
 }
 
-// Not actually find_discord but no need to have this in the binary on Windows/Mac
+func PreparePatch(di *DiscordInstall) {}
 
 // FixOwnership fixes file ownership on Linux
 func FixOwnership(p string) error {

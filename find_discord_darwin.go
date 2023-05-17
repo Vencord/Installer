@@ -56,6 +56,8 @@ func FindDiscords() []any {
 	return discords
 }
 
+func PreparePatch(di *DiscordInstall) {}
+
 func FixOwnership(_ string) error {
 	return nil
 }

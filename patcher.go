@@ -149,6 +149,8 @@ func (di *DiscordInstall) patch() error {
 		}
 	}
 
+	PreparePatch(di)
+
 	if di.isPatched {
 		fmt.Println(di.path, "is already patched. Unpatching first...")
 		if err := di.unpatch(); err != nil {
@@ -268,6 +270,8 @@ func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 
 func (di *DiscordInstall) unpatch() error {
 	fmt.Println("Unpatching " + di.path + "...")
+
+	PreparePatch(di)
 
 	if di.isSystemElectron {
 		fmt.Println("Detected as System Electron Install")
