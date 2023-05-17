@@ -16,7 +16,7 @@ var IsInstallerOutdated = false
 func CheckSelfUpdate() {
 	fmt.Println("Checking for Installer Updates...")
 
-	res, err := GetGithubRelease(InstallerReleaseUrl)
+	res, err := GetGithubRelease(InstallerReleaseUrl, InstallerReleaseUrlFallback)
 	if err == nil {
 		IsInstallerOutdated = res.TagName != InstallerTag
 	}
