@@ -44,8 +44,7 @@ if [ -z "$opt" ] || [ "$opt" = y ] || [ "$opt" = yes ]; then
     echo "Running with doas"
     doas env "$@" "$outfile"
   else
-    echo "Didn't find sudo or doas, falling back to su"
-    su -c "SUDO_USER=$(whoami) "$@" '$outfile'"
+    echo "Neither sudo nor doas were found. Please install either of them to proceed."
   fi
 else
   echo "Running unprivileged"
