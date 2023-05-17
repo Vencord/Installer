@@ -3,7 +3,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -11,13 +10,18 @@ import (
 
 var discords []any
 
-func isAllowedClient(client string) bool {
-	switch client {
-	case "", "stable", "ptb", "canary":
+func isValidBranch(branch string) bool {
+	switch branch {
+	case "", "stable", "ptb", "canary", "auto":
 		return true
 	default:
 		return false
 	}
+}
+
+func die(msg string) {
+	fmt.Println(msg)
+	os.Exit(1)
 }
 
 func main() {
@@ -29,24 +33,21 @@ func main() {
 	var installOpenAsar = flag.Bool("install-openasar", false, "Install OpenAsar on a Discord install")
 	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
 	var updateFlag = flag.Bool("update", false, "Update your local Vencord files")
-	var dir = flag.String("dir", "", "Select the location of your Discord client")
-	var client = flag.String("client", "", "Select the branch of Discord you wish to modify [default|stable|ptb|canary]")
+	var dirFlag = flag.String("location", "", "Select the location of your Discord install")
+	var branchFlag = flag.String("branch", "", "Select the branch of Discord you want to modify [default|stable|ptb|canary]")
 	flag.Parse()
 
-	if *dir != "" && *client != "" {
-		fmt.Println("The 'dir' and 'client' flags are mutually exclusive.")
-		os.Exit(1)
+	if *dirFlag != "" && *branchFlag != "" {
+		die("The 'location' and 'branch' flags are mutually exclusive.")
 	}
 
-	if !isAllowedClient(*client) {
-		fmt.Println("The 'client' flag must be one of the following: [stable|ptb|canary]")
-		os.Exit(1)
+	if !isValidBranch(*branchFlag) {
+		die("The 'branch' flag must be one of the following: [auto|stable|ptb|canary]")
 	}
 
 	if *installFlag || *updateFlag {
 		if !<-GithubDoneChan {
-			fmt.Println("Not", Ternary(*installFlag, "installing", "updating"), "as fetching release data failed")
-			return
+			die("Not " + Ternary(*installFlag, "installing", "updating") + " as fetching release data failed")
 		}
 	}
 
@@ -54,24 +55,24 @@ func main() {
 
 	var err error
 	if *installFlag {
-		_ = PromptDiscord("patch", *dir, *client).patch()
+		_ = PromptDiscord("patch", *dirFlag, *branchFlag).patch()
 	} else if *uninstallFlag {
-		_ = PromptDiscord("unpatch", *dir, *client).unpatch()
+		_ = PromptDiscord("unpatch", *dirFlag, *branchFlag).unpatch()
 	} else if *updateFlag {
 		_ = installLatestBuilds()
 	} else if *installOpenAsar {
-		discord := PromptDiscord("patch", *dir, *client)
+		discord := PromptDiscord("patch", *dirFlag, *branchFlag)
 		if !discord.IsOpenAsar() {
 			err = discord.InstallOpenAsar()
 		} else {
-			err = errors.New("OpenAsar already installed")
+			die("OpenAsar already installed")
 		}
 	} else if *uninstallOpenAsar {
-		discord := PromptDiscord("patch", *dir, *client)
+		discord := PromptDiscord("patch", *dirFlag, *branchFlag)
 		if discord.IsOpenAsar() {
 			err = discord.UninstallOpenAsar()
 		} else {
-			err = errors.New("OpenAsar not installed")
+			die("OpenAsar not installed")
 		}
 	} else {
 		flag.Usage()
@@ -79,10 +80,22 @@ func main() {
 
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
 func PromptDiscord(action, dir, branch string) *DiscordInstall {
+	if branch == "auto" {
+		for _, b := range []string{"stable", "canary", "ptb"} {
+			for _, discord := range discords {
+				install := discord.(*DiscordInstall)
+				if install.branch == b {
+					return install
+				}
+			}
+		}
+		die("No Discord install found. Try manually specifying it with the --dir flag")
+	}
 
 	if branch != "" {
 		for _, discord := range discords {
@@ -91,12 +104,14 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 				return install
 			}
 		}
-		fmt.Println("Discord" + branch + " is not installed on your pc")
-		os.Exit(1)
+		die("Discord " + branch + " not found")
 	}
+
 	if dir != "" {
-		if discord := ParseDiscord(*&dir, branch); discord != nil {
+		if discord := ParseDiscord(dir, branch); discord != nil {
 			return discord
+		} else {
+			die(dir + " is not a valid Discord install")
 		}
 	}
 
