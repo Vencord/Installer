@@ -94,7 +94,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		fmt.Println("Discord" + branch + " is not installed on your pc")
 		os.Exit(1)
 	}
-	if *&dir != "" {
+	if dir != "" {
 		if discord := ParseDiscord(*&dir, branch); discord != nil {
 			return discord
 		}
