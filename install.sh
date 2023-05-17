@@ -7,19 +7,18 @@ if [ "$(id -u)" -eq 0 ]; then
 fi
 
 outfile=$(mktemp)
-# shellcheck disable=SC2064
-trap "rm -rf '$outfile'" EXIT
+trap 'rm -rf "$outfile"' EXIT
 
 echo "Downloading Installer..."
 
-rootenv=
+set -- "XDG_CONFIG_HOME=$XDG_CONFIG_HOME"
 kind=wayland
 if [ -z "$WAYLAND_DISPLAY" ]; then
   echo "X11 detected"
   kind=x11
 else
   echo "Wayland detected"
-  rootenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR WAYLAND_DISPLAY=$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
+  set -- "$@" "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" "WAYLAND_DISPLAY=$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
 fi
 
 curl -sS https://github.com/Vendicated/VencordInstaller/releases/latest/download/VencordInstaller-$kind \
@@ -40,16 +39,15 @@ opt="$(echo "$runAsRoot" | tr "[:upper:]" "[:lower:]")"
 if [ -z "$opt" ] || [ "$opt" = y ] || [ "$opt" = yes ]; then
   if command -v sudo >/dev/null; then
     echo "Running with sudo"
-    sudo env $rootenv "$outfile"
+    sudo env "$@" "$outfile"
   elif command -v doas >/dev/null; then
     echo "Running with doas"
-    doas env $rootenv "$outfile"
+    doas env "$@" "$outfile"
   else
     echo "Didn't find sudo or doas, falling back to su"
-    su -c "SUDO_USER=$(whoami) '$outfile'"
+    su -c "SUDO_USER=$(whoami) 'env $outfile'"
   fi
 else
   echo "Running unprivileged"
   "$outfile"
 fi
-
