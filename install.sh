@@ -45,7 +45,7 @@ if [ -z "$opt" ] || [ "$opt" = y ] || [ "$opt" = yes ]; then
     doas env "$@" "$outfile"
   else
     echo "Didn't find sudo or doas, falling back to su"
-    su -c "SUDO_USER=$(whoami) 'env $outfile'"
+    su -c "SUDO_USER=$(whoami) "$@" '$outfile'"
   fi
 else
   echo "Running unprivileged"
