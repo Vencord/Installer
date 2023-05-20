@@ -136,6 +136,19 @@ func InitGithubDownloader() {
 func installLatestBuilds() (retErr error) {
 	fmt.Println("Installing latest builds...")
 
+	// create an empty package.json file in our files dir.
+	// without this, node will walk up the file tree and search for a package.json in the
+	// parent folders. This might lead to issues if the user for example has ~/package.json
+	// with type: "module" in it
+	pkgJsonFile := path.Join(FilesDir, "package.json")
+	out, err := os.OpenFile(pkgJsonFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		fmt.Println("Failed to create", pkgJsonFile, err)
+	} else {
+		_, _ = out.WriteString("{}")
+		_ = out.Close()
+	}
+
 	var wg sync.WaitGroup
 
 	for _, ass := range ReleaseData.Assets {
