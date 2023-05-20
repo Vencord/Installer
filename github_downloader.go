@@ -141,12 +141,9 @@ func installLatestBuilds() (retErr error) {
 	// parent folders. This might lead to issues if the user for example has ~/package.json
 	// with type: "module" in it
 	pkgJsonFile := path.Join(FilesDir, "package.json")
-	out, err := os.OpenFile(pkgJsonFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	err := os.WriteFile(pkgJsonFile, []byte("{}"), 0644)
 	if err != nil {
 		fmt.Println("Failed to create", pkgJsonFile, err)
-	} else {
-		_, _ = out.WriteString("{}")
-		_ = out.Close()
 	}
 
 	var wg sync.WaitGroup
