@@ -90,7 +90,7 @@ func main() {
 }
 
 func PromptDiscord(action, dir, branch string) *DiscordInstall {
-	if branch == "auto" {
+	if branch == "default" {
 		for _, b := range []string{"stable", "canary", "ptb"} {
 			for _, discord := range discords {
 				install := discord.(*DiscordInstall)
