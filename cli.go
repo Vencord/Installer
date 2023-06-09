@@ -39,7 +39,7 @@ func main() {
 	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
 	var updateFlag = flag.Bool("update", false, "Update your local Vencord files")
 	var locationFlag = flag.String("location", "", "Select the location of your Discord install")
-	var branchFlag = flag.String("branch", "", "Select the branch of Discord you want to modify [default|stable|ptb|canary]")
+	var branchFlag = flag.String("branch", "", "Select the branch of Discord you want to modify [auto|stable|ptb|canary]")
 	flag.Parse()
 
 	if *locationFlag != "" && *branchFlag != "" {
