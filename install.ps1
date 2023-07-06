@@ -1,14 +1,6 @@
 $DOWNLOAD_CLI = "https://github.com/Vencord/Installer/releases/latest/download/VencordInstallerCli.exe"
 $DOWNLOAD_GUI = "https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.exe"
 
-# I stole this from somewhere idk how it works
-$isAdmin = [bool]([Security.Principal.WindowsIdentity]::GetCurrent().Groups -match 'S-1-5-32-544')
-
-if ($isAdmin) {
-	Write-Output "Do not run me as Administrator! Exiting..."
-	Return
-}
-
 if ([Environment]::Is64BitOperatingSystem -and [System.Environment]::OSVersion.Version.Major -ge 10) {
 	Write-Output "=============================="
 	Write-Output "|      Vencord Installer     |"
