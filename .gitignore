@@ -1,6 +1,4 @@
 VencordInstaller
-VencordInstaller.exe
-
+VencordInstallerCli
+*.exe
 *.syso
-
-nsis/nsis-installer.exe

@@ -371,6 +371,17 @@ func renderInstaller() g.Widget {
 		g.Separator(),
 		g.Dummy(0, 5),
 
+		g.Style().SetFontSize(20).To(
+			renderErrorCard(
+				DiscordYellow,
+				"**Github** and **vencord.dev** are the only official places to get Vencord. Any other site claiming to be us is malicious.\n"+
+					"If you downloaded from any other source, you should delete / uninstall everything immediately, run a malware scan and change your Discord password.",
+				90,
+			),
+		),
+
+		g.Dummy(0, 5),
+
 		g.Style().SetFontSize(30).To(
 			g.Label("Please select an install to patch"),
 		),
@@ -505,7 +516,7 @@ func renderInstaller() g.Widget {
 	return layout
 }
 
-func renderErrorCard(col color.Color, message string) g.Widget {
+func renderErrorCard(col color.Color, message string, height float32) g.Widget {
 	return g.Style().
 		SetColor(g.StyleColorChildBg, col).
 		SetStyleFloat(g.StyleVarAlpha, 0.9).
@@ -513,7 +524,7 @@ func renderErrorCard(col color.Color, message string) g.Widget {
 		SetStyleFloat(g.StyleVarChildRounding, 5).
 		To(
 			g.Child().
-				Size(g.Auto, 40).
+				Size(g.Auto, height).
 				Layout(
 					g.Row(
 						g.Style().SetColor(g.StyleColorText, color.Black).To(
@@ -548,7 +559,6 @@ func loop() {
 			),
 
 			g.Dummy(0, 20),
-
 			g.Style().SetFontSize(20).To(
 				g.Row(
 					g.Label(Ternary(IsDevInstall, "Dev Install: ", "Files will be downloaded to: ")+FilesDir),
@@ -575,13 +585,13 @@ func loop() {
 						}
 						return g.Label("Latest Vencord Version: " + LatestHash)
 					}, func() g.Widget {
-						return renderErrorCard(DiscordRed, "Failed to fetch Info from GitHub: "+GithubError.Error())
+						return renderErrorCard(DiscordRed, "Failed to fetch Info from GitHub: "+GithubError.Error(), 40)
 					},
 				},
 				&CondWidget{
 					IsInstallerOutdated,
 					func() g.Widget {
-						return renderErrorCard(DiscordYellow, "This Installer is outdated!"+GetInstallerDownloadMarkdown())
+						return renderErrorCard(DiscordYellow, "This Installer is outdated!"+GetInstallerDownloadMarkdown(), 40)
 					},
 					nil,
 				},
