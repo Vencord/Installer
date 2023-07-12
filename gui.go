@@ -98,7 +98,7 @@ func getChosenInstall() *DiscordInstall {
 	if radioIdx == customChoiceIdx {
 		choice = ParseDiscord(customDir, "")
 		if choice == nil {
-			ShowModal("Hey now...", "That doesn't seem to be a Discord install.\nPlease make sure you select the base folder\n(blah/Discord, not blah/Discord/resources/app)")
+			g.OpenPopup("#invalid-custom-location")
 		}
 	} else {
 		choice = discords[radioIdx].(*DiscordInstall)
@@ -386,12 +386,16 @@ func renderInstaller() g.Widget {
 			g.Label("Please select an install to patch"),
 		),
 
+		&CondWidget{len(discords) == 0, func() g.Widget {
+			return g.Label("No Discord installs found. You first need to install Discord.")
+		}, nil},
+
 		g.Style().SetFontSize(20).To(
 			g.RangeBuilder("Discords", discords, func(i int, v any) g.Widget {
 				d := v.(*DiscordInstall)
 				text := d.path + " (" + d.branch + ")"
 				if d.isPatched {
-					text = "[PATCHED] " + text
+					text += " [PATCHED]"
 				}
 				return g.RadioButton(text, radioIdx == i).
 					OnChange(makeRadioOnChange(i))
@@ -510,6 +514,7 @@ func renderInstaller() g.Widget {
 			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", true),
 		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
 		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
+		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install. Make sure you select the base folder."),
 		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 	}
 
