@@ -393,7 +393,8 @@ func renderInstaller() g.Widget {
 		g.Style().SetFontSize(20).To(
 			g.RangeBuilder("Discords", discords, func(i int, v any) g.Widget {
 				d := v.(*DiscordInstall)
-				text := d.path + " (" + d.branch + ")"
+				//goland:noinspection GoDeprecation
+				text := strings.Title(d.branch) + " - " + d.path
 				if d.isPatched {
 					text += " [PATCHED]"
 				}
