@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"golang.org/x/sys/windows"
+	"os/user"
 	"syscall"
 	"unsafe"
 )
@@ -37,6 +38,13 @@ func init() {
 }
 
 func IsAdmin() bool {
+	u, err := user.Current()
+	// We only want to show the alert if the installer is run elevated.
+	// Some people may use the Administrator user in which case it's fine
+	if err != nil && u.Username == "Administrator" {
+		return false
+	}
+
 	// most sane windows code, copy-pasted from https://github.com/golang/go/issues/28804#issuecomment-505326268
 
 	var sid *windows.SID
@@ -45,7 +53,7 @@ func IsAdmin() bool {
 	// official windows documentation. The Go API for this is a
 	// direct wrap around the official C++ API.
 	// See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
-	err := windows.AllocateAndInitializeSid(
+	err = windows.AllocateAndInitializeSid(
 		&windows.SECURITY_NT_AUTHORITY,
 		2,
 		windows.SECURITY_BUILTIN_DOMAIN_RID,
