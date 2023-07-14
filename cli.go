@@ -1,4 +1,5 @@
 //go:build cli
+
 /*
  * SPDX-License-Identifier: GPL-3.0
  * Vencord Installer, a cross platform gui/cli app for installing Vencord
@@ -34,10 +35,10 @@ func main() {
 	discords = FindDiscords()
 
 	var installFlag = flag.Bool("install", false, "Install Vencord on a Discord install")
+	var updateFlag = flag.Bool("reinstall", false, "Reinstall & update Vencord")
 	var uninstallFlag = flag.Bool("uninstall", false, "Uninstall Vencord from a Discord install")
 	var installOpenAsar = flag.Bool("install-openasar", false, "Install OpenAsar on a Discord install")
 	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
-	var updateFlag = flag.Bool("update", false, "Update your local Vencord files")
 	var locationFlag = flag.String("location", "", "Select the location of your Discord install")
 	var branchFlag = flag.String("branch", "", "Select the branch of Discord you want to modify [auto|stable|ptb|canary]")
 	flag.Parse()
@@ -64,7 +65,10 @@ func main() {
 	} else if *uninstallFlag {
 		_ = PromptDiscord("unpatch", *locationFlag, *branchFlag).unpatch()
 	} else if *updateFlag {
-		_ = installLatestBuilds()
+		err := installLatestBuilds()
+		if err == nil {
+			PromptDiscord("repatch", *locationFlag, *branchFlag).patch()
+		}
 	} else if *installOpenAsar {
 		discord := PromptDiscord("patch", *locationFlag, *branchFlag)
 		if !discord.IsOpenAsar() {

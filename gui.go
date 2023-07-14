@@ -467,25 +467,30 @@ func renderInstaller() g.Widget {
 						Tooltip("Patch the selected Discord Install"),
 					),
 				g.Style().
+					SetColor(g.StyleColorButton, DiscordBlue).
+					SetDisabled(GithubError != nil).
+					To(
+						g.Button("Reinstall / Repair").
+							OnClick(func() {
+								if IsDevInstall {
+									handlePatch()
+								} else {
+									err := InstallLatestBuilds()
+									if err == nil {
+										handlePatch()
+									}
+								}
+							}).
+							Size((w-40)/4, 50),
+						Tooltip("Reinstall & Update Vencord"),
+					),
+				g.Style().
 					SetColor(g.StyleColorButton, DiscordRed).
 					To(
 						g.Button("Uninstall").
 							OnClick(handleUnpatch).
 							Size((w-40)/4, 50),
 						Tooltip("Unpatch the selected Discord Install"),
-					),
-				g.Style().
-					SetColor(g.StyleColorButton, DiscordBlue).
-					SetDisabled(IsDevInstall || GithubError != nil).
-					To(
-						g.Button(Ternary(GithubError == nil && LatestHash == InstalledHash, "Re-Download Vencord", "Update")).
-							OnClick(func() {
-								if err := InstallLatestBuilds(); err == nil {
-									g.OpenPopup("#downloaded")
-								}
-							}).
-							Size((w-40)/4, 50),
-						Tooltip("Update your local Vencord files"),
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, Ternary(isOpenAsar, DiscordRed, DiscordGreen)).
@@ -498,7 +503,6 @@ func renderInstaller() g.Widget {
 			),
 		),
 
-		InfoModal("#downloaded", "Successfully Downloaded", "The Vencord files were successfully downloaded!"),
 		InfoModal("#patched", "Successfully Patched", "If Discord is still open, fully close it first.\n"+
 			"Then, start it and verify Vencord installed successfully by looking for its category in Discord Settings"),
 		InfoModal("#unpatched", "Successfully Unpatched", "If Discord is still open, fully close it first. Then start it again, it should be back to stock!"),
