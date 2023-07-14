@@ -1,4 +1,5 @@
 //go:build cli
+
 /*
  * SPDX-License-Identifier: GPL-3.0
  * Vencord Installer, a cross platform gui/cli app for installing Vencord
@@ -95,6 +96,8 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 			for _, discord := range discords {
 				install := discord.(*DiscordInstall)
 				if install.branch == b {
+					fmt.Printf("Branch: ", install.branch)
+					fmt.Printf("file path: ", install.path)
 					return install
 				}
 			}
@@ -106,6 +109,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		for _, discord := range discords {
 			install := discord.(*DiscordInstall)
 			if install.branch == branch {
+				fmt.Printf("file path: ", install.path)
 				return install
 			}
 		}
