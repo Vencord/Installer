@@ -171,17 +171,11 @@ jobs:
           export GOPATH=/mingw64
           CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -v -tags "static cli" -ldflags "-s -w -extldflags=-static -X 'main.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'main.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli.exe
 
-      - name: Build NSIS installer
-        uses: joncloud/makensis-action@c481d9faa93b9189844ea92c602866e7b4f7371b # v4
-        with:
-          script-file: nsis/installer.nsi
-
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: VencordInstaller-windows
           path: |
-            nsis/nsis-installer.exe
             VencordInstaller.exe
             VencordInstallerCli.exe
 
@@ -221,4 +215,3 @@ jobs:
             linux/VencordInstalle*
             macos/VencordInstaller.MacOS.zip
             windows/VencordInstalle*.exe
-            windows/nsis/nsis-installer.exe
