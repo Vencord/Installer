@@ -40,7 +40,7 @@ if ($choice -eq 2) {
 	Write-Output "2) Install OpenAsar"
 	Write-Output "3) Uninstall Vencord"
 	Write-Output "4) Uninstall OpenAsar"
-	Write-Output "5) Redownload or Update Vencord"
+	Write-Output "5) Reinstall & Update Vencord"
 	Write-Output "Q) Quit without doing anything"
 	Write-Output ""
 	$choice = Read-Host "Please choose by typing a number or Q"
@@ -50,7 +50,7 @@ if ($choice -eq 2) {
 		2 { $flag = "-install-openasar" }
 		3 { $flag = "-uninstall" }
 		4 { $flag = "-uninstall-openasar" }
-		5 { $flag = "-update" }
+		5 { $flag = "-reinstall" }
 		q { Return }
 		default {
 			Write-Output "Invalid choice $choice. Exiting..."
