@@ -146,14 +146,14 @@ func handleOpenAsarConfirmed() {
 	if choice != nil {
 		if choice.IsOpenAsar() {
 			if err := choice.UninstallOpenAsar(); err != nil {
-				handleErr(err, "uninstall OpenAsar from")
+				handleErr(choice, err, "uninstall OpenAsar from")
 			} else {
 				g.OpenPopup("#openasar-unpatched")
 				g.Update()
 			}
 		} else {
 			if err := choice.InstallOpenAsar(); err != nil {
-				handleErr(err, "install OpenAsar on")
+				handleErr(choice, err, "install OpenAsar on")
 			} else {
 				g.OpenPopup("#openasar-patched")
 				g.Update()
@@ -162,13 +162,15 @@ func handleOpenAsarConfirmed() {
 	}
 }
 
-func handleErr(err error, action string) {
+func handleErr(di *DiscordInstall, err error, action string) {
 	if errors.Is(err, os.ErrPermission) {
 		switch runtime.GOOS {
 		case "windows":
 			err = errors.New("Permission denied. Make sure your Discord is fully closed (from the tray)!")
 		case "darwin":
-			err = errors.New("Permission denied. Please grant the installer Full Disk Access in the system settings (privacy & security page).")
+			// FIXME: This text is not selectable which is a bit mehhh
+			command := "sudo chown -R \"${USER}:wheel\" " + di.path
+			err = errors.New("Permission denied. Please grant the installer Full Disk Access in the system settings (privacy & security page).\n\nIf that also doesn't work, try running the following command in your terminal:\n" + command)
 		default:
 			err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
 		}
@@ -186,7 +188,7 @@ func (di *DiscordInstall) Patch() {
 		return
 	}
 	if err := di.patch(); err != nil {
-		handleErr(err, "patch")
+		handleErr(di, err, "patch")
 	} else {
 		g.OpenPopup("#patched")
 	}
@@ -194,7 +196,7 @@ func (di *DiscordInstall) Patch() {
 
 func (di *DiscordInstall) Unpatch() {
 	if err := di.unpatch(); err != nil {
-		handleErr(err, "unpatch")
+		handleErr(di, err, "unpatch")
 	} else {
 		g.OpenPopup("#unpatched")
 	}
@@ -292,7 +294,7 @@ func InfoModal(id, title, description string) g.Widget {
 }
 
 func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
-	isDynamic := strings.HasPrefix(id, "#modal")
+	isDynamic := strings.HasPrefix(id, "#modal") && !strings.Contains(description, "\n")
 	return g.Style().
 		SetStyle(g.StyleVarWindowPadding, 30, 30).
 		SetStyleFloat(g.StyleVarWindowRounding, 12).
