@@ -5,8 +5,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sqweek/dialog"
 	"net/http"
 )
+
 import "github.com/gorilla/websocket"
 
 var upgrader = websocket.Upgrader{
@@ -23,14 +25,15 @@ type DiscordData struct {
 }
 
 const (
-	OpError             = "ERROR"
-	OpOk                = "OK"
-	OpListInstalls      = "LIST_INSTALLS"
-	OpPatch             = "PATCH"
-	OpUnpatch           = "UNPATCH"
-	OpRepair            = "REPAIR"
-	OpInstallOpenAsar   = "INSTALL_OPENASAR"
-	OpUninstallOpenAsar = "UNINSTALL_OPENASAR"
+	OpError               = "ERROR"
+	OpOk                  = "OK"
+	OpListInstalls        = "LIST_INSTALLS"
+	OpChooseCustomInstall = "CHOOSE_CUSTOM_INSTALL"
+	OpPatch               = "PATCH"
+	OpUnpatch             = "UNPATCH"
+	OpRepair              = "REPAIR"
+	OpInstallOpenAsar     = "INSTALL_OPENASAR"
+	OpUninstallOpenAsar   = "UNINSTALL_OPENASAR"
 )
 
 type Payload struct {
@@ -105,7 +108,7 @@ func launch(w http.ResponseWriter, r *http.Request) {
 			replyError("", "Missing Nonce")
 			continue
 		}
-		
+
 		switch payload.Op {
 		case OpListInstalls:
 			discords := FindDiscords()
@@ -121,6 +124,13 @@ func launch(w http.ResponseWriter, r *http.Request) {
 			}
 
 			reply(payload.Nonce, data)
+		case OpChooseCustomInstall:
+			directory, err := dialog.Directory().Title("Discord Install Directory").Browse()
+			if err != nil {
+				replyError(payload.Nonce, err.Error())
+			} else {
+				reply(payload.Nonce, directory)
+			}
 		case OpPatch, OpUnpatch, OpRepair, OpInstallOpenAsar, OpUninstallOpenAsar:
 			var path string
 			err := json.Unmarshal(payload.Data, &path)
@@ -129,34 +139,26 @@ func launch(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 
-			discords := FindDiscords()
-			var di *DiscordInstall = nil
-			for _, d := range discords {
-				di := d.(*DiscordInstall)
-				if di.path == path {
-					di = di
-					break
-				}
-			}
-			if di == nil {
-				replyError(payload.Nonce, "No such Discord install: "+path)
+			discordInstall := ParseDiscord(path, "")
+			if discordInstall == nil {
+				replyError(payload.Nonce, "Not a valid Discord install: "+path)
 				break
 			}
 
 			switch payload.Op {
 			case OpPatch:
-				err = di.patch()
+				err = discordInstall.patch()
 			case OpUnpatch:
-				err = di.unpatch()
+				err = discordInstall.unpatch()
 			case OpRepair:
 				err := InstallLatestBuilds()
 				if err == nil {
-					err = di.patch()
+					err = discordInstall.patch()
 				}
 			case OpInstallOpenAsar:
-				err = di.InstallOpenAsar()
+				err = discordInstall.InstallOpenAsar()
 			case OpUninstallOpenAsar:
-				err = di.UninstallOpenAsar()
+				err = discordInstall.UninstallOpenAsar()
 			}
 
 			if err == nil {
@@ -173,7 +175,7 @@ func launch(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/launch", launch)
 
-	http.ListenAndServe(":18281", nil)
+	http.ListenAndServe("localhost:18281", nil)
 }
 
 func InstallLatestBuilds() error {
