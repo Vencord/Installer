@@ -1,4 +1,4 @@
-//go:build gui || (!gui && !cli)
+//go:build gui || (!gui && !cli && !web)
 
 /*
  * SPDX-License-Identifier: GPL-3.0

@@ -6,6 +6,7 @@ require (
 	github.com/AllenDang/giu v0.6.2
 	github.com/AllenDang/imgui-go v1.12.1-0.20220322114136-499bbf6a42ad
 	github.com/ProtonMail/go-appdir v1.1.0
+	github.com/gorilla/websocket v1.5.0
 )
 
 require (
