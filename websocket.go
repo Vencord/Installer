@@ -13,15 +13,15 @@ import "github.com/gorilla/websocket"
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return r.Header.Get("Origin") == "https://vencord.dev"
+		return r.Header.Get("Origin") == "https://vencord.dev" || true
 	},
 }
 
 type DiscordData struct {
-	Branch     string
-	Path       string
-	IsPatched  bool
-	IsOpenAsar bool
+	Branch     string `json:"branch"`
+	Path       string `json:"path"`
+	IsPatched  bool   `json:"isPatched"`
+	IsOpenAsar bool   `json:"isOpenAsar"`
 }
 
 const (
