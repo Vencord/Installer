@@ -15,12 +15,12 @@ jobs:
       - name: Publish Vendicated.Vencord.Canary to WinGet
         uses: vedantmgoyal2009/winget-releaser@v2
         with:
-          identifier: Publish Vendicated.Vencord.Canary
+          identifier: Vendicated.Vencord.Canary
           installers-regex: '\.VencordInstallerCli.exe' 
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish Vendicated.Vencord.PTB to WinGet
         uses: vedantmgoyal2009/winget-releaser@v2
         with:
-          identifier: Publish Vendicated.Vencord.PTB
+          identifier: Vendicated.Vencord.PTB
           installers-regex: '\.VencordInstallerCli.exe' 
           token: ${{ secrets.GITHUB_TOKEN }}
