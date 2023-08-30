@@ -6,21 +6,21 @@ jobs:
   publish:
     runs-on: windows-latest
     steps:
-      - name: Publish Vencord.Vencord to WinGet
+      - name: Publish Vendicated.Vencord to WinGet
         uses: vedantmgoyal2009/winget-releaser@v2
         with:
-          identifier: Vencord.Vencord
+          identifier: Vendicated.Vencord
           installers-regex: 'VencordInstallerCli\.exe'
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish Vencord.Vencord.Canary to WinGet
+      - name: Publish Vendicated.Vencord.Canary to WinGet
         uses: vedantmgoyal2009/winget-releaser@v2
         with:
-          identifier: Vencord.Vencord.Canary
+          identifier: Vendicated.Vencord.Canary
           installers-regex: 'VencordInstallerCli\.exe' 
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish Vencord.Vencord.PTB to WinGet
+      - name: Publish Vendicated.Vencord.PTB to WinGet
         uses: vedantmgoyal2009/winget-releaser@v2
         with:
-          identifier: Vencord.Vencord.PTB
+          identifier: Vendicated.Vencord.PTB
           installers-regex: 'VencordInstallerCli\.exe' 
           token: ${{ secrets.GITHUB_TOKEN }}
