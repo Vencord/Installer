@@ -29,11 +29,15 @@ Run the following command in your terminal and follow along with the instruction
 sh -c "$(curl -sS https://raw.githubusercontent.com/Vendicated/VencordInstaller/main/install.sh)"
 ```
 
-### MacOs
+### MacOS
 
-Download the latest [MacOs build](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.MacOS.zip), unzip it, and run `VencordInstaller.app` 
+Download the latest [MacOS build](https://github.com/Vencord/Installer/releases/latest/download/VencordInstaller.MacOS.zip), unzip it, and run `VencordInstaller.app` 
 
-If you get a `VencordInstaller can't be opened` warning, right-click `VencordInstaller.app` and click open.
+If you get a `“VencordInstaller” cannot be opened because the developer cannot be verified.` warning, open Terminal or iTerm then run the following command:
+
+`ssxattr -d com.apple.quarantine /Users/USERNAME/PATH/VencordInstaller.app`
+
+Of course, you have to change the path with the correct one.
 
 This warning shows because the app isn't signed since I'm not willing to pay 100 bucks a year for an Apple Developer license.
 
