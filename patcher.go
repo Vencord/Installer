@@ -10,12 +10,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ProtonMail/go-appdir"
 	"os"
 	"os/exec"
 	path "path/filepath"
 	"strings"
+
+	"github.com/ProtonMail/go-appdir"
 )
+
+const AppDotAsar = "app.asar"
+const DotUnpacked = ".unpacked"
 
 var BaseDir string
 var FilesDir string
@@ -98,7 +102,7 @@ func writeFiles(dir string) error {
 }
 
 func patchRenames(dir string, isSystemElectron bool) (err error) {
-	appAsar := path.Join(dir, "app.asar")
+	appAsar := path.Join(dir, AppDotAsar)
 	_appAsar := path.Join(dir, "_app.asar")
 
 	var renamesDone [][]string
@@ -124,7 +128,7 @@ func patchRenames(dir string, isSystemElectron bool) (err error) {
 	renamesDone = append(renamesDone, []string{appAsar, _appAsar})
 
 	if isSystemElectron {
-		from, to := appAsar+".unpacked", _appAsar+".unpacked"
+		from, to := appAsar+DotUnpacked, _appAsar+DotUnpacked
 		fmt.Println("Renaming", from, "to", to)
 		err := os.Rename(from, to)
 		if err != nil {
@@ -218,7 +222,7 @@ func (di *DiscordInstall) patch() error {
 }
 
 func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
-	appAsar := path.Join(dir, "app.asar")
+	appAsar := path.Join(dir, AppDotAsar)
 	appAsarTmp := path.Join(dir, "app.asar.tmp")
 	_appAsar := path.Join(dir, "_app.asar")
 
@@ -259,8 +263,8 @@ func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 	}
 
 	if isSystemElectron {
-		fmt.Println("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
-		if err := os.Rename(_appAsar+".unpacked", appAsar+".unpacked"); err != nil {
+		fmt.Println("Renaming", _appAsar+DotUnpacked, "to", appAsar+DotUnpacked)
+		if err := os.Rename(_appAsar+DotUnpacked, appAsar+DotUnpacked); err != nil {
 			fmt.Println(err)
 			errOut = err
 		}
@@ -280,7 +284,7 @@ func (di *DiscordInstall) unpatch() error {
 			return err
 		}
 	} else {
-		isCanaryHack := IsDirectory(path.Join(di.appPath, "..", "app.asar"))
+		isCanaryHack := IsDirectory(path.Join(di.appPath, "..", AppDotAsar))
 		if isCanaryHack {
 			if err := unpatchRenames(path.Join(di.appPath, ".."), false); err != nil {
 				return err

@@ -1,9 +1,7 @@
 {
   "RT_GROUP_ICON": {
     "APP": {
-      "0000": [
-        "icon.png"
-      ]
+      "0000": ["icon.png"]
     }
   },
   "RT_MANIFEST": {

@@ -23,7 +23,7 @@ switch ($choice) {
 	default {
 		Write-Output "Invalid choice $choice. Exiting..."
 		Return
-	}	
+	}
 }
 
 $outfile = "$env:TEMP\$(([uri]$link).Segments[-1])"
@@ -58,7 +58,7 @@ if ($choice -eq 2) {
 		}
 	}
 
-	Start-Process -Wait -NoNewWindow -FilePath "$outfile" -ArgumentList "$flag" 
+	Start-Process -Wait -NoNewWindow -FilePath "$outfile" -ArgumentList "$flag"
 } else {
 	Start-Process -Wait -NoNewWindow -FilePath "$outfile"
 }

@@ -100,7 +100,7 @@ func (di *DiscordInstall) InstallOpenAsar() error {
 
 func (di *DiscordInstall) UninstallOpenAsar() error {
 	PreparePatch(di)
-	
+
 	dir := path.Join(di.appPath, "..")
 	originalAsar := path.Join(dir, "app.asar.original")
 	if !ExistsFile(originalAsar) {

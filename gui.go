@@ -13,10 +13,12 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/imgui-go"
 	"image"
 	"image/color"
+
+	g "github.com/AllenDang/giu"
+	"github.com/AllenDang/imgui-go"
+
 	// png decoder for icon
 	_ "image/png"
 	"os"
@@ -25,6 +27,9 @@ import (
 	"strconv"
 	"strings"
 )
+
+const TheScuffedInstall = "#scuffed-install"
+const TheModal = "#modal"
 
 var (
 	discords        []any
@@ -180,7 +185,7 @@ func handleErr(di *DiscordInstall, err error, action string) {
 }
 
 func HandleScuffedInstall() {
-	g.OpenPopup("#scuffed-install")
+	g.OpenPopup(TheScuffedInstall)
 }
 
 func (di *DiscordInstall) Patch() {
@@ -294,7 +299,7 @@ func InfoModal(id, title, description string) g.Widget {
 }
 
 func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
-	isDynamic := strings.HasPrefix(id, "#modal") && !strings.Contains(description, "\n")
+	isDynamic := strings.HasPrefix(id, TheModal) && !strings.Contains(description, "\n")
 	return g.Style().
 		SetStyle(g.StyleVarWindowPadding, 30, 30).
 		SetStyleFloat(g.StyleVarWindowRounding, 12).
@@ -309,7 +314,7 @@ func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
 						g.Style().SetFontSize(20).To(
 							g.Label(description).Wrapped(isDynamic),
 						),
-						&CondWidget{id == "#scuffed-install", func() g.Widget {
+						&CondWidget{id == TheScuffedInstall, func() g.Widget {
 							return g.Column(
 								g.Dummy(0, 10),
 								g.Button("Take me there!").OnClick(func() {
@@ -354,7 +359,7 @@ func ShowModal(title, desc string) {
 	modalTitle = title
 	modalMessage = desc
 	modalId++
-	g.OpenPopup("#modal" + strconv.Itoa(modalId))
+	g.OpenPopup(TheModal + strconv.Itoa(modalId))
 }
 
 func renderInstaller() g.Widget {
@@ -508,7 +513,7 @@ func renderInstaller() g.Widget {
 		InfoModal("#patched", "Successfully Patched", "If Discord is still open, fully close it first.\n"+
 			"Then, start it and verify Vencord installed successfully by looking for its category in Discord Settings"),
 		InfoModal("#unpatched", "Successfully Unpatched", "If Discord is still open, fully close it first. Then start it again, it should be back to stock!"),
-		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
+		InfoModal(TheScuffedInstall, "Hold On!", "You have a broken Discord Install.\n"+
 			"Sometimes Discord decides to install to the wrong location for some reason!\n"+
 			"You need to fix this before patching, otherwise Vencord will likely not work.\n\n"+
 			"Use the below button to jump there and delete any folder called Discord or Squirrel.\n"+
@@ -522,7 +527,7 @@ func renderInstaller() g.Widget {
 		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
 		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
 		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install. Make sure you select the base folder."),
-		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
+		InfoModal(TheModal+strconv.Itoa(modalId), modalTitle, modalMessage),
 	}
 
 	return layout
