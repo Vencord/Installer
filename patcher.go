@@ -9,7 +9,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ProtonMail/go-appdir"
 	"os"
 	"os/exec"
@@ -30,20 +29,20 @@ var PackageJson = []byte(`{
 
 func init() {
 	if dir := os.Getenv("VENCORD_USER_DATA_DIR"); dir != "" {
-		fmt.Println("Using VENCORD_USER_DATA_DIR")
+		Log.Debug("Using VENCORD_USER_DATA_DIR")
 		BaseDir = dir
 	} else if dir = os.Getenv("DISCORD_USER_DATA_DIR"); dir != "" {
-		fmt.Println("Using DISCORD_USER_DATA_DIR/../VencordData")
+		Log.Debug("Using DISCORD_USER_DATA_DIR/../VencordData")
 		BaseDir = path.Join(dir, "..", "VencordData")
 	} else {
-		fmt.Println("Using UserConfig")
+		Log.Debug("Using UserConfig")
 		BaseDir = appdir.New("Vencord").UserConfig()
 	}
 	FilesDir = path.Join(BaseDir, "dist")
 	if !ExistsFile(FilesDir) {
 		FilesDirErr = os.MkdirAll(FilesDir, 0755)
 		if FilesDirErr != nil {
-			fmt.Println("Failed to create", FilesDir, FilesDirErr)
+			Log.Error("Failed to create", FilesDir, FilesDirErr)
 		} else {
 			FilesDirErr = FixOwnership(BaseDir)
 		}
@@ -104,28 +103,28 @@ func patchRenames(dir string, isSystemElectron bool) (err error) {
 	var renamesDone [][]string
 	defer func() {
 		if err != nil && len(renamesDone) > 0 {
-			fmt.Println("Failed to patch. Undoing partial patch")
+			Log.Error("Failed to patch. Undoing partial patch")
 			for _, rename := range renamesDone {
 				if innerErr := os.Rename(rename[1], rename[0]); innerErr != nil {
-					fmt.Println("Failed to undo partial patch. This install is probably bricked.", innerErr)
+					Log.Error("Failed to undo partial patch. This install is probably bricked.", innerErr)
 				} else {
-					fmt.Println("Successfully undid all changes")
+					Log.Info("Successfully undid all changes")
 				}
 			}
 		}
 	}()
 
-	fmt.Println("Renaming", appAsar, "to", _appAsar)
+	Log.Debug("Renaming", appAsar, "to", _appAsar)
 	if err := os.Rename(appAsar, _appAsar); err != nil {
 		err = CheckIfErrIsCauseItsBusyRn(err)
-		fmt.Println(err)
+		Log.Error(err.Error())
 		return err
 	}
 	renamesDone = append(renamesDone, []string{appAsar, _appAsar})
 
 	if isSystemElectron {
 		from, to := appAsar+".unpacked", _appAsar+".unpacked"
-		fmt.Println("Renaming", from, "to", to)
+		Log.Debug("Renaming", from, "to", to)
 		err := os.Rename(from, to)
 		if err != nil {
 			return err
@@ -133,7 +132,7 @@ func patchRenames(dir string, isSystemElectron bool) (err error) {
 		renamesDone = append(renamesDone, []string{from, to})
 	}
 
-	fmt.Println("Writing files to", appAsar)
+	Log.Debug("Writing files to", appAsar)
 	if err := writeFiles(appAsar); err != nil {
 		return err
 	}
@@ -142,7 +141,7 @@ func patchRenames(dir string, isSystemElectron bool) (err error) {
 }
 
 func (di *DiscordInstall) patch() error {
-	fmt.Println("Patching " + di.path + "...")
+	Log.Info("Patching " + di.path + "...")
 	if LatestHash != InstalledHash {
 		if err := InstallLatestBuilds(); err != nil {
 			return nil // already shown dialog so don't return same error again
@@ -152,7 +151,7 @@ func (di *DiscordInstall) patch() error {
 	PreparePatch(di)
 
 	if di.isPatched {
-		fmt.Println(di.path, "is already patched. Unpatching first...")
+		Log.Info(di.path, "is already patched. Unpatching first...")
 		if err := di.unpatch(); err != nil {
 			if errors.Is(err, os.ErrPermission) {
 				return err
@@ -170,7 +169,7 @@ func (di *DiscordInstall) patch() error {
 			return err
 		}
 	}
-	fmt.Println("Successfully patched", di.path)
+	Log.Info("Successfully patched", di.path)
 	di.isPatched = true
 
 	if di.isFlatpak {
@@ -183,7 +182,7 @@ func (di *DiscordInstall) patch() error {
 			}
 		}
 
-		fmt.Println("This is a flatpak. Trying to grant the Flatpak access to", FilesDir+"...")
+		Log.Debug("This is a flatpak. Trying to grant the Flatpak access to", FilesDir+"...")
 
 		isSystemFlatpak := strings.HasPrefix(di.path, "/var")
 		var args []string
@@ -193,13 +192,13 @@ func (di *DiscordInstall) patch() error {
 		args = append(args, "override", name, "--filesystem="+FilesDir)
 		fullCmd := "flatpak " + strings.Join(args, " ")
 
-		fmt.Println("Running", fullCmd)
+		Log.Debug("Running", fullCmd)
 
 		var err error
 		if !isSystemFlatpak && os.Getuid() == 0 {
 			// We are operating on a user flatpak but are root
 			actualUser := os.Getenv("SUDO_USER")
-			fmt.Println("This is a user install but we are root. Using su to run as", actualUser)
+			Log.Debug("This is a user install but we are root. Using su to run as", actualUser)
 			cmd := exec.Command("su", "-", actualUser, "-c", "sh", "-c", fullCmd)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -225,43 +224,43 @@ func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 	var renamesDone [][]string
 	defer func() {
 		if errOut != nil && len(renamesDone) > 0 {
-			fmt.Println("Failed to unpatch. Undoing partial unpatch")
+			Log.Error("Failed to unpatch. Undoing partial unpatch")
 			for _, rename := range renamesDone {
 				if innerErr := os.Rename(rename[1], rename[0]); innerErr != nil {
-					fmt.Println("Failed to undo partial unpatch. This install is probably bricked.", innerErr)
+					Log.Error("Failed to undo partial unpatch. This install is probably bricked.", innerErr)
 				} else {
-					fmt.Println("Successfully undid all changes")
+					Log.Info("Successfully undid all changes")
 				}
 			}
 		} else if errOut == nil {
 			if innerErr := os.RemoveAll(appAsarTmp); innerErr != nil {
-				fmt.Println("Failed to delete temporary app.asar (patch folder) backup. This is whatever but you might want to delete it manually.", innerErr)
+				Log.Warn("Failed to delete temporary app.asar (patch folder) backup. This is whatever but you might want to delete it manually.", innerErr)
 			}
 		}
 	}()
 
-	fmt.Println("Deleting", appAsar)
+	Log.Debug("Deleting", appAsar)
 	if err := os.Rename(appAsar, appAsarTmp); err != nil {
 		err = CheckIfErrIsCauseItsBusyRn(err)
-		fmt.Println(err)
+		Log.Error(err.Error())
 		errOut = err
 	} else {
 		renamesDone = append(renamesDone, []string{appAsar, appAsarTmp})
 	}
 
-	fmt.Println("Renaming", _appAsar, "to", appAsar)
+	Log.Debug("Renaming", _appAsar, "to", appAsar)
 	if err := os.Rename(_appAsar, appAsar); err != nil {
 		err = CheckIfErrIsCauseItsBusyRn(err)
-		fmt.Println(err)
+		Log.Error(err.Error())
 		errOut = err
 	} else {
 		renamesDone = append(renamesDone, []string{_appAsar, appAsar})
 	}
 
 	if isSystemElectron {
-		fmt.Println("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
+		Log.Debug("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
 		if err := os.Rename(_appAsar+".unpacked", appAsar+".unpacked"); err != nil {
-			fmt.Println(err)
+			Log.Error(err.Error())
 			errOut = err
 		}
 	}
@@ -269,12 +268,12 @@ func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
 }
 
 func (di *DiscordInstall) unpatch() error {
-	fmt.Println("Unpatching " + di.path + "...")
+	Log.Info("Unpatching " + di.path + "...")
 
 	PreparePatch(di)
 
 	if di.isSystemElectron {
-		fmt.Println("Detected as System Electron Install")
+		Log.Debug("Detected as System Electron Install")
 		// See comment in Patch
 		if err := unpatchRenames(di.path, true); err != nil {
 			return err
@@ -288,21 +287,21 @@ func (di *DiscordInstall) unpatch() error {
 		} else {
 			err := IsSafeToDelete(di.appPath)
 			if errors.Is(err, os.ErrPermission) {
-				fmt.Println("Permission to read", di.appPath, "denied")
+				Log.Error("Permission to read", di.appPath, "denied")
 				return err
 			}
-			fmt.Println("Checking if", di.appPath, "is safe to delete:", Ternary(err == nil, "Yes", "No"))
+			Log.Debug("Checking if", di.appPath, "is safe to delete:", Ternary(err == nil, "Yes", "No"))
 			if err != nil {
 				return errors.New("Deleting patch folder '" + di.appPath + "' is possibly unsafe. Please do it manually: " + err.Error())
 			}
-			fmt.Println("Deleting", di.appPath)
+			Log.Debug("Deleting", di.appPath)
 			err = os.RemoveAll(di.appPath)
 			if err != nil {
 				return err
 			}
 		}
 	}
-	fmt.Println("Successfully unpatched", di.path)
+	Log.Info("Successfully unpatched", di.path)
 	di.isPatched = false
 	return nil
 }

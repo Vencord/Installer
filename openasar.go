@@ -9,7 +9,6 @@ package main
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -40,20 +39,20 @@ func (di *DiscordInstall) IsOpenAsar() (retBool bool) {
 	}
 
 	defer func() {
-		fmt.Println("Checking if", di.path, "is using OpenAsar:", retBool)
+		Log.Debug("Checking if", di.path, "is using OpenAsar:", retBool)
 		di.isOpenAsar = &retBool
 	}()
 
 	asarFile, err := FindAsarFile(path.Join(di.appPath, ".."))
 	if err != nil {
-		fmt.Println(err)
+		Log.Error(err.Error())
 		return false
 	}
 
 	b, err := io.ReadAll(asarFile)
 	_ = asarFile.Close()
 	if err != nil {
-		fmt.Println(err)
+		Log.Error(err.Error())
 		return false
 	}
 
@@ -100,7 +99,7 @@ func (di *DiscordInstall) InstallOpenAsar() error {
 
 func (di *DiscordInstall) UninstallOpenAsar() error {
 	PreparePatch(di)
-	
+
 	dir := path.Join(di.appPath, "..")
 	originalAsar := path.Join(dir, "app.asar.original")
 	if !ExistsFile(originalAsar) {

@@ -20,16 +20,19 @@ You need to install the [Go programming language](https://go.dev/doc/install) an
 #### Base dependencies
 ```sh
 apt install -y pkg-config libsdl2-dev libglx-dev libgl1-mesa-dev
+dnf install pkg-config libGL-devel libXxf86vm-devel
 ```
 
 #### X11 dependencies
 ```sh
 apt install -y xorg-dev
+dnf install libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
 ```
 
 #### Wayland dependencies
 ```sh
 apt install -y libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules
+dnf install wayland-devel libxkbcommon-devel wayland-protocols-devel extra-cmake-modules
 ```
 
 </details>

@@ -26,7 +26,7 @@ func isValidBranch(branch string) bool {
 }
 
 func die(msg string) {
-	fmt.Println(msg)
+	Log.Error(msg)
 	os.Exit(1)
 }
 
@@ -41,6 +41,7 @@ func main() {
 	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
 	var locationFlag = flag.String("location", "", "Select the location of your Discord install")
 	var branchFlag = flag.String("branch", "", "Select the branch of Discord you want to modify [auto|stable|ptb|canary]")
+	flag.Bool("debug", false, "Enable debug info")
 	flag.Parse()
 
 	if *locationFlag != "" && *branchFlag != "" {

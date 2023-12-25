@@ -12,7 +12,6 @@ import (
 	"bytes"
 	_ "embed"
 	"errors"
-	"fmt"
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/imgui-go"
 	"image"
@@ -52,6 +51,7 @@ var (
 var iconBytes []byte
 
 func main() {
+	LogLevel = LevelDebug
 	InitGithubDownloader()
 	discords = FindDiscords()
 
@@ -71,8 +71,8 @@ func main() {
 
 	icon, _, err := image.Decode(bytes.NewReader(iconBytes))
 	if err != nil {
-		fmt.Println("Failed to load application icon", err)
-		fmt.Println(iconBytes, len(iconBytes))
+		Log.Warn("Failed to load application icon", err)
+		Log.Debug(iconBytes, len(iconBytes))
 	} else {
 		win.SetIcon([]image.Image{icon})
 	}

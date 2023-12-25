@@ -7,14 +7,13 @@
 package main
 
 import (
-	"fmt"
 	"runtime"
 )
 
 var IsInstallerOutdated = false
 
 func CheckSelfUpdate() {
-	fmt.Println("Checking for Installer Updates...")
+	Log.Debug("Checking for Installer Updates...")
 
 	res, err := GetGithubRelease(InstallerReleaseUrl, InstallerReleaseUrlFallback)
 	if err == nil {

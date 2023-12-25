@@ -8,7 +8,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	path "path/filepath"
@@ -26,7 +25,7 @@ func ParseDiscord(p, branch string) *DiscordInstall {
 	entries, err := os.ReadDir(p)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			fmt.Println("Error during readdir "+p+":", err)
+			Log.Warn("Error during readdir "+p+":", err)
 		}
 		return nil
 	}
@@ -70,14 +69,14 @@ func FindDiscords() []any {
 
 	appData := os.Getenv("LOCALAPPDATA")
 	if appData == "" {
-		fmt.Println("%LOCALAPPDATA% is empty???????")
+		Log.Error("%LOCALAPPDATA% is empty???????")
 		return discords
 	}
 
 	for branch, dirname := range windowsNames {
 		p := path.Join(appData, dirname)
 		if discord := ParseDiscord(p, branch); discord != nil {
-			fmt.Println("Found Discord install at ", p)
+			Log.Debug("Found Discord install at ", p)
 			discords = append(discords, discord)
 		}
 	}
@@ -86,7 +85,7 @@ func FindDiscords() []any {
 
 func PreparePatch(di *DiscordInstall) {
 	name := windowsNames[di.branch]
-	fmt.Println("Killing " + name + "...")
+	Log.Debug("Killing " + name + "...")
 
 	_ = exec.Command("powershell", "Stop-Process -Name "+name).Run()
 }

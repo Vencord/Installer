@@ -8,7 +8,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"os/user"
@@ -37,14 +36,14 @@ func init() {
 			panic("VencordInstaller must not be run as the root user. Please rerun as normal user. Use sudo or doas to run as root.")
 		}
 
-		fmt.Println("VencordInstaller was run with root privileges, actual user is", sudoUser)
-		fmt.Println("Looking up HOME of", sudoUser)
+		Log.Debug("VencordInstaller was run with root privileges, actual user is", sudoUser)
+		Log.Debug("Looking up HOME of", sudoUser)
 
 		u, err := user.Lookup(sudoUser)
 		if err != nil {
-			fmt.Println("Failed to lookup HOME", err)
+			Log.Warn("Failed to lookup HOME", err)
 		} else {
-			fmt.Println("Actual HOME is", u.HomeDir)
+			Log.Debug("Actual HOME is", u.HomeDir)
 			_ = os.Setenv("HOME", u.HomeDir)
 		}
 	} else if os.Getuid() == 0 {
@@ -87,7 +86,7 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 		isSystemElectron = true
 		isPatched = ExistsFile(path.Join(p, "_app.asar.unpacked"))
 	} else {
-		fmt.Println("Tried to parse invalid Location:", p)
+		Log.Warn("Tried to parse invalid Location:", p)
 		return nil
 	}
 
@@ -107,7 +106,7 @@ func FindDiscords() []any {
 		children, err := os.ReadDir(dir)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				fmt.Println("Error during readdir "+dir+":", err)
+				Log.Warn("Error during readdir "+dir+":", err)
 			}
 			continue
 		}
@@ -120,7 +119,7 @@ func FindDiscords() []any {
 
 			discordDir := path.Join(dir, name)
 			if discord := ParseDiscord(discordDir, ""); discord != nil {
-				fmt.Println("Found Discord install at ", discordDir)
+				Log.Debug("Found Discord install at ", discordDir)
 				discords = append(discords, discord)
 			}
 		}
@@ -137,20 +136,20 @@ func FixOwnership(p string) error {
 		return nil
 	}
 
-	fmt.Println("Fixing Ownership of", p)
+	Log.Debug("Fixing Ownership of", p)
 
 	sudoUser := os.Getenv("SUDO_USER")
 	if sudoUser == "" {
 		panic("SUDO_USER was empty. This point should never be reached")
 	}
 
-	fmt.Println("Looking up User", sudoUser)
+	Log.Debug("Looking up User", sudoUser)
 	u, err := user.Lookup(sudoUser)
 	if err != nil {
-		fmt.Println("Lookup failed:", err)
+		Log.Error("Lookup failed:", err)
 		return err
 	}
-	fmt.Println("Lookup successful, Uid", u.Uid, "Gid", u.Gid)
+	Log.Debug("Lookup successful, Uid", u.Uid, "Gid", u.Gid)
 	// This conversion is safe because of the GOOS guard above
 	uid, _ := strconv.Atoi(u.Uid)
 	gid, _ := strconv.Atoi(u.Gid)
@@ -158,13 +157,13 @@ func FixOwnership(p string) error {
 	err = path.WalkDir(p, func(path string, d fs.DirEntry, err error) error {
 		if err == nil {
 			err = os.Chown(path, uid, gid)
-			fmt.Println("chown", u.Uid+":"+u.Gid, path+":", Ternary(err == nil, "Success!", "Failed"))
+			Log.Debug("chown", u.Uid+":"+u.Gid, path+":", Ternary(err == nil, "Success!", "Failed"))
 		}
 		return err
 	})
 
 	if err != nil {
-		fmt.Println("Failed to fix ownership:", err)
+		Log.Error("Failed to fix ownership:", err)
 	}
 	return err
 }

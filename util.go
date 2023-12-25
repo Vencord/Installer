@@ -8,7 +8,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -26,17 +25,17 @@ func ArrayIncludes[T comparable](arr []T, v T) bool {
 
 func ExistsFile(path string) bool {
 	_, err := os.Stat(path)
-	fmt.Println("Checking if", path, "exists:", Ternary(err == nil, "Yes", "No"))
+	Log.Debug("Checking if", path, "exists:", Ternary(err == nil, "Yes", "No"))
 	return err == nil
 }
 
 func IsDirectory(path string) bool {
 	s, err := os.Stat(path)
 	if err != nil {
-		fmt.Println("Error while checking if", path, "is directory:", err)
+		Log.Error("Error while checking if", path, "is directory:", err)
 		return false
 	}
-	fmt.Println("Checking if", path, "is directory:", Ternary(s.IsDir(), "Yes", "No"))
+	Log.Debug("Checking if", path, "is directory:", Ternary(s.IsDir(), "Yes", "No"))
 	return s.IsDir()
 }
 
@@ -81,9 +80,6 @@ func CheckIfErrIsCauseItsBusyRn(err error) error {
 	return err
 }
 
-func Unwrap[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
+func Prepend[T any](slice []T, elems ...T) []T {
+	return append(elems, slice...)
 }
