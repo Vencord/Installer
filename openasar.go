@@ -73,7 +73,7 @@ func (di *DiscordInstall) InstallOpenAsar() error {
 	}
 	_ = asarFile.Close()
 
-	if err = os.Rename(asarFile.Name(), path.Join(dir, "app.asar.original")); err != nil {
+	if err = os.Rename(asarFile.Name(), path.Join(dir, "app.asar.backup")); err != nil {
 		return err
 	}
 
@@ -101,21 +101,26 @@ func (di *DiscordInstall) UninstallOpenAsar() error {
 	PreparePatch(di)
 
 	dir := path.Join(di.appPath, "..")
-	originalAsar := path.Join(dir, "app.asar.original")
-	if !ExistsFile(originalAsar) {
-		return errors.New("No app.asar.original. Reinstall Discord")
+	// .original is our old name
+	// OpenAsar's updater uses .backup, so we now also use that - .original is deprecated
+	for _, file := range []string{path.Join(dir, "app.asar.backup"), path.Join(dir, "app.asar.original")} {
+		if !ExistsFile(file) {
+			continue
+		}
+
+		asarFile, err := FindAsarFile(dir)
+		if err != nil {
+			return err
+		}
+		_ = asarFile.Close()
+
+		if err = os.Rename(file, asarFile.Name()); err != nil {
+			return err
+		}
+
+		di.isOpenAsar = Ptr(false)
+		return nil
 	}
 
-	asarFile, err := FindAsarFile(dir)
-	if err != nil {
-		return err
-	}
-	_ = asarFile.Close()
-
-	if err = os.Rename(originalAsar, asarFile.Name()); err != nil {
-		return err
-	}
-
-	di.isOpenAsar = Ptr(false)
-	return nil
+	return errors.New("No app.asar.backup. Reinstall Discord")
 }
