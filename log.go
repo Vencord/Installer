@@ -81,3 +81,9 @@ func (h Handler) Fatal(a ...any) {
 	h.Log(LevelFatal, a...)
 	os.Exit(1)
 }
+
+func (h Handler) PanicIfErr(err error) {
+	if err != nil {
+		h.Fatal(err)
+	}
+}

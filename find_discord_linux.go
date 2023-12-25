@@ -65,14 +65,14 @@ func init() {
 func ParseDiscord(p, _ string) *DiscordInstall {
 	name := path.Base(p)
 
-	isFlatpak := strings.Contains(p, "/flatpak/")
-	if isFlatpak {
+	needsFlatpakResolve := strings.Contains(p, "/flatpak/") && !strings.Contains(p, "/current/active/files/")
+	if needsFlatpakResolve {
 		discordName := strings.ToLower(name[len("com.discordapp."):])
 		if discordName != "discord" { //
 			// DiscordCanary -> discord-canary
 			discordName = discordName[:7] + "-" + discordName[7:]
 		}
-		p = path.Join(p, "current", "active", "files", discordName)
+		p = path.Join(p, "current/active/files", discordName)
 	}
 
 	resources := path.Join(p, "resources")
@@ -95,7 +95,7 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 		branch:           GetBranch(name),
 		appPath:          app,
 		isPatched:        isPatched,
-		isFlatpak:        isFlatpak,
+		isFlatpak:        needsFlatpakResolve,
 		isSystemElectron: isSystemElectron,
 	}
 }

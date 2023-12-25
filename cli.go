@@ -11,7 +11,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/manifoldco/promptui"
 	"os"
+	"slices"
+	"strings"
 )
 
 var discords []any
@@ -34,15 +37,31 @@ func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
 
-	var installFlag = flag.Bool("install", false, "Install Vencord on a Discord install")
-	var updateFlag = flag.Bool("reinstall", false, "Reinstall & update Vencord")
-	var uninstallFlag = flag.Bool("uninstall", false, "Uninstall Vencord from a Discord install")
-	var installOpenAsar = flag.Bool("install-openasar", false, "Install OpenAsar on a Discord install")
-	var uninstallOpenAsar = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar from a Discord install")
-	var locationFlag = flag.String("location", "", "Select the location of your Discord install")
-	var branchFlag = flag.String("branch", "", "Select the branch of Discord you want to modify [auto|stable|ptb|canary]")
+	// Used by log.go init func
 	flag.Bool("debug", false, "Enable debug info")
+
+	var helpFlag = flag.Bool("help", false, "View usage instructions")
+	var versionFlag = flag.Bool("version", false, "View the program version")
+	var installFlag = flag.Bool("install", false, "Install Vencord")
+	var updateFlag = flag.Bool("repair", false, "Repair Vencord")
+	var uninstallFlag = flag.Bool("uninstall", false, "Uninstall Vencord")
+	var installOpenAsarFlag = flag.Bool("install-openasar", false, "Install OpenAsar")
+	var uninstallOpenAsarFlag = flag.Bool("uninstall-openasar", false, "Uninstall OpenAsar")
+	var locationFlag = flag.String("location", "", "The location of the Discord install to modify")
+	var branchFlag = flag.String("branch", "", "The branch of Discord to modify [auto|stable|ptb|canary]")
 	flag.Parse()
+
+	if *helpFlag {
+		flag.Usage()
+		return
+	}
+
+	if *versionFlag {
+		fmt.Println("Vencord Installer Cli", InstallerTag, "("+InstallerGitHash+")")
+		fmt.Println("Copyright (C) 2023 Vendicated and Vencord contributors")
+		fmt.Println("License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.")
+		return
+	}
 
 	if *locationFlag != "" && *branchFlag != "" {
 		die("The 'location' and 'branch' flags are mutually exclusive.")
@@ -58,38 +77,53 @@ func main() {
 		}
 	}
 
-	fmt.Println("Vencord Installer cli", InstallerTag, "("+InstallerGitHash+")")
+	install, uninstall, update, installOpenAsar, uninstallOpenAsar := *installFlag, *uninstallFlag, *updateFlag, *installOpenAsarFlag, *uninstallOpenAsarFlag
+	switches := []*bool{&install, &update, &uninstall, &installOpenAsar, &uninstallOpenAsar}
+	if !slices.ContainsFunc(switches, func(b *bool) bool { return *b }) {
+		choices := []string{
+			"Install Vencord",
+			"Repair Vencord",
+			"Uninstall Vencord",
+			"Install OpenAsar",
+			"Uninstall OpenAsar",
+		}
+		_, choice, err := (&promptui.Select{
+			Label: "What would you like to do? (Press Enter to confirm)",
+			Items: choices,
+		}).Run()
+		Log.PanicIfErr(err)
+
+		*switches[slices.Index(choices, choice)] = true
+	}
 
 	var err error
-	if *installFlag {
+	if install {
 		_ = PromptDiscord("patch", *locationFlag, *branchFlag).patch()
-	} else if *uninstallFlag {
+	} else if uninstall {
 		_ = PromptDiscord("unpatch", *locationFlag, *branchFlag).unpatch()
-	} else if *updateFlag {
+	} else if update {
 		err := installLatestBuilds()
 		if err == nil {
-			PromptDiscord("repatch", *locationFlag, *branchFlag).patch()
+			_ = PromptDiscord("repatch", *locationFlag, *branchFlag).patch()
 		}
-	} else if *installOpenAsar {
+	} else if installOpenAsar {
 		discord := PromptDiscord("patch", *locationFlag, *branchFlag)
 		if !discord.IsOpenAsar() {
 			err = discord.InstallOpenAsar()
 		} else {
 			die("OpenAsar already installed")
 		}
-	} else if *uninstallOpenAsar {
+	} else if uninstallOpenAsar {
 		discord := PromptDiscord("patch", *locationFlag, *branchFlag)
 		if discord.IsOpenAsar() {
 			err = discord.UninstallOpenAsar()
 		} else {
 			die("OpenAsar not installed")
 		}
-	} else {
-		flag.Usage()
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		Log.Error(err)
 		os.Exit(1)
 	}
 }
@@ -125,39 +159,34 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		}
 	}
 
-	fmt.Println("Please choose a Discord install to", action)
+	items := SliceMap(discords, func(d any) string {
+		install := d.(*DiscordInstall)
+		//goland:noinspection GoDeprecation
+		return fmt.Sprintf("%s (%s)%s", strings.Title(install.branch), install.path, Ternary(install.isPatched, " [PATCHED]", ""))
+	})
+	items = append(items, "Custom Location")
 
-	for i, discord := range discords {
-		install := discord.(*DiscordInstall)
-		fmt.Printf("[%d] %s%s (%s)\n", i+1, Ternary(install.isPatched, "(PATCHED) ", ""), install.path, install.branch)
+	_, choice, err := (&promptui.Select{
+		Label: "Select Discord install to " + action + " (Press Enter to confirm)",
+		Items: items,
+	}).Run()
+	Log.PanicIfErr(err)
+
+	if choice != "Custom Location" {
+		return discords[slices.Index(items, choice)].(*DiscordInstall)
 	}
 
-	fmt.Printf("[%d] Custom Location\n", len(discords)+1)
-
-	var choice int
 	for {
-		fmt.Printf("> ")
-		if _, err := fmt.Scan(&choice); err != nil {
-			fmt.Println("That wasn't a valid choice")
-			continue
+		custom, err := (&promptui.Prompt{
+			Label: "Custom Discord Location",
+		}).Run()
+		Log.PanicIfErr(err)
+
+		if di := ParseDiscord(custom, ""); di != nil {
+			return di
 		}
 
-		choice--
-		if choice >= 0 && choice < len(discords) {
-			return discords[choice].(*DiscordInstall)
-		}
-
-		if choice == len(discords) {
-			var custom string
-			fmt.Print("Custom Discord Install: ")
-			if _, err := fmt.Scan(&custom); err == nil {
-				if discord := ParseDiscord(custom, branch); discord != nil {
-					return discord
-				}
-			}
-		}
-
-		fmt.Println("That wasn't a valid choice")
+		Log.Error("Invalid Discord install!")
 	}
 }
 
