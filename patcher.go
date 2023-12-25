@@ -7,7 +7,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/ProtonMail/go-appdir"
 	"os"
@@ -20,12 +19,6 @@ var BaseDir string
 var FilesDir string
 var FilesDirErr error
 var Patcher string
-
-var PackageJson = []byte(`{
-	"name": "discord",
-	"main": "index.js"
-}
-`)
 
 func init() {
 	if dir := os.Getenv("VENCORD_USER_DATA_DIR"); dir != "" {
@@ -60,43 +53,9 @@ type DiscordInstall struct {
 	isOpenAsar       *bool
 }
 
-// IsSafeToDelete returns nil if path is safe to delete.
-// In other cases, the returned error should give more info
-func IsSafeToDelete(path string) error {
-	files, err := os.ReadDir(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			err = nil
-		}
-		return err
-	}
-	for _, file := range files {
-		name := file.Name()
-		if name != "package.json" && name != "index.js" {
-			return errors.New("Found file '" + name + "' which doesn't belong to Vencord.")
-		}
-	}
-	return nil
-}
+//region Patch
 
-func writeFiles(dir string) error {
-	if err := os.RemoveAll(dir); err != nil {
-		return err
-	}
-
-	if err := os.Mkdir(dir, 0755); err != nil {
-		return err
-	}
-
-	if err := os.WriteFile(path.Join(dir, "package.json"), PackageJson, 0644); err != nil {
-		return err
-	}
-
-	patcherPath, _ := json.Marshal(Patcher)
-	return os.WriteFile(path.Join(dir, "index.js"), []byte("require("+string(patcherPath)+")"), 0644)
-}
-
-func patchRenames(dir string, isSystemElectron bool) (err error) {
+func patchAppAsar(dir string, isSystemElectron bool) (err error) {
 	appAsar := path.Join(dir, "app.asar")
 	_appAsar := path.Join(dir, "_app.asar")
 
@@ -132,8 +91,8 @@ func patchRenames(dir string, isSystemElectron bool) (err error) {
 		renamesDone = append(renamesDone, []string{from, to})
 	}
 
-	Log.Debug("Writing files to", appAsar)
-	if err := writeFiles(appAsar); err != nil {
+	Log.Debug("Writing custom app.asar to", appAsar)
+	if err := WriteAppAsar(appAsar, Patcher); err != nil {
 		return err
 	}
 
@@ -160,15 +119,10 @@ func (di *DiscordInstall) patch() error {
 		}
 	}
 
-	if di.isSystemElectron {
-		if err := patchRenames(di.path, true); err != nil {
-			return err
-		}
-	} else {
-		if err := patchRenames(path.Join(di.appPath, ".."), false); err != nil {
-			return err
-		}
+	if err := patchAppAsar(path.Join(di.appPath, ".."), di.isSystemElectron); err != nil {
+		return err
 	}
+
 	Log.Info("Successfully patched", di.path)
 	di.isPatched = true
 
@@ -216,7 +170,11 @@ func (di *DiscordInstall) patch() error {
 	return nil
 }
 
-func unpatchRenames(dir string, isSystemElectron bool) (errOut error) {
+//endregion
+
+// region Unpatch
+
+func unpatchAppAsar(dir string, isSystemElectron bool) (errOut error) {
 	appAsar := path.Join(dir, "app.asar")
 	appAsarTmp := path.Join(dir, "app.asar.tmp")
 	_appAsar := path.Join(dir, "_app.asar")
@@ -272,36 +230,13 @@ func (di *DiscordInstall) unpatch() error {
 
 	PreparePatch(di)
 
-	if di.isSystemElectron {
-		Log.Debug("Detected as System Electron Install")
-		// See comment in Patch
-		if err := unpatchRenames(di.path, true); err != nil {
-			return err
-		}
-	} else {
-		isCanaryHack := IsDirectory(path.Join(di.appPath, "..", "app.asar"))
-		if isCanaryHack {
-			if err := unpatchRenames(path.Join(di.appPath, ".."), false); err != nil {
-				return err
-			}
-		} else {
-			err := IsSafeToDelete(di.appPath)
-			if errors.Is(err, os.ErrPermission) {
-				Log.Error("Permission to read", di.appPath, "denied")
-				return err
-			}
-			Log.Debug("Checking if", di.appPath, "is safe to delete:", Ternary(err == nil, "Yes", "No"))
-			if err != nil {
-				return errors.New("Deleting patch folder '" + di.appPath + "' is possibly unsafe. Please do it manually: " + err.Error())
-			}
-			Log.Debug("Deleting", di.appPath)
-			err = os.RemoveAll(di.appPath)
-			if err != nil {
-				return err
-			}
-		}
+	if err := unpatchAppAsar(path.Join(di.appPath, ".."), di.isSystemElectron); err != nil {
+		return err
 	}
+
 	Log.Info("Successfully unpatched", di.path)
 	di.isPatched = false
 	return nil
 }
+
+//endregion

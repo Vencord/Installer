@@ -82,7 +82,7 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 	isPatched, isSystemElectron := false, false
 
 	if ExistsFile(resources) { // normal install
-		isPatched = ExistsFile(app) || IsDirectory(path.Join(resources, "app.asar"))
+		isPatched = ExistsFile(path.Join(resources, "_app.asar"))
 	} else if ExistsFile(path.Join(p, "app.asar")) { // System electron doesn't have resources folder
 		isSystemElectron = true
 		isPatched = ExistsFile(path.Join(p, "_app.asar.unpacked"))

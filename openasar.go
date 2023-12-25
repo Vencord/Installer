@@ -19,7 +19,7 @@ import (
 const OpenAsarDownloadLink = "https://github.com/GooseMod/OpenAsar/releases/download/nightly/app.asar"
 
 func FindAsarFile(dir string) (*os.File, error) {
-	for _, file := range []string{"app.asar", "_app.asar"} {
+	for _, file := range []string{"_app.asar", "app.asar"} {
 		f, err := os.Open(path.Join(dir, file))
 		if err != nil {
 			continue
