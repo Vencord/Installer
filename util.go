@@ -14,15 +14,6 @@ import (
 	"syscall"
 )
 
-func ArrayIncludes[T comparable](arr []T, v T) bool {
-	for _, e := range arr {
-		if e == v {
-			return true
-		}
-	}
-	return false
-}
-
 func SliceMap[T, U any](arr []T, mapper func(T) U) []U {
 	result := make([]U, len(arr))
 	for i := range arr {
