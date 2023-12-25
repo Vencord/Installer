@@ -82,7 +82,7 @@ func (h Handler) Fatal(a ...any) {
 	os.Exit(1)
 }
 
-func (h Handler) PanicIfErr(err error) {
+func (h Handler) FatalIfErr(err error) {
 	if err != nil {
 		h.Fatal(err)
 	}

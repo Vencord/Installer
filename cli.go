@@ -9,8 +9,10 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"os"
 	"slices"
@@ -91,7 +93,7 @@ func main() {
 			Label: "What would you like to do? (Press Enter to confirm)",
 			Items: choices,
 		}).Run()
-		Log.PanicIfErr(err)
+		handlePromptError(err)
 
 		*switches[slices.Index(choices, choice)] = true
 	}
@@ -102,9 +104,11 @@ func main() {
 	} else if uninstall {
 		_ = PromptDiscord("unpatch", *locationFlag, *branchFlag).unpatch()
 	} else if update {
+		Log.Info("Downloading latest Vencord files...")
 		err := installLatestBuilds()
+		Log.Info("Done!")
 		if err == nil {
-			_ = PromptDiscord("repatch", *locationFlag, *branchFlag).patch()
+			_ = PromptDiscord("repair", *locationFlag, *branchFlag).patch()
 		}
 	} else if installOpenAsar {
 		discord := PromptDiscord("patch", *locationFlag, *branchFlag)
@@ -126,6 +130,16 @@ func main() {
 		Log.Error(err)
 		os.Exit(1)
 	}
+
+	color.HiGreen("✔ Success!")
+}
+
+func handlePromptError(err error) {
+	if errors.Is(err, promptui.ErrInterrupt) {
+		os.Exit(0)
+	}
+
+	Log.FatalIfErr(err)
 }
 
 func PromptDiscord(action, dir, branch string) *DiscordInstall {
@@ -162,7 +176,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 	items := SliceMap(discords, func(d any) string {
 		install := d.(*DiscordInstall)
 		//goland:noinspection GoDeprecation
-		return fmt.Sprintf("%s (%s)%s", strings.Title(install.branch), install.path, Ternary(install.isPatched, " [PATCHED]", ""))
+		return fmt.Sprintf("%s - %s%s", strings.Title(install.branch), install.path, Ternary(install.isPatched, " [PATCHED]", ""))
 	})
 	items = append(items, "Custom Location")
 
@@ -170,7 +184,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		Label: "Select Discord install to " + action + " (Press Enter to confirm)",
 		Items: items,
 	}).Run()
-	Log.PanicIfErr(err)
+	handlePromptError(err)
 
 	if choice != "Custom Location" {
 		return discords[slices.Index(items, choice)].(*DiscordInstall)
@@ -180,7 +194,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		custom, err := (&promptui.Prompt{
 			Label: "Custom Discord Location",
 		}).Run()
-		Log.PanicIfErr(err)
+		handlePromptError(err)
 
 		if di := ParseDiscord(custom, ""); di != nil {
 			return di
