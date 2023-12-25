@@ -7,7 +7,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/ProtonMail/go-appdir"
 	"os"
@@ -20,12 +19,6 @@ var BaseDir string
 var FilesDir string
 var FilesDirErr error
 var Patcher string
-
-var PackageJson = []byte(`{
-	"name": "discord",
-	"main": "index.js"
-}
-`)
 
 func init() {
 	if dir := os.Getenv("VENCORD_USER_DATA_DIR"); dir != "" {
@@ -80,20 +73,7 @@ func IsSafeToDelete(path string) error {
 }
 
 func writeFiles(dir string) error {
-	if err := os.RemoveAll(dir); err != nil {
-		return err
-	}
-
-	if err := os.Mkdir(dir, 0755); err != nil {
-		return err
-	}
-
-	if err := os.WriteFile(path.Join(dir, "package.json"), PackageJson, 0644); err != nil {
-		return err
-	}
-
-	patcherPath, _ := json.Marshal(Patcher)
-	return os.WriteFile(path.Join(dir, "index.js"), []byte("require("+string(patcherPath)+")"), 0644)
+	return WriteAppAsar(dir, Patcher)
 }
 
 func patchRenames(dir string, isSystemElectron bool) (err error) {

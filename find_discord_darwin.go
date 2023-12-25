@@ -37,7 +37,7 @@ func ParseDiscord(p, branch string) *DiscordInstall {
 		path:             p,
 		branch:           branch,
 		appPath:          app,
-		isPatched:        ExistsFile(app) || IsDirectory(path.Join(resources, "app.asar")),
+		isPatched:        ExistsFile(path.Join(resources, "_app.asar")),
 		isFlatpak:        false,
 		isSystemElectron: false,
 	}

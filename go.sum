@@ -30,7 +30,11 @@ github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b h1:GgabKamyOY
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20231223183121-56fa3ac82ce7 h1:7tf/0aw5DxRQjr7WaNqgtjidub6v21L2cogKIbMcTYw=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20231223183121-56fa3ac82ce7/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
+github.com/jaygooby/asar v0.0.0-20180821163548-0325fa527fec h1:0LK32mZMaKmLW8gIMiyBQ6qycJ5tGd3sCa3QTPIE4q8=
+github.com/jaygooby/asar v0.0.0-20180821163548-0325fa527fec/go.mod h1:UTTX3Nhj3TzwHDDmzgNDr4jYw32VUYQk1w3fJwnIzmc=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
+github.com/layeh/asar v0.0.0-20180124002634-bf07d1986b90 h1:5hy0UuhtUV0fyn43vmOPOG7m0cuVkftlmvPBkhD3wPc=
+github.com/layeh/asar v0.0.0-20180124002634-bf07d1986b90/go.mod h1:2Vfuit4Gp5UEZp/wjGniURN7PgiTALLrkdTHkK6Z3YA=
 github.com/manifoldco/promptui v0.9.0 h1:3V4HzJk1TtXW1MTZMP7mdlwbBpIinw3HztaIlYthEiA=
 github.com/manifoldco/promptui v0.9.0/go.mod h1:ka04sppxSGFAtxX0qhlYQjISsg9mR4GWtQEhdbn6Pgg=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
