@@ -12,8 +12,8 @@ import (
 	"bytes"
 	_ "embed"
 	"errors"
+	imgui2 "github.com/AllenDang/cimgui-go"
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/imgui-go"
 	"image"
 	"image/color"
 	// png decoder for icon
@@ -74,7 +74,7 @@ func main() {
 		Log.Warn("Failed to load application icon", err)
 		Log.Debug(iconBytes, len(iconBytes))
 	} else {
-		win.SetIcon([]image.Image{icon})
+		win.SetIcon(icon)
 	}
 	win.Run(loop)
 }
@@ -419,7 +419,7 @@ func renderInstaller() g.Widget {
 					OnChange(onCustomInputChanged).
 					// this library has its own autocomplete but it's broken
 					Callback(
-						func(data imgui.InputTextCallbackData) int32 {
+						func(data imgui2.InputTextCallbackData) int {
 							if len(candidates) == 0 {
 								return 0
 							}
@@ -435,15 +435,15 @@ func renderInstaller() g.Widget {
 							// Delete previous auto complete
 							if lastAutoComplete != "" {
 								start -= len(lastAutoComplete)
-								data.DeleteBytes(start, len(lastAutoComplete))
+								data.DeleteChars(int32(start), int32(len(lastAutoComplete)))
 							} else if autoCompleteFile != "" { // delete partial input
 								start -= len(autoCompleteFile)
-								data.DeleteBytes(start, len(autoCompleteFile))
+								data.DeleteChars(int32(start), int32(len(autoCompleteFile)))
 							}
 
 							// Insert auto complete
 							lastAutoComplete = candidates[autoCompleteIdx].(string)
-							data.InsertBytes(start, []byte(lastAutoComplete))
+							data.InsertChars(int32(start), lastAutoComplete)
 							autoCompleteIdx++
 
 							return 0
@@ -539,9 +539,7 @@ func renderErrorCard(col color.Color, message string, height float32) g.Widget {
 				Size(g.Auto, height).
 				Layout(
 					g.Row(
-						g.Style().SetColor(g.StyleColorText, color.Black).To(
-							g.Markdown(&message),
-						),
+						g.Style().SetColor(g.StyleColorText, color.Black).To(),
 					),
 				),
 		)
