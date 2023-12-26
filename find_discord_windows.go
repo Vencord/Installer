@@ -8,10 +8,12 @@ package main
 
 import (
 	"errors"
+	"golang.org/x/sys/windows"
 	"os"
-	"os/exec"
 	path "path/filepath"
 	"strings"
+	"sync"
+	"unsafe"
 )
 
 var windowsNames = map[string]string{
@@ -20,6 +22,8 @@ var windowsNames = map[string]string{
 	"canary": "DiscordCanary",
 	"dev":    "DiscordDevelopment",
 }
+
+var killLock sync.Mutex
 
 func ParseDiscord(p, branch string) *DiscordInstall {
 	entries, err := os.ReadDir(p)
@@ -84,10 +88,30 @@ func FindDiscords() []any {
 }
 
 func PreparePatch(di *DiscordInstall) {
+	killLock.Lock()
+	defer killLock.Unlock()
+	
 	name := windowsNames[di.branch]
-	Log.Debug("Killing " + name + "...")
+	Log.Debug("Trying to kill", name)
+	pid := findProcessIdByName(name + ".exe")
+	if pid == 0 {
+		Log.Debug("Didn't find process matching name")
+		return
+	}
 
-	_ = exec.Command("powershell", "Stop-Process -Name "+name).Run()
+	proc, err := os.FindProcess(int(pid))
+	if err != nil {
+		Log.Warn("Failed to find process with pid", pid)
+		return
+	}
+
+	err = proc.Kill()
+	if err != nil {
+		Log.Warn("Failed to kill", name+":", err)
+	} else {
+		Log.Debug("Waiting for", name, "to exit")
+		_, _ = proc.Wait()
+	}
 }
 
 func FixOwnership(_ string) error {
@@ -106,4 +130,22 @@ func CheckScuffedInstall() bool {
 		}
 	}
 	return false
+}
+
+func findProcessIdByName(name string) uint32 {
+	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
+	if err != nil {
+		return 0
+	}
+
+	procEntry := windows.ProcessEntry32{Size: uint32(unsafe.Sizeof(windows.ProcessEntry32{}))}
+	for {
+		err = windows.Process32Next(snapshot, &procEntry)
+		if err != nil {
+			return 0
+		}
+		if windows.UTF16ToString(procEntry.ExeFile[:]) == name {
+			return procEntry.ProcessID
+		}
+	}
 }
