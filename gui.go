@@ -377,12 +377,14 @@ func UpdateModal() g.Widget {
 							g.Button("Update Now").
 								OnClick(func() {
 									if runtime.GOOS == "darwin" {
+										g.CloseCurrentPopup()
 										g.OpenURL(GetInstallerDownloadLink())
 										return
 									}
 
 									err := UpdateSelf()
 									g.CloseCurrentPopup()
+
 									if err != nil {
 										ShowModal("Failed to update self!", err.Error())
 									} else {
