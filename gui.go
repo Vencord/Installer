@@ -358,7 +358,7 @@ func UpdateModal() g.Widget {
 		SetStyleFloat(g.StyleVarWindowRounding, 12).
 		To(
 			g.PopupModal("#update-prompt").
-				Flags(g.WindowFlagsNoTitleBar).
+				Flags(g.WindowFlagsNoTitleBar | g.WindowFlagsAlwaysAutoResize).
 				Layout(
 					g.Align(g.AlignCenter).To(
 						g.Style().SetFontSize(30).To(
@@ -368,9 +368,9 @@ func UpdateModal() g.Widget {
 							g.Label(
 								"Would you like to update now?\n\n"+
 									"Once you press Update Now, the new installer will automatically be downloaded.\n"+
-									"The installer will temporarily seem unresponsive. That's normal, just wait!\n"+
-									"Once the update is done, the Installer will automatically close and reopen.\n\n"+
-									"On MacOs, Auto updates are not supported, so it will instead open the download link.",
+									"The installer will temporarily seem unresponsive. Just wait!\n"+
+									"Once the update is done, the Installer will automatically reopen.\n\n"+
+									"On MacOs, Auto updates are not supported, so it will instead open in browser.",
 							),
 						),
 						g.Row(

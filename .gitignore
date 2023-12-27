@@ -2,3 +2,4 @@ VencordInstaller
 VencordInstallerCli
 *.exe
 *.syso
+*.old
