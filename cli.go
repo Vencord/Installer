@@ -12,6 +12,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/Vendicated/VencordInstaller/buildinfo"
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"os"
@@ -59,7 +60,7 @@ func main() {
 	}
 
 	if *versionFlag {
-		fmt.Println("Vencord Installer Cli", InstallerTag, "("+InstallerGitHash+")")
+		fmt.Println("Vencord Installer Cli", buildinfo.InstallerTag, "("+buildinfo.InstallerGitHash+")")
 		fmt.Println("Copyright (C) 2023 Vendicated and Vencord contributors")
 		fmt.Println("License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.")
 		return

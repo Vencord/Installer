@@ -14,6 +14,7 @@ import (
 	"errors"
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/imgui-go"
+	"github.com/Vendicated/VencordInstaller/buildinfo"
 	"image"
 	"image/color"
 	// png decoder for icon
@@ -587,7 +588,7 @@ func loop() {
 					return g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me").Wrapped(true)
 				}, nil},
 				g.Dummy(0, 10),
-				g.Label("Installer Version: "+InstallerTag+" ("+InstallerGitHash+")"+Ternary(IsInstallerOutdated, " - OUTDATED", "")),
+				g.Label("Installer Version: "+buildinfo.InstallerTag+" ("+buildinfo.InstallerGitHash+")"+Ternary(IsSelfOutdated, " - OUTDATED", "")),
 				g.Label("Local Vencord Version: "+InstalledHash),
 				&CondWidget{
 					GithubError == nil,
@@ -601,7 +602,7 @@ func loop() {
 					},
 				},
 				&CondWidget{
-					IsInstallerOutdated,
+					IsSelfOutdated,
 					func() g.Widget {
 						return renderErrorCard(DiscordYellow, "This Installer is outdated!"+GetInstallerDownloadMarkdown(), 40)
 					},
