@@ -64,7 +64,7 @@ func main() {
 	}()
 
 	go func() {
-		CheckSelfUpdate()
+		<-SelfUpdateCheckDoneChan
 		g.Update()
 	}()
 

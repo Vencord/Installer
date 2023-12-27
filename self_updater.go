@@ -13,35 +13,42 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"runtime"
 	"time"
 )
 
 var IsSelfOutdated = false
+var SelfUpdateCheckDoneChan = make(chan bool, 1)
 
 func init() {
 	go DeleteOldExecutable()
-}
 
-func CheckSelfUpdate() {
-	Log.Debug("Checking for Installer Updates...")
+	go func() {
+		Log.Debug("Checking for Installer Updates...")
 
-	res, err := GetGithubRelease(InstallerReleaseUrl, InstallerReleaseUrlFallback)
-	if err == nil {
-		IsSelfOutdated = res.TagName != buildinfo.InstallerTag
-	}
+		res, err := GetGithubRelease(InstallerReleaseUrl, InstallerReleaseUrlFallback)
+		if err != nil {
+			Log.Warn("Failed to check for self updates:", err)
+			SelfUpdateCheckDoneChan <- false
+		} else {
+			IsSelfOutdated = res.TagName != buildinfo.InstallerTag
+			Log.Debug("Is self outdated?", IsSelfOutdated)
+			SelfUpdateCheckDoneChan <- true
+		}
+	}()
 }
 
 func GetInstallerDownloadLink() string {
 	const BaseUrl = "https://github.com/Vencord/Installer/releases/latest/download/"
 	switch runtime.GOOS {
 	case "windows":
-		filename := Ternary(buildinfo.UiType == buildinfo.UiTypeCli, "VencordInstallerCli.exe ", "VencordInstaller.exe ")
+		filename := Ternary(buildinfo.UiType == buildinfo.UiTypeCli, "VencordInstallerCli.exe", "VencordInstaller.exe")
 		return BaseUrl + filename
 	case "darwin":
 		return BaseUrl + "VencordInstaller.MacOS.zip"
 	case "linux":
-		return BaseUrl + " VencordInstallerCli-linux "
+		return BaseUrl + "VencordInstallerCli-linux"
 	default:
 		return ""
 	}
@@ -77,13 +84,15 @@ func UpdateSelf() error {
 		return err
 	}
 
+	ownExeDir := path.Dir(ownExePath)
+
 	res, err := http.Get(url)
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
 
-	tmp, err := os.CreateTemp("", "VencordInstallerUpdate")
+	tmp, err := os.CreateTemp(ownExeDir, "VencordInstallerUpdate")
 	if err != nil {
 		return fmt.Errorf("Failed to create tempfile: %w", err)
 	}
@@ -91,6 +100,9 @@ func UpdateSelf() error {
 		_ = tmp.Close()
 		_ = os.Remove(tmp.Name())
 	}()
+	if err = tmp.Chmod(0o755); err != nil {
+		return fmt.Errorf("Failed to chmod 755", tmp.Name()+":", err)
+	}
 
 	if _, err = io.Copy(tmp, res.Body); err != nil {
 		return err
