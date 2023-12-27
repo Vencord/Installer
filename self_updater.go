@@ -54,14 +54,6 @@ func GetInstallerDownloadLink() string {
 	}
 }
 
-func GetInstallerDownloadMarkdown() string {
-	link := GetInstallerDownloadLink()
-	if link == "" {
-		return ""
-	}
-	return " [Download the latest Installer](" + link + ")"
-}
-
 func CanUpdateSelf() bool {
 	//goland:noinspection GoBoolExpressions
 	return IsSelfOutdated && runtime.GOOS != "darwin"
@@ -141,4 +133,30 @@ func DeleteOldExecutable() {
 		Log.Warn("Failed to remove old executable. Retrying in 1 second.", err)
 		time.Sleep(1 * time.Second)
 	}
+}
+
+func RelaunchSelf() error {
+	attr := new(os.ProcAttr)
+	attr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}
+
+	var argv []string
+	if len(os.Args) > 1 {
+		argv = os.Args[1:]
+	} else {
+		argv = []string{}
+	}
+
+	Log.Debug("Restarting self with exe", os.Args[0], "and args", argv)
+
+	proc, err := os.StartProcess(os.Args[0], argv, attr)
+	if err != nil {
+		return fmt.Errorf("Failed to start new process: %w", err)
+	}
+
+	if err = proc.Release(); err != nil {
+		return fmt.Errorf("Failed to release new process: %w", err)
+	}
+
+	os.Exit(0)
+	return nil
 }
