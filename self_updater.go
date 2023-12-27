@@ -87,8 +87,16 @@ func UpdateSelf() error {
 	if err != nil {
 		return fmt.Errorf("Failed to create tempfile: %w", err)
 	}
+	defer func() {
+		_ = tmp.Close()
+		_ = os.Remove(tmp.Name())
+	}()
 
 	if _, err = io.Copy(tmp, res.Body); err != nil {
+		return err
+	}
+
+	if err = tmp.Close(); err != nil {
 		return err
 	}
 
