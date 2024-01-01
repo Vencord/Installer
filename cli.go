@@ -17,6 +17,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"vencordinstaller/buildinfo"
 )
 
 var discords []any
@@ -32,7 +33,7 @@ func isValidBranch(branch string) bool {
 
 func die(msg string) {
 	Log.Error(msg)
-	os.Exit(1)
+	exitFailure()
 }
 
 func main() {
@@ -44,6 +45,7 @@ func main() {
 
 	var helpFlag = flag.Bool("help", false, "View usage instructions")
 	var versionFlag = flag.Bool("version", false, "View the program version")
+	var updateSelfFlag = flag.Bool("update-self", false, "Update me to the latest version")
 	var installFlag = flag.Bool("install", false, "Install Vencord")
 	var updateFlag = flag.Bool("repair", false, "Repair Vencord")
 	var uninstallFlag = flag.Bool("uninstall", false, "Uninstall Vencord")
@@ -59,10 +61,21 @@ func main() {
 	}
 
 	if *versionFlag {
-		fmt.Println("Vencord Installer Cli", InstallerTag, "("+InstallerGitHash+")")
+		fmt.Println("Vencord Installer Cli", buildinfo.InstallerTag, "("+buildinfo.InstallerGitHash+")")
 		fmt.Println("Copyright (C) 2023 Vendicated and Vencord contributors")
 		fmt.Println("License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.")
 		return
+	}
+
+	if *updateSelfFlag {
+		if !<-SelfUpdateCheckDoneChan {
+			die("Can't update self because checking for updates failed")
+		}
+		if err := UpdateSelf(); err != nil {
+			Log.Error("Failed to update self:", err)
+			exitFailure()
+		}
+		exitSuccess()
 	}
 
 	if *locationFlag != "" && *branchFlag != "" {
@@ -82,18 +95,43 @@ func main() {
 	install, uninstall, update, installOpenAsar, uninstallOpenAsar := *installFlag, *uninstallFlag, *updateFlag, *installOpenAsarFlag, *uninstallOpenAsarFlag
 	switches := []*bool{&install, &update, &uninstall, &installOpenAsar, &uninstallOpenAsar}
 	if !slices.ContainsFunc(switches, func(b *bool) bool { return *b }) {
+		go func() {
+			<-SelfUpdateCheckDoneChan
+			if IsSelfOutdated {
+				Log.Warn("Your installer is outdated.")
+				Log.Warn("To update, select the 'Update Vencord Installer' option to update, or run with --update-self")
+			}
+		}()
+
 		choices := []string{
 			"Install Vencord",
 			"Repair Vencord",
 			"Uninstall Vencord",
 			"Install OpenAsar",
 			"Uninstall OpenAsar",
+			"View Help Menu",
+			"Update Vencord Installer",
+			"Quit",
 		}
 		_, choice, err := (&promptui.Select{
 			Label: "What would you like to do? (Press Enter to confirm)",
 			Items: choices,
 		}).Run()
 		handlePromptError(err)
+
+		switch choice {
+		case "View Help Menu":
+			flag.Usage()
+			return
+		case "Quit":
+			return
+		case "Update Vencord Installer":
+			if err := UpdateSelf(); err != nil {
+				Log.Error("Failed to update self:", err)
+				exitFailure()
+			}
+			exitSuccess()
+		}
 
 		*switches[slices.Index(choices, choice)] = true
 	}
@@ -129,13 +167,23 @@ func main() {
 
 	if err != nil {
 		Log.Error(err)
-		os.Exit(1)
+		exitFailure()
 	}
 	if errSilent != nil {
-		os.Exit(1)
+		exitFailure()
 	}
 
+	exitSuccess()
+}
+
+func exitSuccess() {
 	color.HiGreen("✔ Success!")
+	os.Exit(0)
+}
+
+func exitFailure() {
+	color.HiRed("❌ Failed!")
+	os.Exit(1)
 }
 
 func handlePromptError(err error) {

@@ -1,4 +1,4 @@
-//go:build gui || (!gui && !cli)
+//go:build !cli
 
 /*
  * SPDX-License-Identifier: GPL-3.0
@@ -16,6 +16,7 @@ import (
 	"github.com/AllenDang/imgui-go"
 	"image"
 	"image/color"
+	"vencordinstaller/buildinfo"
 	// png decoder for icon
 	_ "image/png"
 	"os"
@@ -42,7 +43,8 @@ var (
 	modalTitle   = "Oh No :("
 	modalMessage = "You should never see this"
 
-	acceptedOpenAsar bool
+	acceptedOpenAsar   bool
+	showedUpdatePrompt bool
 
 	win *g.MasterWindow
 )
@@ -50,8 +52,11 @@ var (
 //go:embed winres/icon.png
 var iconBytes []byte
 
-func main() {
+func init() {
 	LogLevel = LevelDebug
+}
+
+func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
 
@@ -63,7 +68,7 @@ func main() {
 	}()
 
 	go func() {
-		CheckSelfUpdate()
+		<-SelfUpdateCheckDoneChan
 		g.Update()
 	}()
 
@@ -350,6 +355,59 @@ func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
 		)
 }
 
+func UpdateModal() g.Widget {
+	return g.Style().
+		SetStyle(g.StyleVarWindowPadding, 30, 30).
+		SetStyleFloat(g.StyleVarWindowRounding, 12).
+		To(
+			g.PopupModal("#update-prompt").
+				Flags(g.WindowFlagsNoTitleBar | g.WindowFlagsAlwaysAutoResize).
+				Layout(
+					g.Align(g.AlignCenter).To(
+						g.Style().SetFontSize(30).To(
+							g.Label("Your Installer is outdated!"),
+						),
+						g.Style().SetFontSize(20).To(
+							g.Label(
+								"Would you like to update now?\n\n"+
+									"Once you press Update Now, the new installer will automatically be downloaded.\n"+
+									"The installer will temporarily seem unresponsive. Just wait!\n"+
+									"Once the update is done, the Installer will automatically reopen.\n\n"+
+									"On MacOs, Auto updates are not supported, so it will instead open in browser.",
+							),
+						),
+						g.Row(
+							g.Button("Update Now").
+								OnClick(func() {
+									if runtime.GOOS == "darwin" {
+										g.CloseCurrentPopup()
+										g.OpenURL(GetInstallerDownloadLink())
+										return
+									}
+
+									err := UpdateSelf()
+									g.CloseCurrentPopup()
+
+									if err != nil {
+										ShowModal("Failed to update self!", err.Error())
+									} else {
+										if err = RelaunchSelf(); err != nil {
+											ShowModal("Failed to restart self! Please do it manually.", err.Error())
+										}
+									}
+								}).
+								Size(100, 30),
+							g.Button("Later").
+								OnClick(func() {
+									g.CloseCurrentPopup()
+								}).
+								Size(100, 30),
+						),
+					),
+				),
+		)
+}
+
 func ShowModal(title, desc string) {
 	modalTitle = title
 	modalMessage = desc
@@ -367,6 +425,11 @@ func renderInstaller() g.Widget {
 		currentDiscord = discords[radioIdx].(*DiscordInstall)
 	}
 	var isOpenAsar = currentDiscord != nil && currentDiscord.IsOpenAsar()
+
+	if CanUpdateSelf() && !showedUpdatePrompt {
+		showedUpdatePrompt = true
+		g.OpenPopup("#update-prompt")
+	}
 
 	layout := g.Layout{
 		g.Dummy(0, 20),
@@ -523,6 +586,8 @@ func renderInstaller() g.Widget {
 		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
 		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install. Make sure you select the base folder."),
 		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
+
+		UpdateModal(),
 	}
 
 	return layout
@@ -587,7 +652,7 @@ func loop() {
 					return g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me").Wrapped(true)
 				}, nil},
 				g.Dummy(0, 10),
-				g.Label("Installer Version: "+InstallerTag+" ("+InstallerGitHash+")"+Ternary(IsInstallerOutdated, " - OUTDATED", "")),
+				g.Label("Installer Version: "+buildinfo.InstallerTag+" ("+buildinfo.InstallerGitHash+")"+Ternary(IsSelfOutdated, " - OUTDATED", "")),
 				g.Label("Local Vencord Version: "+InstalledHash),
 				&CondWidget{
 					GithubError == nil,
@@ -599,13 +664,6 @@ func loop() {
 					}, func() g.Widget {
 						return renderErrorCard(DiscordRed, "Failed to fetch Info from GitHub: "+GithubError.Error(), 40)
 					},
-				},
-				&CondWidget{
-					IsInstallerOutdated,
-					func() g.Widget {
-						return renderErrorCard(DiscordYellow, "This Installer is outdated!"+GetInstallerDownloadMarkdown(), 40)
-					},
-					nil,
 				},
 			),
 
