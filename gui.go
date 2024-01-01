@@ -14,9 +14,9 @@ import (
 	"errors"
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/imgui-go"
-	"github.com/Vendicated/VencordInstaller/buildinfo"
 	"image"
 	"image/color"
+	"vencordinstaller/buildinfo"
 	// png decoder for icon
 	_ "image/png"
 	"os"
@@ -52,8 +52,11 @@ var (
 //go:embed winres/icon.png
 var iconBytes []byte
 
-func main() {
+func init() {
 	LogLevel = LevelDebug
+}
+
+func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
 

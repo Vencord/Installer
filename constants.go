@@ -7,8 +7,8 @@
 package main
 
 import (
-	"github.com/Vendicated/VencordInstaller/buildinfo"
 	"image/color"
+	"vencordinstaller/buildinfo"
 )
 
 const ReleaseUrl = "https://api.github.com/repos/Vendicated/Vencord/releases/latest"

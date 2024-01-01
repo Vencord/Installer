@@ -9,19 +9,25 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/Vendicated/VencordInstaller/buildinfo"
 	"io"
 	"net/http"
 	"os"
 	"path"
 	"runtime"
 	"time"
+	"vencordinstaller/buildinfo"
 )
 
 var IsSelfOutdated = false
 var SelfUpdateCheckDoneChan = make(chan bool, 1)
 
 func init() {
+	//goland:noinspection GoBoolExpressions
+	if buildinfo.InstallerTag == buildinfo.VersionUnknown {
+		Log.Debug("Disabling self updater as this is not a release build")
+		return
+	}
+
 	go DeleteOldExecutable()
 
 	go func() {

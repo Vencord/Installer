@@ -12,12 +12,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/Vendicated/VencordInstaller/buildinfo"
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"os"
 	"slices"
 	"strings"
+	"vencordinstaller/buildinfo"
 )
 
 var discords []any
