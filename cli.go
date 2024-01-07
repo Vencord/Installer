@@ -204,7 +204,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 				}
 			}
 		}
-		die("No Discord install found. Try manually specifying it with the --dir flag")
+		die("No Discord install found. Try manually specifying it with the --dir flag. Hint: snap is not supported")
 	}
 
 	if branch != "" {
@@ -221,7 +221,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		if discord := ParseDiscord(dir, branch); discord != nil {
 			return discord
 		} else {
-			die(dir + " is not a valid Discord install")
+			die(dir + " is not a valid Discord install. Hint: snap is not supported")
 		}
 	}
 

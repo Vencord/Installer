@@ -452,7 +452,11 @@ func renderInstaller() g.Widget {
 		),
 
 		&CondWidget{len(discords) == 0, func() g.Widget {
-			return g.Label("No Discord installs found. You first need to install Discord.")
+			s := "No Discord installs found. You first need to install Discord."
+			if runtime.GOOS == "linux" {
+				s += " snap is not supported."
+			}
+			return g.Label(s)
 		}, nil},
 
 		g.Style().SetFontSize(20).To(
@@ -584,7 +588,7 @@ func renderInstaller() g.Widget {
 			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", true),
 		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
 		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
-		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install. Make sure you select the base folder."),
+		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install.\nMake sure you select the base folder.\n\nHint: Discord snap is not supported. use flatpak or .deb"),
 		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 
 		UpdateModal(),
