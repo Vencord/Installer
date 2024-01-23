@@ -1,6 +1,6 @@
 module vencordinstaller
 
-go 1.21
+go 1.20
 
 require (
 	github.com/AllenDang/giu v0.6.2

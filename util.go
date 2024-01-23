@@ -22,6 +22,29 @@ func SliceMap[T, U any](arr []T, mapper func(T) U) []U {
 	return result
 }
 
+func SliceIndexFunc[T any](slice []T, fn func(T) bool) int {
+	for i, e := range slice {
+		if fn(e) {
+			return i
+		}
+	}
+	return -1
+}
+
+func SliceIndex[T comparable](slice []T, item T) int {
+	return SliceIndexFunc(slice, func(e T) bool {
+		return e == item
+	})
+}
+
+func SliceContainsFunc[T any](slice []T, fn func(T) bool) bool {
+	return SliceIndexFunc(slice, fn) != -1
+}
+
+func SliceContains[T comparable](slice []T, item T) bool {
+	return SliceIndex(slice, item) != -1
+}
+
 func ExistsFile(path string) bool {
 	_, err := os.Stat(path)
 	Log.Debug("Checking if", path, "exists:", Ternary(err == nil, "Yes", "No"))
