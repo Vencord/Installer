@@ -180,7 +180,7 @@ func main() {
 
 func exit(status int) {
 	if runtime.GOOS == "windows" && isDoubleClickRun() {
-		fmt.Print("press any key to exit")
+		fmt.Print("Press Enter to exit")
 		var b byte
 		_, _ = fmt.Scanf("%v", &b)
 	}
