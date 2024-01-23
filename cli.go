@@ -15,8 +15,11 @@ import (
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"os"
+	"runtime"
 	"slices"
 	"strings"
+	"syscall"
+	"unsafe"
 	"vencordinstaller/buildinfo"
 )
 
@@ -176,19 +179,42 @@ func main() {
 	exitSuccess()
 }
 
+func exit(status int) {
+	if runtime.GOOS == "windows" && isDoubleClickRun() {
+		fmt.Print("press any key to exit")
+		var b byte
+		_, _ = fmt.Scanf("%v", &b)
+	}
+	os.Exit(status)
+}
+
+func isDoubleClickRun() bool {
+	kernel32 := syscall.NewLazyDLL("kernel32.dll")
+	lp := kernel32.NewProc("GetConsoleProcessList")
+	if lp != nil {
+		var pids [2]uint32
+		var maxCount uint32 = 2
+		ret, _, _ := lp.Call(uintptr(unsafe.Pointer(&pids)), uintptr(maxCount))
+		if ret > 1 {
+			return false
+		}
+	}
+	return true
+}
+
 func exitSuccess() {
 	color.HiGreen("✔ Success!")
-	os.Exit(0)
+	exit(0)
 }
 
 func exitFailure() {
 	color.HiRed("❌ Failed!")
-	os.Exit(1)
+	exit(1)
 }
 
 func handlePromptError(err error) {
 	if errors.Is(err, promptui.ErrInterrupt) {
-		os.Exit(0)
+		exit(0)
 	}
 
 	Log.FatalIfErr(err)
