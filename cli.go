@@ -17,8 +17,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"syscall"
-	"unsafe"
 	"vencordinstaller/buildinfo"
 )
 
@@ -179,26 +177,12 @@ func main() {
 }
 
 func exit(status int) {
-	if runtime.GOOS == "windows" && isDoubleClickRun() {
+	if runtime.GOOS == "windows" && IsDoubleClickRun() {
 		fmt.Print("Press Enter to exit")
 		var b byte
 		_, _ = fmt.Scanf("%v", &b)
 	}
 	os.Exit(status)
-}
-
-func isDoubleClickRun() bool {
-	kernel32 := syscall.NewLazyDLL("kernel32.dll")
-	lp := kernel32.NewProc("GetConsoleProcessList")
-	if lp != nil {
-		var pids [2]uint32
-		var maxCount uint32 = 2
-		ret, _, _ := lp.Call(uintptr(unsafe.Pointer(&pids)), uintptr(maxCount))
-		if ret > 1 {
-			return false
-		}
-	}
-	return true
 }
 
 func exitSuccess() {
