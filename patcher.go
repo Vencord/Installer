@@ -119,8 +119,14 @@ func (di *DiscordInstall) patch() error {
 		}
 	}
 
-	if err := patchAppAsar(path.Join(di.appPath, ".."), di.isSystemElectron); err != nil {
-		return err
+	if di.isSystemElectron {
+		if err := patchAppAsar(di.path, true); err != nil {
+			return err
+		}
+	} else {
+		if err := patchAppAsar(path.Join(di.appPath, ".."), false); err != nil {
+			return err
+		}
 	}
 
 	Log.Info("Successfully patched", di.path)
@@ -230,8 +236,14 @@ func (di *DiscordInstall) unpatch() error {
 
 	PreparePatch(di)
 
-	if err := unpatchAppAsar(path.Join(di.appPath, ".."), di.isSystemElectron); err != nil {
-		return err
+	if di.isSystemElectron {
+		if err := unpatchAppAsar(di.path, true); err != nil {
+			return err
+		}
+	} else {
+		if err := unpatchAppAsar(path.Join(di.appPath, ".."), false); err != nil {
+			return err
+		}
 	}
 
 	Log.Info("Successfully unpatched", di.path)
