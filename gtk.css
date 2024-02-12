@@ -1,0 +1,36 @@
+@define-color green #2d7c46;
+@define-color red   #ec4144;
+@define-color blue  #5865f2;
+
+.main-content {
+    padding: 8px;
+}
+
+.title {
+    font-size: 20px;
+}
+
+.version-name {
+    font-weight: bold;
+    margin-right: 3px;
+}
+
+.button {
+    font-weight: bold;
+}
+
+.button:hover {
+    filter: brightness(0.9);
+}
+
+.button-positive {
+    background: @green;
+}
+
+.button-negative {
+    background: @red;
+}
+
+.button-neutral {
+    background: @blue;
+}
