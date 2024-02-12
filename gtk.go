@@ -31,6 +31,12 @@ func init() {
 	LogLevel = LevelDebug
 }
 
+type Labellable interface {
+	gtk.Widgetter
+	SetLabel(label string)
+	AddCSSClass(class string)
+}
+
 func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
@@ -76,47 +82,60 @@ func createHeader() gtk.Widgetter {
 
 	fileLocationBox := gtk.NewBox(gtk.OrientationVertical, 0)
 
-	versionBox := gtk.NewBox(gtk.OrientationVertical, 0)
-	attachVersionLabel(versionBox, "Installer", fmt.Sprintf("%s (%s)", buildinfo.InstallerTag, buildinfo.InstallerGitHash))
-	attachVersionLabel(versionBox, "Local Vencord", InstalledHash)
+	versionGrid := gtk.NewGrid()
+	versionGrid.SetHAlign(gtk.AlignStart)
+	versionGrid.SetColumnHomogeneous(true)
+	versionGrid.SetColumnSpacing(5)
+
+	const VencordTreeBaseUrl = "https://github.com/Vendicated/Vencord/tree/"
+	const InstallerTreeBaseUrl = "https://github.com/Vencord/Installer/tree/"
+	var installerUrl string
+	if buildinfo.InstallerGitHash == buildinfo.VersionUnknown {
+		installerUrl = InstallerTreeBaseUrl + "main"
+	} else {
+		installerUrl = InstallerTreeBaseUrl + buildinfo.InstallerGitHash
+	}
+
+	attachVersionLabel(versionGrid, 0, "Installer", fmt.Sprintf("%s (%s)", buildinfo.InstallerTag, buildinfo.InstallerGitHash), installerUrl)
+	attachVersionLabel(versionGrid, 1, "Local Vencord", InstalledHash, VencordTreeBaseUrl+InstalledHash)
 
 	if GithubError == nil {
 		if IsDevInstall {
-			versionBox.Append(gtk.NewLabel("Not updating Vencord due to being in DevMode"))
+			versionGrid.Attach(gtk.NewLabel("Not updating Vencord due to being in DevMode"), 0, 2, 1, 1)
 		} else {
-			versionLabel := attachVersionLabel(versionBox, "Latest Vencord", LatestHash)
+			linkButton := attachVersionLabel(versionGrid, 2, "Latest Vencord", LatestHash, VencordTreeBaseUrl+LatestHash)
 			go func() {
 				<-GithubDoneChan
 				glib.IdleAdd(func() {
-					versionLabel.SetLabel(LatestHash)
+					linkButton.SetURI(VencordTreeBaseUrl + LatestHash)
+					linkButton.SetLabel(LatestHash)
 				})
 			}()
 		}
 	} else {
-		versionBox.Append(gtk.NewLabel("Failed to fetch latest version from github: " + GithubError.Error()))
+		versionGrid.Attach(gtk.NewLabel("Failed to fetch latest version from github: "+GithubError.Error()), 0, 2, 1, 1)
 	}
 
 	// header.Append(title)
 	header.Append(fileLocationBox)
-	header.Append(versionBox)
+	header.Append(versionGrid)
 
 	return header
 }
 
-func attachVersionLabel(parent *gtk.Box, name, version string) *gtk.Label {
-	box := gtk.NewBox(gtk.OrientationHorizontal, 0)
-	box.AddCSSClass("version-row")
-
+func attachVersionLabel(parent *gtk.Grid, row int, name, version, url string) *gtk.LinkButton {
 	nameLabel := gtk.NewLabel(name + " Version:")
+	nameLabel.SetXAlign(0)
 	nameLabel.AddCSSClass("version-name")
-	versionLabel := gtk.NewLabel(version)
-	versionLabel.AddCSSClass("version-value")
 
-	box.Append(nameLabel)
-	box.Append(versionLabel)
+	linkButton := gtk.NewLinkButtonWithLabel(url, version)
+	linkButton.AddCSSClass("version-value")
+	linkButton.Child().(*gtk.Label).SetXAlign(0)
 
-	parent.Append(box)
-	return versionLabel
+	parent.Attach(nameLabel, 0, row, 1, 1)
+	parent.Attach(linkButton, 1, row, 1, 1)
+
+	return linkButton
 }
 
 func createInstaller() gtk.Widgetter {
@@ -128,11 +147,12 @@ func createInstaller() gtk.Widgetter {
 	title.AddCSSClass("installer-title")
 
 	var firstButton *gtk.CheckButton
-	radioBox := gtk.NewBox(gtk.OrientationVertical, 3)
+	radioBox := gtk.NewBox(gtk.OrientationVertical, 5)
 	for _, di := range discords {
 		install := di.(*DiscordInstall)
 
 		radio := gtk.NewCheckButton()
+		radio.AddCSSClass("branch-radio-button")
 		if firstButton == nil {
 			firstButton = radio
 			radio.SetActive(true)
@@ -140,12 +160,17 @@ func createInstaller() gtk.Widgetter {
 			radio.SetGroup(firstButton)
 		}
 
-		labelBox := gtk.NewBox(gtk.OrientationHorizontal, 3)
+		labelBox := gtk.NewBox(gtk.OrientationHorizontal, 5)
 		labelBox.SetParent(radio)
 
 		icon, _ := loadAssetPng(install.branch + ".png")
 		labelBox.Append(gtk.NewImageFromPixbuf(icon))
-		labelBox.Append(gtk.NewLabel(install.branch))
+		//goland:noinspection GoDeprecation strings.Title is useeeful
+
+		branchLabel := gtk.NewLabel(strings.Title(install.branch))
+		branchLabel.SetXAlign(0)
+		branchLabel.AddCSSClass("branch-radio-name")
+		labelBox.Append(branchLabel)
 
 		if install.isPatched {
 			starIcon := gtk.NewImageFromIconName("starred-symbolic")
@@ -160,6 +185,22 @@ func createInstaller() gtk.Widgetter {
 		radioBox.Append(radio)
 	}
 
+	customRadio := gtk.NewCheckButton()
+	customRadio.AddCSSClass("branch-radio-button")
+	if firstButton != nil {
+		customRadio.SetGroup(firstButton)
+	}
+	labelBox := gtk.NewBox(gtk.OrientationHorizontal, 5)
+	labelBox.SetParent(customRadio)
+
+	labelBox.Append(gtk.NewImageFromIconName("document-open-symbolic"))
+	customLabel := gtk.NewLabel("Custom Location")
+	customLabel.SetXAlign(0)
+	customLabel.AddCSSClass("branch-radio-name")
+	labelBox.Append(customLabel)
+
+	radioBox.Append(customRadio)
+
 	installer.Append(title)
 	installer.Append(radioBox)
 	installer.Append(createInstallerButtons())
@@ -169,21 +210,25 @@ func createInstaller() gtk.Widgetter {
 
 func createInstallerButtons() gtk.Widgetter {
 	installButton := gtk.NewButtonWithLabel("Install")
+	installButton.SetHExpand(true)
 	installButton.SetCSSClasses([]string{"button", "button-positive"})
 	repairButton := gtk.NewButtonWithLabel("Repair")
+	repairButton.SetHExpand(true)
 	repairButton.SetCSSClasses([]string{"button", "button-neutral"})
 	uninstallButton := gtk.NewButtonWithLabel("Uninstall")
+	uninstallButton.SetHExpand(true)
 	uninstallButton.SetCSSClasses([]string{"button", "button-negative"})
 	openAsarButton := gtk.NewButtonWithLabel("Install OpenAsar")
+	openAsarButton.SetHExpand(true)
 	openAsarButton.SetCSSClasses([]string{"button", "button-positive"})
 
 	grid := gtk.NewGrid()
-	grid.SetRowSpacing(8)
 	grid.SetColumnSpacing(8)
+	grid.SetColumnHomogeneous(true)
 	grid.Attach(installButton, 0, 0, 1, 1)
 	grid.Attach(repairButton, 1, 0, 1, 1)
-	grid.Attach(uninstallButton, 0, 1, 1, 1)
-	grid.Attach(openAsarButton, 1, 1, 1, 1)
+	grid.Attach(uninstallButton, 2, 0, 1, 1)
+	grid.Attach(openAsarButton, 3, 0, 1, 1)
 
 	return grid
 }

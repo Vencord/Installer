@@ -3,7 +3,8 @@
 @define-color blue  #5865f2;
 
 .main-content {
-    padding: 8px;
+    padding: 16px;
+    font-size: 16px;
 }
 
 .title {
@@ -13,6 +14,19 @@
 .version-name {
     font-weight: bold;
     margin-right: 3px;
+}
+
+.version-link {
+    padding: 0;
+    margin: 0;
+}
+
+.installer-title {
+    font-size: 25px;
+}
+
+.branch-radio-name {
+    min-width: 6em;
 }
 
 .button {
