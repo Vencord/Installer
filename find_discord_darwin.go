@@ -7,6 +7,7 @@
 package main
 
 import (
+	"os"
 	path "path/filepath"
 	"strings"
 )
@@ -45,11 +46,17 @@ func ParseDiscord(p, branch string) *DiscordInstall {
 
 func FindDiscords() []any {
 	var discords []any
+	bases := []string{
+		"/Applications",
+		path.Join(os.Getenv("HOME"), "Applications"),
+	}
 	for branch, dirname := range macosNames {
-		p := "/Applications/" + dirname
-		if discord := ParseDiscord(p, branch); discord != nil {
-			Log.Debug("Found Discord Install at", p)
-			discords = append(discords, discord)
+		for _, base := range bases {
+			p := path.Join(base, dirname)
+			if discord := ParseDiscord(p, branch); discord != nil {
+				Log.Debug("Found Discord Install at", p)
+				discords = append(discords, discord)
+			}
 		}
 	}
 	return discords
