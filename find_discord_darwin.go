@@ -8,8 +8,10 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	path "path/filepath"
 	"strings"
+	"sync"
 )
 
 var macosNames = map[string]string{
@@ -18,6 +20,8 @@ var macosNames = map[string]string{
 	"canary": "Discord Canary.app",
 	"dev":    "Discord Development.app",
 }
+
+var killLock sync.Mutex
 
 func ParseDiscord(p, branch string) *DiscordInstall {
 	if !ExistsFile(p) {
@@ -62,7 +66,31 @@ func FindDiscords() []any {
 	return discords
 }
 
-func PreparePatch(di *DiscordInstall) {}
+func KillDiscord(di *DiscordInstall) bool {
+	killLock.Lock()
+	defer killLock.Unlock()
+
+	Log.Debug("Trying to kill")
+
+	cmd := exec.Command("sh", "-c", "ps aux | grep 'Discord' | grep -v grep")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	_, err := cmd.CombinedOutput()
+	if err != nil {
+		Log.Debug("Didn't find process")
+		return false
+	}
+
+	cmd =  exec.Command("pkill", "Discord")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		Log.Warn("Failed to kill Discord:", err)
+		return false
+	}
+	return true
+}
 
 func FixOwnership(_ string) error {
 	return nil

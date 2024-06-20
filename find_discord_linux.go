@@ -10,16 +10,20 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"os/exec"
 	"os/user"
 	path "path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 var (
 	Home        string
 	DiscordDirs []string
 )
+
+var killLock sync.Mutex
 
 func init() {
 	// If ran as root, the HOME environment variable will be that of root.
@@ -128,7 +132,31 @@ func FindDiscords() []any {
 	return discords
 }
 
-func PreparePatch(di *DiscordInstall) {}
+func KillDiscord(di *DiscordInstall) bool {
+	killLock.Lock()
+	defer killLock.Unlock()
+
+	Log.Debug("Trying to kill")
+
+	cmd := exec.Command("pgrep", "Discord")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	_, err := cmd.Output()
+	if err != nil {
+		Log.Debug("Didn't find process")
+		return false
+	}
+
+	cmd =  exec.Command("pkill", "Discord")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		Log.Warn("Failed to kill Discord:", err)
+		return false
+	}
+	return true
+}
 
 // FixOwnership fixes file ownership on Linux
 func FixOwnership(p string) error {

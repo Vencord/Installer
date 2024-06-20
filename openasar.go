@@ -64,8 +64,6 @@ func (di *DiscordInstall) IsOpenAsar() (retBool bool) {
 }
 
 func (di *DiscordInstall) InstallOpenAsar() error {
-	PreparePatch(di)
-
 	dir := path.Join(di.appPath, "..")
 	asarFile, err := FindAsarFile(dir)
 	if err != nil {
@@ -98,8 +96,6 @@ func (di *DiscordInstall) InstallOpenAsar() error {
 }
 
 func (di *DiscordInstall) UninstallOpenAsar() error {
-	PreparePatch(di)
-
 	dir := path.Join(di.appPath, "..")
 	// .original is our old name
 	// OpenAsar's updater uses .backup, so we now also use that - .original is deprecated
