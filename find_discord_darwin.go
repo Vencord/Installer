@@ -81,7 +81,7 @@ func KillDiscord(di *DiscordInstall) bool {
 		return false
 	}
 
-	cmd =  exec.Command("pkill", "Discord")
+	cmd = exec.Command("pkill", "Discord")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
