@@ -253,6 +253,10 @@ func (di *DiscordInstall) unpatch() error {
 // region Launch
 
 func (di *DiscordInstall) launch() error {
+	if di.isFlatpak {
+		return nil
+	}
+
 	var executableFolder = path.Join(di.appPath, "../..")
 	var executablePath string
 	if runtime.GOOS == "windows" {
@@ -262,12 +266,7 @@ func (di *DiscordInstall) launch() error {
 	}
 
 	Log.Info("Launching Discord from path: " + executablePath)
-	var cmd *exec.Cmd
-	if di.isFlatpak {
-		cmd = exec.Command("flatpak", "run", "com.discordapp.Discord")
-	} else {
-		cmd = exec.Command(executablePath)
-	}
+	cmd := exec.Command(executablePath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
