@@ -73,20 +73,15 @@ func KillDiscord(di *DiscordInstall) bool {
 	Log.Debug("Trying to kill")
 
 	cmd := exec.Command("sh", "-c", "ps aux | grep 'Discord' | grep -v grep")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	_, err := cmd.CombinedOutput()
 	if err != nil {
 		Log.Debug("Didn't find process")
 		return false
 	}
 
-	cmd = exec.Command("pkill", "Discord")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
+	err = exec.Command("pkill", "Discord").Run()
 	if err != nil {
-		Log.Warn("Failed to kill Discord:", err)
+		Log.Warn("Failed to kill Discord: ", err)
 		return false
 	}
 	return true
