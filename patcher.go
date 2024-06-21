@@ -261,8 +261,13 @@ func (di *DiscordInstall) launch() error {
 		executablePath = path.Join(executableFolder, "Discord")
 	}
 
-	Log.Info("Launching Discord from path: " + executablePath + "...")
-	cmd := exec.Command(executablePath)
+	Log.Info("Launching Discord from path: " + executablePath)
+	var cmd *exec.Cmd
+	if di.isFlatpak {
+		cmd = exec.Command("flatpak", "run", "com.discordapp.Discord")
+	} else {
+		cmd = exec.Command(executablePath)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	var err = cmd.Start()
