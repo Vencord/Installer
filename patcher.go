@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	path "path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -106,8 +107,6 @@ func (di *DiscordInstall) patch() error {
 			return nil // already shown dialog so don't return same error again
 		}
 	}
-
-	PreparePatch(di)
 
 	if di.isPatched {
 		Log.Info(di.path, "is already patched. Unpatching first...")
@@ -234,8 +233,6 @@ func unpatchAppAsar(dir string, isSystemElectron bool) (errOut error) {
 func (di *DiscordInstall) unpatch() error {
 	Log.Info("Unpatching " + di.path + "...")
 
-	PreparePatch(di)
-
 	if di.isSystemElectron {
 		if err := unpatchAppAsar(di.path, true); err != nil {
 			return err
@@ -252,3 +249,37 @@ func (di *DiscordInstall) unpatch() error {
 }
 
 //endregion
+
+// region Launch
+
+func (di *DiscordInstall) launch() error {
+	var executableFolder = path.Join(di.appPath, "../..")
+	var executablePath string
+	if runtime.GOOS == "windows" {
+		executablePath = path.Join(executableFolder, "Discord.exe")
+	} else {
+		executablePath = path.Join(executableFolder, "Discord")
+	}
+
+	Log.Info("Launching Discord from path: " + executablePath)
+	var cmd *exec.Cmd
+	if di.isFlatpak {
+		var sudoUser = os.Getenv("SUDO_USER")
+		if sudoUser != "" {
+			cmd = exec.Command("su", "-c", "flatpak run com.discordapp.Discord", sudoUser)
+		} else {
+			cmd = exec.Command("flatpak", "run", "com.discordapp.Discord")
+		}
+	} else {
+		cmd = exec.Command(executablePath)
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		return errors.New("Failed to launch Discord: " + err.Error())
+	}
+
+	return nil
+}
+
+// endregion

@@ -87,7 +87,7 @@ func FindDiscords() []any {
 	return discords
 }
 
-func PreparePatch(di *DiscordInstall) {
+func KillDiscord(di *DiscordInstall) bool {
 	killLock.Lock()
 	defer killLock.Unlock()
 	
@@ -96,21 +96,23 @@ func PreparePatch(di *DiscordInstall) {
 	pid := findProcessIdByName(name + ".exe")
 	if pid == 0 {
 		Log.Debug("Didn't find process matching name")
-		return
+		return false
 	}
 
 	proc, err := os.FindProcess(int(pid))
 	if err != nil {
 		Log.Warn("Failed to find process with pid", pid)
-		return
+		return false
 	}
 
 	err = proc.Kill()
 	if err != nil {
 		Log.Warn("Failed to kill", name+":", err)
+		return false
 	} else {
 		Log.Debug("Waiting for", name, "to exit")
 		_, _ = proc.Wait()
+		return true
 	}
 }
 

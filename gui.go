@@ -149,10 +149,14 @@ func handleOpenAsar() {
 func handleOpenAsarConfirmed() {
 	choice := getChosenInstall()
 	if choice != nil {
+		var wasDiscordKilled = KillDiscord(choice)
 		if choice.IsOpenAsar() {
 			if err := choice.UninstallOpenAsar(); err != nil {
 				handleErr(choice, err, "uninstall OpenAsar from")
 			} else {
+				if wasDiscordKilled {
+					choice.launch()
+				}
 				g.OpenPopup("#openasar-unpatched")
 				g.Update()
 			}
@@ -160,6 +164,9 @@ func handleOpenAsarConfirmed() {
 			if err := choice.InstallOpenAsar(); err != nil {
 				handleErr(choice, err, "install OpenAsar on")
 			} else {
+				if wasDiscordKilled {
+					choice.launch()
+				}
 				g.OpenPopup("#openasar-patched")
 				g.Update()
 			}
@@ -192,17 +199,25 @@ func (di *DiscordInstall) Patch() {
 	if CheckScuffedInstall() {
 		return
 	}
+	var wasDiscordKilled = KillDiscord(di)
 	if err := di.patch(); err != nil {
 		handleErr(di, err, "patch")
 	} else {
+		if wasDiscordKilled {
+			di.launch()
+		}
 		g.OpenPopup("#patched")
 	}
 }
 
 func (di *DiscordInstall) Unpatch() {
+	var wasDiscordKilled = KillDiscord(di)
 	if err := di.unpatch(); err != nil {
 		handleErr(di, err, "unpatch")
 	} else {
+		if wasDiscordKilled {
+			di.launch()
+		}
 		g.OpenPopup("#unpatched")
 	}
 }
@@ -572,9 +587,9 @@ func renderInstaller() g.Widget {
 			),
 		),
 
-		InfoModal("#patched", "Successfully Patched", "If Discord is still open, fully close it first.\n"+
-			"Then, start it and verify Vencord installed successfully by looking for its category in Discord Settings"),
-		InfoModal("#unpatched", "Successfully Unpatched", "If Discord is still open, fully close it first. Then start it again, it should be back to stock!"),
+		InfoModal("#patched", "Successfully Patched", "\n"+
+			"Verify Vencord installed successfully by looking for its category in Discord Settings"),
+		InfoModal("#unpatched", "Successfully Unpatched", "Discord should be back to stock!"),
 		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
 			"Sometimes Discord decides to install to the wrong location for some reason!\n"+
 			"You need to fix this before patching, otherwise Vencord will likely not work.\n\n"+
@@ -586,8 +601,8 @@ func renderInstaller() g.Widget {
 			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
 			"no support will be provided, join the OpenAsar Server instead!\n\n"+
 			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", true),
-		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
-		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
+		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "Verify OpenAsar installed successfully in the Discord settings!"),
+		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "Discord should be back to stock!"),
 		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install.\nMake sure you select the base folder.\n\nHint: Discord snap is not supported. use flatpak or .deb"),
 		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 
