@@ -264,7 +264,12 @@ func (di *DiscordInstall) launch() error {
 	Log.Info("Launching Discord from path: " + executablePath)
 	var cmd *exec.Cmd
 	if di.isFlatpak {
-		cmd = exec.Command("flatpak", "run", "com.discordapp.Discord")
+		var sudoUser = os.Getenv("SUDO_USER")
+		if sudoUser != "" {
+			cmd = exec.Command("su", "-c", "flatpak run com.discordapp.Discord", sudoUser)
+		} else {
+			cmd = exec.Command("flatpak", "run", "com.discordapp.Discord")
+		}
 	} else {
 		cmd = exec.Command(executablePath)
 	}
