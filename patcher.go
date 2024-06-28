@@ -275,7 +275,7 @@ func (di *DiscordInstall) launch() error {
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := cmd.Start(); err != nil {
 		return errors.New("Failed to launch Discord: " + err.Error())
 	}
 
