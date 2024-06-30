@@ -294,12 +294,21 @@ func Tooltip(label string) g.Widget {
 		)
 }
 
-func InfoModal(id, title, description string) g.Widget {
-	return RawInfoModal(id, title, description, false)
+func SuccessModal(id, title string, description string) g.Widget {
+	return RawInfoModal(id, title, DiscordGreen, description, false)
 }
 
-func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
+func ErrorModal(id, title string, description string) g.Widget {
+	return RawInfoModal(id, title, DiscordRed, description, false)
+}
+
+func InfoModal(id, title string, description string) g.Widget {
+	return RawInfoModal(id, title, color.White, description, false)
+}
+
+func RawInfoModal(id, title string, titleColor color.Color, description string, isOpenAsar bool) g.Widget {
 	isDynamic := strings.HasPrefix(id, "#modal") && !strings.Contains(description, "\n")
+
 	return g.Style().
 		SetStyle(g.StyleVarWindowPadding, 30, 30).
 		SetStyleFloat(g.StyleVarWindowRounding, 12).
@@ -308,7 +317,7 @@ func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
 				Flags(g.WindowFlagsNoTitleBar | Ternary(isDynamic, g.WindowFlagsAlwaysAutoResize, 0)).
 				Layout(
 					g.Align(g.AlignCenter).To(
-						g.Style().SetFontSize(30).To(
+						g.Style().SetFontSize(30).SetColor(g.StyleColorText, titleColor).To(
 							g.Label(title),
 						),
 						g.Style().SetFontSize(20).To(
@@ -572,24 +581,23 @@ func renderInstaller() g.Widget {
 			),
 		),
 
-		InfoModal("#patched", "Successfully Patched", "If Discord is still open, fully close it first.\n"+
-			"Then, start it and verify Vencord installed successfully by looking for its category in Discord Settings"),
-		InfoModal("#unpatched", "Successfully Unpatched", "If Discord is still open, fully close it first. Then start it again, it should be back to stock!"),
-		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
+		SuccessModal("#patched", "Successfully Patched", "Vencord has been installed. Please restart Discord and verify that Vencord is working by looking for its category in the Discord Settings."),
+		SuccessModal("#unpatched", "Successfully Unpatched", "If Discord is still open, fully close it first. Then start it again, it should be back to stock!"),
+		ErrorModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
 			"Sometimes Discord decides to install to the wrong location for some reason!\n"+
 			"You need to fix this before patching, otherwise Vencord will likely not work.\n\n"+
 			"Use the below button to jump there and delete any folder called Discord or Squirrel.\n"+
 			"If the folder is now empty, feel free to go back a step and delete that folder too.\n"+
 			"Then see if Discord still starts. If not, reinstall it"),
-		RawInfoModal("#openasar-confirm", "OpenAsar", "OpenAsar is an open-source alternative of Discord desktop's app.asar.\n"+
+		RawInfoModal("#openasar-confirm", "OpenAsar", color.White, "OpenAsar is an open-source alternative of Discord desktop's app.asar.\n"+
 			"Vencord is in no way affiliated with OpenAsar.\n"+
 			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
 			"no support will be provided, join the OpenAsar Server instead!\n\n"+
 			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", true),
-		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
-		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
+		SuccessModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
+		SuccessModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
 		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install.\nMake sure you select the base folder.\n\nHint: Discord snap is not supported. use flatpak or .deb"),
-		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
+		ErrorModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
 
 		UpdateModal(),
 	}
