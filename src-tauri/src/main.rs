@@ -12,7 +12,11 @@ mod logic;
 
 use std::process::Command;
 
-use logic::discord;
+use logic::{
+    discord::{self, parse_discord},
+    shared::DiscordInstall,
+};
+use tauri::api::dialog::blocking::FileDialogBuilder;
 
 #[link(name = "c")]
 extern "C" {
@@ -21,8 +25,10 @@ extern "C" {
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-fn find_discords() -> Vec<String> {
-    discord::find_discords()
+fn find_discords() -> Vec<DiscordInstall> {
+    let mut discords = discord::find_discords();
+    discords.sort_by(|a, b| a.branch.cmp(&b.branch));
+    discords
 }
 
 #[tauri::command]
@@ -43,6 +49,13 @@ fn install() -> String {
     format!("Ran as UID {}", String::from_utf8(res.stdout).unwrap())
 }
 
+#[tauri::command]
+async fn pick_custom_install() -> Option<DiscordInstall> {
+    FileDialogBuilder::new()
+        .pick_folder()
+        .and_then(|f| parse_discord(f))
+}
+
 fn main() {
     if std::env::args_os().count() > 1 {
         cli();
@@ -55,7 +68,11 @@ fn main() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![find_discords, install])
+        .invoke_handler(tauri::generate_handler![
+            find_discords,
+            install,
+            pick_custom_install
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

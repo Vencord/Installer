@@ -1,151 +1,142 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/tauri";
+    import { invoke } from "@tauri-apps/api/tauri";
+    import type { DiscordInstall } from "../types";
 
-  const installs = invoke<string[]>("find_discords");
+    const installs = invoke<DiscordInstall[]>("find_discords");
 
-  let res = "-";
-  async function install() {
-    res = await invoke("install");
-  }
+    let res = "-";
+    async function install() {
+        res = await invoke("install");
+    }
+    async function uninstall() {
+        res = await invoke("uninstall");
+    }
+    async function repair() {
+        res = await invoke("repair");
+    }
+
+    let selectedInstall: DiscordInstall;
+    $: installs.then(i => (selectedInstall = i[0]));
+
+    let customInstall: DiscordInstall;
+    async function chooseCustomInstall() {
+        customInstall = await invoke("pick_custom_install");
+        console.log(customInstall);
+    }
 </script>
 
 <div class="container">
-  <h1>Vencord Installer</h1>
+    <h1>Vencord Installer</h1>
 
-  <h3>Installs</h3>
-  {#await installs}
-    <p>Loading...</p>
-  {:then installs}
-    {#each installs as install}
-      <div>
-        <p>{install}</p>
-      </div>
-    {/each}
-  {:catch error}
-    <p>{error.message}</p>
-  {/await}
+    <h3>Installs</h3>
+    {#await installs}
+        <p>Loading...</p>
+    {:then installs}
+        <div class="radios">
+            {#each installs as install, idx}
+                <label>
+                    <input type="radio" name="install" value={install} bind:group={selectedInstall} />
+                    <img src={`/${install.branch.toLowerCase()}.webp`} alt="" width="32" height="32" />
+                    {install.branch} ({install.path})
+                    {" "}
+                    {install.is_patched ? "🟢" : "🔴"}
+                </label>
+            {/each}
+            <label>
+                <input
+                    type="radio"
+                    name="install"
+                    value={null}
+                    bind:group={selectedInstall}
+                    on:change={chooseCustomInstall}
+                />
+                Pick Custom
+            </label>
+        </div>
+    {:catch error}
+        <p>{error.message}</p>
+    {/await}
 
-  <button on:click={install}>Click</button>
-
-  <p>{res}</p>
+    <div class="buttons">
+        <button class="btn-green" on:click={install}>Install</button>
+        <button class="btn-red" on:click={uninstall}>Uninstall</button>
+        <button class="btn-neutral" on:click={repair}>Repair</button>
+    </div>
 </div>
 
 <style>
-  .logo.vite:hover {
-    filter: drop-shadow(0 0 2em #747bff);
-  }
-
-  .logo.svelte-kit:hover {
-    filter: drop-shadow(0 0 2em #ff3e00);
-  }
-
-  :root {
-    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-
-    color: #0f0f0f;
-    background-color: #f6f6f6;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  .container {
-    margin: 0;
-    padding-top: 10vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: 0.75s;
-  }
-
-  .logo.tauri:hover {
-    filter: drop-shadow(0 0 2em #24c8db);
-  }
-
-  .row {
-    display: flex;
-    justify-content: center;
-  }
-
-  a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
-  }
-
-  a:hover {
-    color: #535bf2;
-  }
-
-  h1 {
-    text-align: center;
-  }
-
-  input,
-  button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    color: #0f0f0f;
-    background-color: #ffffff;
-    transition: border-color 0.25s;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-  }
-
-  button {
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: #396cd8;
-  }
-  button:active {
-    border-color: #396cd8;
-    background-color: #e8e8e8;
-  }
-
-  input,
-  button {
-    outline: none;
-  }
-
-  #greet-input {
-    margin-right: 5px;
-  }
-
-  @media (prefers-color-scheme: dark) {
     :root {
-      color: #f6f6f6;
-      background-color: #2f2f2f;
+        font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: 400;
+
+        color: #0f0f0f;
+        background-color: #f6f6f6;
+
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-text-size-adjust: 100%;
     }
 
-    a:hover {
-      color: #24c8db;
+    .container {
+        padding: 1em;
     }
 
-    input,
+    h1 {
+        text-align: center;
+    }
+
+    .radios {
+        display: grid;
+        gap: 0.5em;
+        margin: 1em 0;
+    }
+
+    label {
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+    }
+
+    input[type="radio"] {
+        height: 1.2rem;
+        width: 1.2rem;
+    }
+
+    .buttons {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1em;
+    }
+
     button {
-      color: #ffffff;
-      background-color: #0f0f0f98;
+        padding: 0.75em;
+        border-radius: 6px;
+        border: none;
     }
-    button:active {
-      background-color: #0f0f0f69;
+
+    .btn-green {
+        background-color: lime;
+        color: black;
     }
-  }
+
+    .btn-red {
+        background-color: hotpink;
+        color: black;
+    }
+
+    .btn-neutral {
+        background-color: lightskyblue;
+        color: black;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            color: #f6f6f6;
+            background-color: #2f2f2f;
+        }
+    }
 </style>
