@@ -10,4 +10,4 @@ pub use linux::discord;
 mod windows;
 
 #[cfg(windows)]
-pub use super::windows::discord;
+pub use windows::discord;
