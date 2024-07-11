@@ -73,23 +73,24 @@ pub fn parse_discord(path: PathBuf) -> Option<DiscordInstall> {
                 continue;
             };
 
-            let app_name = app_path.file_name()?.to_str().unwrap_or("").to_owned();
-            if app_name.is_empty() {
+            let Some(app_name) = app_path.file_name().and_then(|n| n.to_str()) else {
                 continue;
-            }
+            };
 
-            if app_name > app_path_str.to_owned() {
-                app_path_str = app_path.to_str()?.to_owned();
-                is_patched = resources.join("_app.asar").exists()
+            if app_name > app_path_str.as_str() {
+                if let Some(path_str) = app_path.to_str() {
+                    app_path_str = path_str.to_owned();
+                    is_patched = resources.join("_app.asar").exists()
+                }
             }
         }
     }
 
     Some(DiscordInstall {
         path: path_str,
-        app_path: app_path_str,
+        app_path: Some(app_path_str),
         branch: DiscordBranch::from_filename(&base),
-        is_patched: is_patched,
+        is_patched,
         is_flatpak: false,
     })
 }

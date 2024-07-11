@@ -1,7 +1,4 @@
 use serde::Serialize;
-use tauri::api::dialog::blocking::FileDialogBuilder;
-
-use super::discord::parse_discord;
 
 #[derive(Serialize, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum DiscordBranch {
@@ -27,14 +24,8 @@ impl DiscordBranch {
 #[derive(Serialize)]
 pub struct DiscordInstall {
     pub path: String,
-    pub app_path: String,
+    pub app_path: Option<String>,
     pub branch: DiscordBranch,
     pub is_patched: bool,
     pub is_flatpak: bool,
-}
-
-pub fn pick_custom_install() -> Option<DiscordInstall> {
-    FileDialogBuilder::new()
-        .pick_folder()
-        .and_then(|f| parse_discord(f))
 }
