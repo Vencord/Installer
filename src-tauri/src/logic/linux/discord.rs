@@ -90,6 +90,7 @@ pub fn parse_discord(mut path: PathBuf) -> Option<DiscordInstall> {
 
     Some(DiscordInstall {
         path: path_str,
+        app_path: path_str,
         branch: DiscordBranch::from_filename(&base),
         is_patched: resources.join("_app.asar").exists(),
         is_flatpak,

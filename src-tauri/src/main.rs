@@ -18,10 +18,10 @@ use logic::{
 };
 use tauri::api::dialog::blocking::FileDialogBuilder;
 
-#[link(name = "c")]
-extern "C" {
-    fn geteuid() -> u32;
-}
+// #[link(name = "c")]
+// extern "C" {
+//     fn geteuid() -> u32;
+// }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -89,7 +89,7 @@ fn start_gui(app: tauri::AppHandle) -> Result<(), tauri::Error> {
 }
 
 fn cli() {
-    unsafe {
-        println!("{}", geteuid());
-    }
+    // unsafe {
+    //     println!("{}", geteuid());
+    // }
 }

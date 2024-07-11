@@ -27,6 +27,7 @@ impl DiscordBranch {
 #[derive(Serialize)]
 pub struct DiscordInstall {
     pub path: String,
+    pub app_path: String,
     pub branch: DiscordBranch,
     pub is_patched: bool,
     pub is_flatpak: bool,
