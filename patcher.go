@@ -16,7 +16,7 @@ import (
 )
 
 var BaseDir string
-var VencordAsarPath string
+var VencordDirectory string
 
 func init() {
 	if dir := os.Getenv("VENCORD_USER_DATA_DIR"); dir != "" {
@@ -30,11 +30,11 @@ func init() {
 		BaseDir = appdir.New("Vencord").UserConfig()
 	}
 
-	if dir := os.Getenv("VENCORD_ASAR_FILE"); dir != "" {
-		Log.Debug("Using VENCORD_ASAR_FILE")
-		VencordAsarPath = dir
+	if dir := os.Getenv("VENCORD_DIRECTORY"); dir != "" {
+		Log.Debug("Using VENCORD_DIRECTORY")
+		VencordDirectory = dir
 	} else {
-		VencordAsarPath = path.Join(BaseDir, "vencord.asar")
+		VencordDirectory = path.Join(BaseDir, "vencord.asar")
 	}
 }
 
@@ -87,7 +87,7 @@ func patchAppAsar(dir string, isSystemElectron bool) (err error) {
 	}
 
 	Log.Debug("Writing custom app.asar to", appAsar)
-	if err := WriteAppAsar(appAsar, VencordAsarPath); err != nil {
+	if err := WriteAppAsar(appAsar, VencordDirectory); err != nil {
 		return err
 	}
 
@@ -137,14 +137,14 @@ func (di *DiscordInstall) patch() error {
 			}
 		}
 
-		Log.Debug("This is a flatpak. Trying to grant the Flatpak access to", VencordAsarPath+"...")
+		Log.Debug("This is a flatpak. Trying to grant the Flatpak access to", VencordDirectory+"...")
 
 		isSystemFlatpak := strings.HasPrefix(di.path, "/var")
 		var args []string
 		if !isSystemFlatpak {
 			args = append(args, "--user")
 		}
-		args = append(args, "override", name, "--filesystem="+VencordAsarPath)
+		args = append(args, "override", name, "--filesystem="+VencordDirectory)
 		fullCmd := "flatpak " + strings.Join(args, " ")
 
 		Log.Debug("Running", fullCmd)
@@ -165,7 +165,7 @@ func (di *DiscordInstall) patch() error {
 			err = cmd.Run()
 		}
 		if err != nil {
-			return errors.New("Failed to grant Discord Flatpak access to " + VencordAsarPath + ": " + err.Error())
+			return errors.New("Failed to grant Discord Flatpak access to " + VencordDirectory + ": " + err.Error())
 		}
 	}
 	return nil

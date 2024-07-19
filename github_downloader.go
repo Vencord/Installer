@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	path "path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -110,8 +111,21 @@ func InitGithubDownloader() {
 		Log.Debug("Latest hash is", LatestHash, "Local Install is", Ternary(LatestHash == InstalledHash, "up to date!", "outdated!"))
 	}()
 
+	// either .asar file or directory with main.js file (in DEV)
+	VencordFile := VencordDirectory
+
+	stat, err := os.Stat(VencordFile)
+	if err != nil {
+		return
+	}
+
+	// dev
+	if stat.IsDir() {
+		VencordFile = path.Join(VencordFile, "main.js")
+	}
+
 	// Check hash of installed version if exists
-	b, err := os.ReadFile(VencordAsarPath)
+	b, err := os.ReadFile(VencordFile)
 	if err != nil {
 		return
 	}
@@ -132,6 +146,11 @@ func InitGithubDownloader() {
 
 func installLatestBuilds() (retErr error) {
 	Log.Debug("Installing latest builds...")
+
+	if IsDevInstall {
+		Log.Debug("Skipping due to dev install")
+		return
+	}
 
 	downloadUrl := ""
 	for _, ass := range ReleaseData.Assets {
@@ -158,15 +177,15 @@ func installLatestBuilds() (retErr error) {
 		retErr = err
 		return
 	}
-	out, err := os.OpenFile(VencordAsarPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	out, err := os.OpenFile(VencordDirectory, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		Log.Error("Failed to create", VencordAsarPath+":", err)
+		Log.Error("Failed to create", VencordDirectory+":", err)
 		retErr = err
 		return
 	}
 	read, err := io.Copy(out, res.Body)
 	if err != nil {
-		Log.Error("Failed to download to", VencordAsarPath+":", err)
+		Log.Error("Failed to download to", VencordDirectory+":", err)
 		retErr = err
 		return
 	}
@@ -179,7 +198,7 @@ func installLatestBuilds() (retErr error) {
 		return
 	}
 
-	_ = FixOwnership(VencordAsarPath)
+	_ = FixOwnership(VencordDirectory)
 
 	InstalledHash = LatestHash
 	return
