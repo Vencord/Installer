@@ -21,14 +21,14 @@ type asarEntry struct {
 
 // Ported from https://github.com/GeopJr/asar-cr/blob/cd7695b7c913bf921d9fb6600eaeb1400e3ba225/src/asar-cr/pack.cr#L61
 
-func WriteAppAsar(outFile string, patcherPath string) error {
+func WriteAppAsar(outFile string, vencordAsarPath string) error {
 	header := make(map[string]map[string]asarEntry)
 	files := make(map[string]asarEntry)
 	header["files"] = files
 
 	fileContents := ""
 
-	patcherPathB, _ := json.Marshal(patcherPath)
+	patcherPathB, _ := json.Marshal(vencordAsarPath)
 	indexJsContents := "require(" + string(patcherPathB) + ")"
 	indexJsBytes := len([]byte(indexJsContents))
 	fileContents += indexJsContents
