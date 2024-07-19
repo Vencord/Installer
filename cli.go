@@ -141,26 +141,26 @@ func main() {
 
 	var err error
 	var errSilent error
+	var discord = PromptDiscord(*locationFlag, *branchFlag)
+	var wasDiscordKilled = KillDiscord(discord)
 	if install {
-		errSilent = PromptDiscord("patch", *locationFlag, *branchFlag).patch()
+		errSilent = discord.patch()
 	} else if uninstall {
-		errSilent = PromptDiscord("unpatch", *locationFlag, *branchFlag).unpatch()
+		errSilent = discord.unpatch()
 	} else if update {
 		Log.Info("Downloading latest Vencord files...")
 		err := installLatestBuilds()
 		Log.Info("Done!")
 		if err == nil {
-			errSilent = PromptDiscord("repair", *locationFlag, *branchFlag).patch()
+			errSilent = discord.patch()
 		}
 	} else if installOpenAsar {
-		discord := PromptDiscord("patch", *locationFlag, *branchFlag)
 		if !discord.IsOpenAsar() {
 			err = discord.InstallOpenAsar()
 		} else {
 			die("OpenAsar already installed")
 		}
 	} else if uninstallOpenAsar {
-		discord := PromptDiscord("patch", *locationFlag, *branchFlag)
 		if discord.IsOpenAsar() {
 			err = discord.UninstallOpenAsar()
 		} else {
@@ -176,6 +176,9 @@ func main() {
 		exitFailure()
 	}
 
+	if wasDiscordKilled {
+		discord.launch()
+	}
 	exitSuccess()
 }
 
@@ -206,7 +209,7 @@ func handlePromptError(err error) {
 	Log.FatalIfErr(err)
 }
 
-func PromptDiscord(action, dir, branch string) *DiscordInstall {
+func PromptDiscord(dir, branch string) *DiscordInstall {
 	if branch == "auto" {
 		for _, b := range []string{"stable", "canary", "ptb"} {
 			for _, discord := range discords {
@@ -245,7 +248,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 	items = append(items, "Custom Location")
 
 	_, choice, err := (&promptui.Select{
-		Label: "Select Discord install to " + action + " (Press Enter to confirm)",
+		Label: "Select Discord install (Press Enter to confirm)",
 		Items: items,
 	}).Run()
 	handlePromptError(err)
