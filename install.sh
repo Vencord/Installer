@@ -19,10 +19,10 @@ curl -sS https://github.com/Vendicated/VencordInstaller/releases/latest/download
 
 chmod +x "$outfile"
 
-if command -v sudo >/dev/null; then
+if [ "$(command -v sudo)" ]; then
   echo "Running with sudo"
   sudo env "$@" "$outfile"
-elif command -v doas >/dev/null; then
+elif "$(command -v doas)"; then
   echo "Running with doas"
   doas env "$@" "$outfile"
 else
