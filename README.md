@@ -64,3 +64,8 @@ go build --tags cli
 
 You might want to pass some flags to this command to get a better build.
 See [the GitHub workflow](https://github.com/Vendicated/VencordInstaller/blob/main/.github/workflows/release.yml) for what flags I pass or if you want more precise instructions
+
+### Notes
+
+#### MacOS
+In order to use cli in mac os you need to grant Terminal Full Disk Accesss in *System Settings > Privacy & Security > Full Disk Access*
