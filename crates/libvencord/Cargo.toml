@@ -1,0 +1,18 @@
+[package]
+name = "libvencord"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = { version = "0.12.9", features = ["json", "blocking"] }
+serde_json = "1.0.133"
+tokio = { version = "1.42.0", features = ["full"] }
+serde = { version = "1.0.215", features = ["derive"] }
+
+regex = "1.11.1"
+thiserror = "2.0.9"
+
+[features]
+openasar = []
+version_check = []
+generate_asar = []

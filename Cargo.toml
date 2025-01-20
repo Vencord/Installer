@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+
+members = [ 
+    "crates/libvencord",
+    "crates/vencord-installer", 
+]

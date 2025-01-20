@@ -1,0 +1,14 @@
+[package]
+name = "vencord_installer"
+version = "2.0.0"
+edition = "2021"
+
+[dependencies]
+libvencord = { path = "../libvencord", features = ["openasar", "version_check", "generate_asar"] }
+logger-rs = { git = "https://github.com/khcrysalis/logger-rs", branch = "main" }
+clap = { version = "4.0", features = ["derive", "color"] }
+tokio = { version = "1.42.0", features = ["full"] }
+colored = "2.2.0"
+
+[features]
+gui = [] # use this when adding gui support
