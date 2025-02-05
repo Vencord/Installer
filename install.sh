@@ -6,7 +6,7 @@ if [ "$(id -u)" -eq 0 ]; then
     exit 1
 fi
 
-outfile=$(mktemp -p ~)
+outfile=$(mktemp --tmpdir="$HOME")
 trap 'rm -f "$outfile"' EXIT
 
 echo "Downloading Installer..."
