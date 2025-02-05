@@ -6,7 +6,7 @@ if [ "$(id -u)" -eq 0 ]; then
     exit 1
 fi
 
-outfile=$(mktemp)
+outfile=$(mktemp -p ~)
 trap 'rm -f "$outfile"' EXIT
 
 echo "Downloading Installer..."
@@ -15,7 +15,8 @@ set -- "XDG_CONFIG_HOME=$XDG_CONFIG_HOME"
 
 curl -sS https://github.com/Vendicated/VencordInstaller/releases/latest/download/VencordInstallerCli-Linux \
   --output "$outfile" \
-  --location
+  --location \
+  --fail-with-body
 
 chmod +x "$outfile"
 
