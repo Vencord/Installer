@@ -16,7 +16,7 @@ set -- "XDG_CONFIG_HOME=$XDG_CONFIG_HOME"
 curl -sS https://github.com/Vendicated/VencordInstaller/releases/latest/download/VencordInstallerCli-Linux \
   --output "$outfile" \
   --location \
-  --fail-with-body
+  --fail
 
 chmod +x "$outfile"
 
