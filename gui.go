@@ -81,7 +81,10 @@ func main() {
 		os.Setenv("GDK_DPI_SCALE", "1")
 	}
 
-	win = g.NewMasterWindow("Equilotl", 1200, 800, linuxFlags)
+	win = g.NewMasterWindow("Vencord", 1200, 800, linuxFlags)
+// From PhoenixAceVFX
+// it is 5-6am and i literally copied my contribution from equicord to here
+// Go compare my PRs
 
 	icon, _, err := image.Decode(bytes.NewReader(iconBytes))
 	if err != nil {
