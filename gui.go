@@ -72,7 +72,16 @@ func main() {
 		g.Update()
 	}()
 
-	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
+	// Set up Linux-specific configurations
+	var linuxFlags g.MasterWindowFlags = 0
+	if runtime.GOOS == "linux" {
+		// Add any Linux-specific window flags if needed
+		// For example, you might want to ensure proper scaling on Linux
+		os.Setenv("GDK_SCALE", "1")
+		os.Setenv("GDK_DPI_SCALE", "1")
+	}
+
+	win = g.NewMasterWindow("Equilotl", 1200, 800, linuxFlags)
 
 	icon, _, err := image.Decode(bytes.NewReader(iconBytes))
 	if err != nil {
@@ -176,6 +185,10 @@ func handleErr(di *DiscordInstall, err error, action string) {
 			// FIXME: This text is not selectable which is a bit mehhh
 			command := "sudo chown -R \"${USER}:wheel\" " + di.path
 			err = errors.New("Permission denied. Please grant the installer Full Disk Access in the system settings (privacy & security page).\n\nIf that also doesn't work, try running the following command in your terminal:\n" + command)
+		case "linux":
+			command := "sudo chown -R \"$USER:$USER\" " + di.path
+			err = errors.New("Permission denied. Try running the following command in your terminal:\n" + command +
+				"\n\nOr run the installer with sudo privileges.")
 		default:
 			err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
 		}
