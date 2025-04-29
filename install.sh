@@ -26,6 +26,9 @@ if command -v sudo >/dev/null; then
 elif command -v doas >/dev/null; then
   echo "Running with doas"
   doas env "$@" "$outfile"
+elif command -v run0 >/dev/null; then
+  echo "Running with run0"
+  run0 env "$@" "$outfile"
 else
-  echo "Neither sudo nor doas were found. Please install either of them to proceed."
+  echo "Neither sudo, doas, nor run0 were found. Please install one of them to proceed."
 fi
