@@ -81,12 +81,16 @@ jobs:
       - name: Install Go dependencies
         run: go get -v
 
-      - name: Build
+      - name: Build GUI
         run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller
+
+      - name: Build CLI
+        run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller-cli
 
       - name: Update executable
         run: |
           chmod +x VencordInstaller
+          chmod +x VencordInstaller-cli
 
       - name: Generate MacOS bundle
         run: |
@@ -95,7 +99,7 @@ jobs:
           cp macos/Info.plist VencordInstaller.app/Contents/Info.plist
           mv VencordInstaller VencordInstaller.app/Contents/MacOS/VencordInstaller
           cp macos/icon.icns VencordInstaller.app/Contents/Resources/icon.icns
-          zip -r VencordInstaller.MacOS.zip VencordInstaller.app
+          zip -r VencordInstaller.MacOS.zip VencordInstaller.app VencordInstaller-cli
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
