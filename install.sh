@@ -21,10 +21,10 @@ curl -sS https://github.com/Vendicated/VencordInstaller/releases/latest/download
 chmod +x "$outfile"
 
 if command -v sudo >/dev/null; then
-  echo "Running with sudo"
+  echo "Running the installer with sudo"
   sudo env "$@" "$outfile"
 elif command -v doas >/dev/null; then
-  echo "Running with doas"
+  echo "Running the installer with doas"
   doas env "$@" "$outfile"
 elif command -v run0 >/dev/null; then
   echo "Running with run0"
@@ -33,5 +33,5 @@ elif command -v pkexec >/dev/null; then
   echo "Running with pkexec"
   pkexec env "$@" "SUDO_USER=$(whoami)" "$outfile"
 else
-  echo "Neither sudo nor doas were found. Please install either of them to proceed."
+  echo "Neither sudo nor doas was found. Please install either of them to proceed."
 fi
