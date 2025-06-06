@@ -627,13 +627,13 @@ func loop() {
 			g.Dummy(0, 20),
 			g.Style().SetFontSize(20).To(
 				g.Row(
-					g.Label(Ternary(IsDevInstall, "Dev Install: ", "Vencord will be downloaded to: ")+VencordAsarPath),
+					g.Label(Ternary(IsDevInstall, "Dev Install: ", "Vencord will be downloaded to: ")+VencordDirectory),
 					g.Style().
 						SetColor(g.StyleColorButton, DiscordBlue).
 						SetStyle(g.StyleVarFramePadding, 4, 4).
 						To(
 							g.Button("Open Directory").OnClick(func() {
-								g.OpenURL("file://" + path.Dir(VencordAsarPath))
+								g.OpenURL("file://" + path.Dir(VencordDirectory))
 							}),
 						),
 				),
