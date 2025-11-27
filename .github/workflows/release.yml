@@ -42,7 +42,7 @@ jobs:
           chmod +x VencordInstallerCli-linux
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: VencordInstaller-linux
           path: |
@@ -81,8 +81,11 @@ jobs:
       - name: Install Go dependencies
         run: go get -v
 
-      - name: Build
+      - name: Build GUI
         run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller
+
+      - name: Build CLI
+        run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-MacOS
 
       - name: Update executable
         run: |
@@ -98,10 +101,12 @@ jobs:
           zip -r VencordInstaller.MacOS.zip VencordInstaller.app
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: VencordInstaller-macos
-          path: VencordInstaller.MacOS.zip
+          path: |
+            VencordInstaller.MacOS.zip
+            VencordInstallerCli-MacOS
 
 
   build-windows:
@@ -159,7 +164,7 @@ jobs:
           CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -v -tags "static cli" -ldflags "-s -w -extldflags=-static -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli.exe
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: VencordInstaller-windows
           path: |
@@ -201,4 +206,5 @@ jobs:
           files: |
             linux/VencordInstallerCli-linux
             macos/VencordInstaller.MacOS.zip
+            macos/VencordInstallerCli-MacOS
             windows/VencordInstalle*.exe
