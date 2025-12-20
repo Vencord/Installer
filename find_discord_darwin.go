@@ -50,15 +50,26 @@ func FindDiscords() []any {
 		"/Applications",
 		path.Join(os.Getenv("HOME"), "Applications"),
 	}
+	
+	handleDiscordDir := func(p string, branch string) {
+		if discord := ParseDiscord(p, branch); discord != nil {
+			Log.Debug("Found Discord install at ", p)
+			discords = append(discords, discord)
+		}
+	}
+
 	for branch, dirname := range macosNames {
 		for _, base := range bases {
 			p := path.Join(base, dirname)
-			if discord := ParseDiscord(p, branch); discord != nil {
-				Log.Debug("Found Discord Install at", p)
-				discords = append(discords, discord)
-			}
+			handleDiscordDir(p, branch)
 		}
 	}
+
+	discordCustomDir := os.Getenv("VENCORD_DISCORD_DIR")
+	if discordCustomDir != "" {
+		handleDiscordDir(discordCustomDir, "custom")
+	}
+
 	return discords
 }
 

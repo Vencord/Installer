@@ -62,7 +62,7 @@ func init() {
 	}
 }
 
-func ParseDiscord(p, _ string) *DiscordInstall {
+func ParseDiscord(p, branch string) *DiscordInstall {
 	name := path.Base(p)
 
 	needsFlatpakResolve := strings.Contains(p, "/flatpak/") && !strings.Contains(p, "/current/active/files/")
@@ -90,9 +90,13 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 		return nil
 	}
 
+	if branch == "" {
+		branch = GetBranch(name)
+	}
+
 	return &DiscordInstall{
 		path:             p,
-		branch:           GetBranch(name),
+		branch:           branch,
 		appPath:          app,
 		isPatched:        isPatched,
 		isFlatpak:        needsFlatpakResolve,
@@ -102,6 +106,14 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 
 func FindDiscords() []any {
 	var discords []any
+	
+	handleDiscordDir := func(p string, branch string) {
+		if discord := ParseDiscord(p, branch); discord != nil {
+			Log.Debug("Found Discord install at ", p)
+			discords = append(discords, discord)
+		}
+	}
+
 	for _, dir := range DiscordDirs {
 		children, err := os.ReadDir(dir)
 		if err != nil {
@@ -118,11 +130,13 @@ func FindDiscords() []any {
 			}
 
 			discordDir := path.Join(dir, name)
-			if discord := ParseDiscord(discordDir, ""); discord != nil {
-				Log.Debug("Found Discord install at ", discordDir)
-				discords = append(discords, discord)
-			}
+			handleDiscordDir(discordDir, "")
 		}
+	}
+
+	discordCustomDir := os.Getenv("VENCORD_DISCORD_DIR")
+	if discordCustomDir != "" {
+		handleDiscordDir(discordCustomDir, "custom")
 	}
 
 	return discords
