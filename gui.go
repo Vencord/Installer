@@ -175,7 +175,7 @@ func handleErr(di *DiscordInstall, err error, action string) {
 		case "darwin":
 			// FIXME: This text is not selectable which is a bit mehhh
 			command := "sudo chown -R \"${USER}:wheel\" " + di.path
-			err = errors.New("Permission denied. Please grant the installer Full Disk Access in the system settings (privacy & security page).\n\nIf that also doesn't work, try running the following command in your terminal:\n" + command)
+			err = errors.New("Permission denied. Please grant the installer the App Management permission in the system settings (privacy & security page).\n\nIf that also doesn't work, try running the following command in your terminal:\n" + command)
 		default:
 			err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
 		}
