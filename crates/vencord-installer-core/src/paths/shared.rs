@@ -52,7 +52,10 @@ fn get_last_path_component(path: &Path) -> Option<&str> {
 ///
 /// * `discord_to_patch` - The DiscordLocation to get the resources directory from.
 /// * `_system_electron` - Whether the Discord installation is from https://aur.archlinux.org/packages/discord_arch_electron.
-pub fn resource_dir_path(discord_to_patch: &DiscordLocation, _system_electron: bool) -> PathBuf {
+pub(crate) fn resource_dir_path(
+    discord_to_patch: &DiscordLocation,
+    _system_electron: bool,
+) -> PathBuf {
     let base_path = Path::new(&discord_to_patch.path);
     // compiler optimization.. sorry nerds
     #[cfg(target_os = "linux")]
@@ -67,7 +70,7 @@ pub fn resource_dir_path(discord_to_patch: &DiscordLocation, _system_electron: b
 }
 
 /// This is for OpenAsar, since depending on if its patched, it has a different named asar file.
-pub fn use_appropriate_asar(patched: bool) -> PathBuf {
+pub(crate) fn use_appropriate_asar(patched: bool) -> PathBuf {
     if patched {
         PathBuf::from("_app.asar")
     } else {
@@ -81,7 +84,7 @@ pub fn use_appropriate_asar(patched: bool) -> PathBuf {
 ///
 /// * `path` - The path to the Discord installation.
 /// * `system_electron` - Whether the Discord installation is from https://aur.archlinux.org/packages/discord_arch_electron.
-pub fn is_location_patched(path: &Path, system_electron: &bool) -> bool {
+pub(crate) fn is_location_patched(path: &Path, system_electron: &bool) -> bool {
     let mut asar_path = path.to_path_buf();
 
     if !system_electron {
@@ -101,26 +104,12 @@ pub fn is_location_patched(path: &Path, system_electron: &bool) -> bool {
 ///
 /// * `path` - The path to the Discord installation.
 /// * `patched` - Whether the Discord installation has been patched by the mod already.
-pub fn is_location_openasar(path: &Path, patched: bool) -> bool {
+pub(crate) fn is_location_openasar(path: &Path, patched: bool) -> bool {
     let asar_path = path
         .join(get_discord_resource_location())
         .join(use_appropriate_asar(patched));
 
-    let Ok(mut file) = std::fs::File::open(&asar_path) else {
-        return false;
-    };
-
-    // 0x12FA
-    if file.seek(std::io::SeekFrom::Start(4858)).is_err() {
-        return false;
-    }
-
-    let mut buffer = [0; 1024];
-    let Ok(n) = BufReader::new(file).read(&mut buffer) else {
-        return false;
-    };
-
-    buffer[..n].windows(8).any(|window| window == b"OpenAsar")
+    is_asar_considered_openasar(&asar_path)
 }
 
 /// Returns whether the Discord installation at the given path is a Flatpak installation.
@@ -128,8 +117,7 @@ pub fn is_location_openasar(path: &Path, patched: bool) -> bool {
 /// # Arguments
 ///
 /// * `path` - The path to the Discord installation.
-pub fn is_location_flatpak(_path: &Path) -> bool {
-    // compiler optimization.. sorry nerds
+pub(crate) fn is_location_flatpak(_path: &Path) -> bool {
     #[cfg(target_os = "linux")]
     if _path.to_string_lossy().contains("/flatpak/") {
         true
@@ -146,8 +134,7 @@ pub fn is_location_flatpak(_path: &Path) -> bool {
 /// # Arguments
 ///
 /// * `path` - The path to the Discord installation.
-pub fn is_location_system_electron(_path: &Path) -> bool {
-    // compiler optimization.. sorry nerds
+pub(crate) fn is_location_system_electron(_path: &Path) -> bool {
     #[cfg(target_os = "linux")]
     if !_path.join(get_discord_resource_location()).exists() {
         true
@@ -156,5 +143,39 @@ pub fn is_location_system_electron(_path: &Path) -> bool {
     }
 
     #[cfg(not(target_os = "linux"))]
+    false
+}
+
+pub(crate) fn is_asar_considered_openasar(path: &Path) -> bool {
+    let Ok(mut file) = std::fs::File::open(&path) else {
+        return false;
+    };
+
+    const OPENASAR_MAGIC_BYTES: &[u8] = b"OpenAsar";
+
+    // We read in chunks to see if the file contains openasar bytes.
+    if file.seek(std::io::SeekFrom::Start(4858)).is_err() {
+        return false;
+    }
+
+    let mut buffer = [0; 1024];
+    let Ok(n) = BufReader::new(file).read(&mut buffer) else {
+        return false;
+    };
+
+    buffer[..n]
+        .windows(8)
+        .any(|window| window == OPENASAR_MAGIC_BYTES)
+}
+
+pub(crate) async fn is_asar_original(path: &Path) -> bool {
+    if let Ok(metadata) = std::fs::metadata(path) {
+        // Discord's asar is really big, this number is arbitrary...
+        // TODO: extract `package.json` instead
+        if metadata.len() > 3_000_000 {
+            return true;
+        }
+    }
+
     false
 }

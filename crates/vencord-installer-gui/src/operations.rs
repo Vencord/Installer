@@ -1,8 +1,7 @@
 use tokio::sync::mpsc;
 
 use vencord_installer_core::{
-    Error, OPENASAR_URL, download, get_dist_path,
-    patch::{patch_mod::Installer, patch_openasar::OpenAsarInstaller},
+    Error, OPENASAR_URL, download, get_dist_path, patch::patch_mod::Installer,
     paths::branch::DiscordLocation,
 };
 
@@ -14,6 +13,7 @@ pub enum AppOperation {
     InstallOpenAsar(DiscordLocation),
     UninstallOpenAsar(DiscordLocation),
     OpenAppData,
+    OpenLink(String),
 }
 
 #[derive(Debug, Clone)]
@@ -62,14 +62,14 @@ impl AppActions {
             AppOperation::InstallOpenAsar(location) => Self::install_openasar(location).await,
             AppOperation::UninstallOpenAsar(location) => Self::uninstall_openasar(location).await,
             AppOperation::OpenAppData => Self::open_appdata().await,
+            AppOperation::OpenLink(url) => {
+                open::that(url).map_err(|e| Error::ErrIo(e))?;
+                Ok(())
+            }
         }
     }
 
     async fn install(location: DiscordLocation) -> Result<(), Error> {
-        if location.patched {
-            return Err(Error::ErrLocationPatched);
-        }
-
         if std::env::var("VENCORD_DEV_INSTALL").map_or(true, |v| v != "1") {
             download().await?;
         }
@@ -80,50 +80,32 @@ impl AppActions {
     }
 
     async fn uninstall(location: DiscordLocation) -> Result<(), Error> {
-        if !location.patched {
-            return Err(Error::ErrLocationNotPatched);
-        }
-
-        Installer::new(location, None).unpatch().await
+        Installer::new(location.clone(), None).unpatch().await
     }
 
     async fn repair(location: DiscordLocation) -> Result<(), Error> {
-        let mut location = location;
-
-        if std::env::var("VENCORD_DEV_INSTALL").map_or(true, |v| v != "1") {
-            download().await?;
-        }
+        let mut installer = Installer::new(location.clone(), Some(get_dist_path(None)));
+        installer.repair().await?;
 
         if location.patched {
-            Installer::new(location.clone(), None).unpatch().await?;
-            location.patched = false;
+            installer.patch().await?;
         }
 
-        if !location.patched {
-            Installer::new(location.clone(), Some(get_dist_path(None)))
-                .patch()
-                .await?;
+        if location.openasar {
+            installer.patch_openasar(OPENASAR_URL).await?;
         }
 
         Ok(())
     }
 
     async fn install_openasar(location: DiscordLocation) -> Result<(), Error> {
-        if location.openasar {
-            return Err(Error::ErrLocationPatched);
-        }
-
-        OpenAsarInstaller::new(location, Some(get_dist_path(None)))
-            .patch(OPENASAR_URL)
+        Installer::new(location, Some(get_dist_path(None)))
+            .patch_openasar(OPENASAR_URL)
             .await
     }
 
     async fn uninstall_openasar(location: DiscordLocation) -> Result<(), Error> {
-        if !location.openasar {
-            return Err(Error::ErrLocationNotPatched);
-        }
-
-        OpenAsarInstaller::new(location, None).unpatch().await
+        Installer::new(location, None).unpatch_openasar().await
     }
 
     async fn open_appdata() -> Result<(), Error> {

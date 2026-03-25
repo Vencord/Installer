@@ -24,7 +24,7 @@ export global DiscordLocationAdapter {
     }
 
     public pure function branch_icon(branch: DiscordBranch) -> image {
-        return branch == DiscordBranch.Stable ? @image-url("assets/stable.svg") : branch == DiscordBranch.PTB ? @image-url("assets/stable.svg") : branch == DiscordBranch.Canary ? @image-url("assets/canary.svg") : branch == DiscordBranch.Development ? @image-url("assets/development.svg") : @image-url("assets/stable.svg");
+        return branch == DiscordBranch.Stable ? @image-url("assets/stable.svg") : branch == DiscordBranch.PTB ? @image-url("assets/ptb.svg") : branch == DiscordBranch.Canary ? @image-url("assets/canary.svg") : branch == DiscordBranch.Development ? @image-url("assets/development.svg") : @image-url("assets/stable.svg");
     }
 }
 
@@ -34,8 +34,6 @@ export global PageManager {
 }
 
 export global AppInfo {
-    in property <string> local_vc_version: "000000";
-    in property <string> remote_vc_version: "000000";
     in property <string> version: "0.0.0";
 }
 
@@ -54,4 +52,5 @@ export global RustCallbacks {
     pure callback do_o_uninstall(location: DiscordLocation);
     pure callback do_repair(location: DiscordLocation);
     pure callback do_open_appdata();
+    pure callback do_open_link(url: string);
 }

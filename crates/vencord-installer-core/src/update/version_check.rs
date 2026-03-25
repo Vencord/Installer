@@ -64,8 +64,8 @@ pub async fn check_latest_version(url: &str, fallback_url: Option<&str>) -> Opti
 /// Returns the hash if the request was successful, otherwise None.
 pub async fn check_hash_from_release(url: &str, fallback_url: Option<&str>) -> Option<String> {
     if let Some(json) = check_latest_version(url, fallback_url).await {
-        let name = json["name"].as_str().unwrap();
-        let hash = name.split_whitespace().last().unwrap();
+        let name = json["name"].as_str()?;
+        let hash = name.split_whitespace().last()?;
         log::info!("Found hash from release: {}", hash);
         Some(hash.to_owned())
     } else {

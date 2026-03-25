@@ -1,12 +1,13 @@
 [target.x86_64-pc-windows-msvc]
 # Increase default stack size to avoid running out of stack
 # space in debug builds. The size matches Linux's default.
-rustflags = [
-    "-C", "link-arg=/STACK:8000000"
-]
+rustflags = ["-C", "link-arg=/STACK:8000000"]
 [target.aarch64-pc-windows-msvc]
 # Increase default stack size to avoid running out of stack
 # space in debug builds. The size matches Linux's default.
-rustflags = [
-    "-C", "link-arg=/STACK:8000000"
-]
+rustflags = ["-C", "link-arg=/STACK:8000000"]
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-mmacosx-version-min=10.13"]
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-mmacosx-version-min=10.13"]

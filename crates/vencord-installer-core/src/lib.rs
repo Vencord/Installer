@@ -1,3 +1,5 @@
+#[cfg(feature = "generate_asar")]
+pub mod asar;
 pub mod patch;
 pub mod paths;
 pub mod update;

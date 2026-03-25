@@ -9,13 +9,20 @@ members = [
 [workspace.package]
 edition = "2024"
 version = "2.0.0"
-authors = [
-    "khcrysalis <s03781614@icloud.com>", 
-    "V <vendicated@riseup.net>"
-]
+authors = ["CLARATION <s03781614@icloud.com>", "V <vendicated@riseup.net>"]
 repository = "https://github.com/Vencord/Installer"
 
 [workspace.dependencies]
 tokio = { version = "1.42.0", features = ["full"] }
 log = "0.4.28"
 env_logger = "0.11.8"
+
+[profile.release]
+codegen-units = 1
+debug = "full"
+lto = true
+opt-level = "s"
+panic = "abort"
+split-debuginfo = "packed"
+strip = "symbols"
+incremental = true

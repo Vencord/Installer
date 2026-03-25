@@ -51,7 +51,7 @@ component DiscordLocationItem inherits Rectangle {
     callback toggle-expand;
 
     height: is-expanded ? 136px : 80px;
-    border-radius: 12px;
+    border-radius: 8px;
     background: GruvboxPalette.bg1;
     clip: true;
     animate height {
@@ -64,7 +64,7 @@ component DiscordLocationItem inherits Rectangle {
         spacing: 0;
         header := Rectangle {
             height: 80px;
-            border-radius: 12px;
+            border-radius: 8px;
             states [
                 inactive when !header-touch.has-hover && !root.is-expanded: {
                     header.background: GruvboxPalette.bg1;
@@ -174,7 +174,7 @@ component DiscordLocationItem inherits Rectangle {
                     spacing: 8px;
 
                     if !location.patched: ActionButton {
-                        text: "Install";
+                        text: "Install Vencord";
                         bg-color: GruvboxPalette.aqua;
                         hover-color: GruvboxPalette.aqua-dim;
                         clicked => {
@@ -182,7 +182,7 @@ component DiscordLocationItem inherits Rectangle {
                         }
                     }
                     if location.patched: ActionButton {
-                        text: "Uninstall";
+                        text: "Uninstall Vencord";
                         bg-color: GruvboxPalette.red;
                         hover-color: GruvboxPalette.red-dim;
                         clicked => {
@@ -228,8 +228,8 @@ export component InstallPage inherits Page {
     ScrollView {
         VerticalLayout {
             spacing: 12px;
-            padding-left: 16px;
-            padding-right: 16px;
+            padding-left: 12px;
+            padding-right: 12px;
 
             for discord[index] in DiscordLocationAdapter.locations: DiscordLocationItem {
                 location: discord;

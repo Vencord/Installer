@@ -4,7 +4,7 @@ use dialoguer::Select;
 
 use vencord_installer_core::{
     Error, OPENASAR_URL, download, get_dist_path,
-    patch::{patch_mod::Installer, patch_openasar::OpenAsarInstaller},
+    patch::patch_mod::Installer,
     paths::{
         branch::DiscordLocation, locations::get_discord_locations,
         shared::get_custom_discord_location,
@@ -81,18 +81,16 @@ async fn install(
         selected_location = select_location().await?;
     }
 
+    let mut installer = Installer::new(selected_location.clone(), Some(get_dist_path(None)));
+
     if client_mod && !selected_location.patched {
         if std::env::var("VENCORD_DEV_INSTALL").map_or(true, |v| v != "1") {
             download().await?;
         }
 
-        Installer::new(selected_location.clone(), Some(get_dist_path(None)))
-            .patch()
-            .await?;
+        installer.patch().await?;
     } else if openasar && !selected_location.openasar {
-        OpenAsarInstaller::new(selected_location.clone(), Some(get_dist_path(None)))
-            .patch(OPENASAR_URL)
-            .await?;
+        installer.patch_openasar(OPENASAR_URL).await?;
     } else {
         log::info!("Already installed, skipping!");
     }
@@ -116,14 +114,12 @@ async fn uninstall(
         selected_location = select_location().await?;
     }
 
+    let mut installer = Installer::new(selected_location.clone(), None);
+
     if client_mod && selected_location.patched {
-        Installer::new(selected_location.clone(), None)
-            .unpatch()
-            .await?;
+        installer.unpatch().await?;
     } else if openasar && selected_location.openasar {
-        OpenAsarInstaller::new(selected_location.clone(), None)
-            .unpatch()
-            .await?;
+        installer.unpatch_openasar().await?;
     } else {
         log::info!("Not installed, skipping!");
     }
@@ -132,7 +128,7 @@ async fn uninstall(
 }
 
 async fn repair(custom_path: Option<String>) -> Result<(), Error> {
-    let mut selected_location: DiscordLocation;
+    let selected_location: DiscordLocation;
 
     if let Some(path) = custom_path {
         selected_location = match get_custom_discord_location(&path) {
@@ -147,17 +143,13 @@ async fn repair(custom_path: Option<String>) -> Result<(), Error> {
         download().await?;
     }
 
-    if selected_location.patched {
-        Installer::new(selected_location.clone(), None)
-            .unpatch()
-            .await?;
-        selected_location.patched = false;
-    }
+    let mut installer = Installer::new(selected_location.clone(), Some(get_dist_path(None)));
 
-    if !selected_location.patched {
-        Installer::new(selected_location.clone(), Some(get_dist_path(None)))
-            .patch()
-            .await?;
+    if selected_location.patched {
+        installer.patch().await?;
+    }
+    if selected_location.openasar {
+        installer.patch_openasar(OPENASAR_URL).await?;
     }
 
     Ok(())

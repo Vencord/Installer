@@ -1,13 +1,9 @@
 use std::{error::Error, rc::Rc};
 use tokio::sync::mpsc;
 
-use vencord_installer_core::{
-    RELEASE_URL, RELEASE_URL_FALLBACK, get_dist_path,
-    paths::{
-        branch::{DiscordBranch as CoreDiscordBranch, DiscordLocation as CoreDiscordLocation},
-        locations::get_discord_locations,
-    },
-    update::version_check::{check_hash_from_release, check_local_version},
+use vencord_installer_core::paths::{
+    branch::{DiscordBranch as CoreDiscordBranch, DiscordLocation as CoreDiscordLocation},
+    locations::get_discord_locations,
 };
 
 use crate::operations::{AppActions, AppMessage, AppOperation};
@@ -53,35 +49,9 @@ impl VencordInstallerApp {
             .global::<AppInfo>()
             .set_version(env!("CARGO_PKG_VERSION").into());
 
-        self.check_versions().await;
         self.setup_callbacks();
         self.refresh_discord_locations();
         Ok(())
-    }
-
-    async fn check_versions(&self) {
-        if let Some(remote_hash) =
-            check_hash_from_release(RELEASE_URL, Some(RELEASE_URL_FALLBACK)).await
-        {
-            self.update_ui(move |app| {
-                app.global::<AppInfo>()
-                    .set_remote_vc_version(remote_hash.into());
-            });
-        }
-
-        if let Some(local_hash) = check_local_version(&get_dist_path(None), None).await {
-            self.update_ui(move |app| {
-                app.global::<AppInfo>()
-                    .set_local_vc_version(local_hash.into());
-            });
-        }
-    }
-
-    fn update_ui<F>(&self, f: F)
-    where
-        F: FnOnce(&AppWindow) + Send + 'static,
-    {
-        Self::invoke_ui_update(self.app_weak.clone(), f);
     }
 
     fn setup_callbacks(&self) {
@@ -139,6 +109,13 @@ impl VencordInstallerApp {
         callbacks.on_do_open_appdata(move || {
             tx_open_appdata.send(AppOperation::OpenAppData).ok();
         });
+
+        let tx_open_link = self.operation_tx.clone();
+        callbacks.on_do_open_link(move |url| {
+            tx_open_link
+                .send(AppOperation::OpenLink(url.to_string()))
+                .ok();
+        });
     }
 
     fn refresh_discord_locations(&self) {
@@ -167,12 +144,11 @@ impl VencordInstallerApp {
     }
 
     fn handle_message(message: AppMessage, app_weak: &slint::Weak<AppWindow>) {
+        Self::invoke_ui_update(app_weak.clone(), |app| {
+            Self::refresh_locations(app);
+        });
         match message {
-            AppMessage::OperationSuccess => {
-                Self::invoke_ui_update(app_weak.clone(), |app| {
-                    Self::refresh_locations(app);
-                });
-            }
+            AppMessage::OperationSuccess => {}
             AppMessage::OperationError(error, show_open_appdata) => {
                 Self::show_error_dialog(app_weak.clone(), error, show_open_appdata);
             }
