@@ -272,6 +272,12 @@ impl Installer {
     #[cfg(target_os = "linux")]
     pub fn grant_flatpak_permissions(&self) -> Result<String, Error> {
         let data_path = self.data_path.clone().ok_or(Error::ErrNoDataPath)?;
+
+        log::info!(
+            "Location is flatpak, granting perms to {}",
+            data_path.to_string_lossy()
+        );
+
         let name = self
             .discord_location
             .path
@@ -280,13 +286,16 @@ impl Installer {
             .unwrap_or("");
 
         let is_system_flatpak = self.discord_location.path.contains("/var");
+
         let mut args = vec![];
+
         if !is_system_flatpak {
             args.push("--user");
         }
         args.push("override");
         args.push(name);
-        args.push(&format!("--filesystem={}", &data_path.to_string_lossy()));
+        let filesystem_arg = format!("--filesystem={}", &data_path.to_string_lossy());
+        args.push(&filesystem_arg);
 
         Ok(format!("flatpak {}", args.join(" ")))
     }
