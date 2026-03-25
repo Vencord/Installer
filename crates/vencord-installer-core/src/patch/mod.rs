@@ -1,11 +1,11 @@
 pub mod patch_mod;
 
 use crate::{Error, paths::branch::DiscordLocation};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-#[cfg(any(target_os = "linux"))]
+#[cfg(target_os = "linux")]
 unsafe extern "C" {
-    unsafe fn geteuid() -> u32;
+    fn geteuid() -> u32;
 }
 
 #[derive(Debug, Clone)]
@@ -38,7 +38,7 @@ impl FileOperation {
                 format!("cp '{}' '{}'", from.display(), to.display())
             }
             FileOperation::Remove { path } => {
-                format!("rm '{}'", path.display())
+                format!("rm -f '{}'", path.display())
             }
             FileOperation::Cmd { string } => string.clone(),
         }
@@ -74,60 +74,44 @@ pub async fn execute(
     operations: &[FileOperation],
     _location: &DiscordLocation,
 ) -> Result<(), Error> {
-    let mut needs_elevated = false;
-
     log::debug!("Running operations: {:#?}", operations);
+    if operations.is_empty() {
+        return Ok(());
+    }
 
-    for operation in operations {
-        let result = match operation {
-            FileOperation::Move { from, to } => tokio::fs::rename(from, to).await,
-            FileOperation::Copy { from, to } => {
-                tokio::fs::copy(from, to).await.map(|_| ())?;
-                // users on linux running with sudo need special treatment
-                #[cfg(target_os = "linux")]
-                unsafe {
-                    if geteuid() == 0 {
-                        if !_location.is_flatpak {
-                            crate::paths::locations::copy_ownership_permissions(&to)
-                                .await
-                                .ok();
-                        }
+    let mut _needs_elevated = false;
+
+    #[cfg(target_os = "linux")]
+    {
+        for op in operations {
+            let path_to_check = match op {
+                FileOperation::Move { from, .. } => from,
+                FileOperation::Copy { to, .. } => to,
+                FileOperation::Remove { path } => path,
+                _ => continue,
+            };
+
+            if let Some(parent) = path_to_check.parent() {
+                if std::fs::metadata(parent).is_ok() {
+                    let metadata = std::fs::metadata(parent).map_err(|e| Error::from(e))?;
+                    if metadata.permissions().readonly()
+                        || unsafe { geteuid() } != 0 && metadata.gen_stats_uid() == 0
+                    {
+                        _needs_elevated = true;
+                        break;
                     }
                 }
-                Ok(())
-            }
-            FileOperation::Remove { path } => tokio::fs::remove_file(path).await,
-            #[cfg(target_os = "linux")]
-            FileOperation::Cmd { string } => {
-                tokio::process::Command::new("sh")
-                    .arg("-c")
-                    .arg(string)
-                    .status()
-                    .await
-                    .ok();
-                Ok(())
-            }
-        };
-
-        if let Err(e) = result {
-            if e.kind() == std::io::ErrorKind::PermissionDenied {
-                needs_elevated = true;
-                break;
-            } else {
-                return Err(Error::from(e));
             }
         }
     }
 
     // If we need elevated permissions, execute all operations with pkexec
     // in a single command, so it only prompts once, only for linux as well
-    if needs_elevated {
+    if _needs_elevated {
         #[cfg(target_os = "linux")]
         {
-            log::warn!("Permission was denied, attempting to use pkexec instead...");
-
+            log::warn!("Detected protected directory, using pkexec for atomic batch...");
             let commands: Vec<String> = operations.iter().map(|op| op.to_shell_command()).collect();
-
             let combined_command = commands.join(" && ");
 
             let status = tokio::process::Command::new("pkexec")
@@ -138,16 +122,52 @@ pub async fn execute(
                 .await?;
 
             if status.success() {
-                Ok(())
+                return Ok(());
             } else {
-                Err(Error::ErrPermissionDenied)
+                return Err(Error::ErrPermissionDenied);
             }
         }
-        #[cfg(not(target_os = "linux"))]
-        {
-            Err(Error::ErrPermissionDenied)
-        }
     } else {
-        Ok(())
+        for operation in operations {
+            match operation {
+                FileOperation::Move { from, to } => {
+                    tokio::fs::rename(from, to)
+                        .await
+                        .map_err(|e| Error::from(e))?;
+                }
+                FileOperation::Copy { from, to } => {
+                    tokio::fs::copy(from, to)
+                        .await
+                        .map_err(|e| Error::from(e))?;
+
+                    #[cfg(target_os = "linux")]
+                    unsafe {
+                        if geteuid() == 0 && !_location.is_flatpak {
+                            crate::paths::locations::copy_ownership_permissions(&to)
+                                .await
+                                .ok();
+                        }
+                    }
+                }
+                FileOperation::Remove { path } => {
+                    if path.exists() {
+                        tokio::fs::remove_file(path)
+                            .await
+                            .map_err(|e| Error::from(e))?;
+                    }
+                }
+                #[cfg(target_os = "linux")]
+                FileOperation::Cmd { string } => {
+                    tokio::process::Command::new("sh")
+                        .arg("-c")
+                        .arg(string)
+                        .status()
+                        .await
+                        .ok();
+                }
+            }
+        }
     }
+
+    Ok(())
 }
