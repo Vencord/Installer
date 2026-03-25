@@ -62,7 +62,8 @@ impl Installer {
             }
         }
 
-        super::rename(&live_path, &mod_backup, &mut opts);
+        // specific order is important on windows to prevent "file in use" errors
+        super::copy(&live_path, &mod_backup, &mut opts);
         super::copy(&custom_asar, &live_path, &mut opts);
         super::execute(&opts, &self.discord_location).await?;
 
@@ -98,8 +99,9 @@ impl Installer {
 
         let mut opts = vec![];
 
-        super::remove(&live_path, &mut opts);
-        super::rename(&mod_backup, &live_path, &mut opts);
+        // specific order is important on windows to prevent "file in use" errors
+        super::copy(&mod_backup, &live_path, &mut opts);
+        super::remove(&mod_backup, &mut opts);
         super::execute(&opts, &self.discord_location).await?;
 
         self.discord_location.patched = false;
