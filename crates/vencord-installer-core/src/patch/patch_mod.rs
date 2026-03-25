@@ -301,8 +301,8 @@ impl Installer {
             (
                 "index.js",
                 &format!(
-                    "require(\"{}\")",
-                    &data_path.join("patcher.js").to_string_lossy()
+                    "require({})",
+                    &serde_json::to_string(&data_path.join("patcher.js"))?
                 ),
             ),
             (
