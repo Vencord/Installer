@@ -12,7 +12,7 @@ env:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-20.04 # hopefully older glibc for better compatibility on systems like debian bullseye
+    runs-on: ubuntu-22.04 # explicit supported runner with broad Linux compatibility
 
     steps:
       - name: Install Go
@@ -267,6 +267,19 @@ jobs:
         with:
           name: VencordInstaller-windows
           path: windows
+
+      - name: Remove stale macOS arch-specific release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" --json assets --jq '.assets[].name' 2>/dev/null | while read -r asset; do
+            case "$asset" in
+              *macos*amd64*|*macos*arm64*|*darwin*amd64*|*darwin*arm64*|*apple-silicon*|*intel*|VencordInstaller-amd64|VencordInstaller-arm64|VencordInstaller-darwin-amd64|VencordInstaller-darwin-arm64)
+                gh release delete-asset "$TAG" "$asset" --yes
+                ;;
+            esac
+          done
 
       - name: Create the release
         uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v1
