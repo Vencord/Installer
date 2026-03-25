@@ -130,12 +130,18 @@ impl VencordInstallerApp {
         let app_weak_folder = self.app_weak.clone();
         let custom_locations_folder = self.custom_locations.clone();
         callbacks.on_do_open_folder_dialog(move || {
-            println!("Opening folder dialog");
-            if let Some(folder) = rfd::FileDialog::new()
+            #[cfg(target_os = "macos")]
+            let dialog_result = rfd::FileDialog::new()
+                .set_title("Select Discord Bundle")
+                .pick_file();
+
+            #[cfg(not(target_os = "macos"))]
+            let dialog_result = rfd::FileDialog::new()
                 .set_title("Select Discord Installation Folder")
-                .pick_file_or_folder()
-            {
-                if let Some(path) = folder.to_str() {
+                .pick_folder();
+
+            if let Some(selected) = dialog_result {
+                if let Some(path) = selected.to_str() {
                     if let Some(location) = get_custom_discord_location(&path) {
                         custom_locations_folder.lock().unwrap().push(location);
 

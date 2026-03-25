@@ -31,6 +31,12 @@ impl Installer {
 
         let data_path = self.data_path.as_ref().ok_or(Error::ErrNoDataPath)?;
 
+        #[cfg(target_os = "windows")]
+        if is_scuffed_install(&self.discord_location.name) {
+            log::error!("You have a broken Discord install. Please reinstall Discord!");
+            return Err(Error::ErrWindowsMovedDirectory);
+        }
+
         let res_dir = resource_dir_path(
             &self.discord_location,
             self.discord_location.is_system_electron,
@@ -109,6 +115,13 @@ impl Installer {
             return Err(Error::ErrLocationPatched);
         }
         let data_path = self.data_path.as_ref().ok_or(Error::ErrNoDataPath)?;
+
+        #[cfg(target_os = "windows")]
+        if is_scuffed_install(&self.discord_location.name) {
+            log::error!("You have a broken Discord install. Please reinstall Discord!");
+            return Err(Error::ErrWindowsMovedDirectory);
+        }
+
         let res_dir = resource_dir_path(
             &self.discord_location,
             self.discord_location.is_system_electron,
