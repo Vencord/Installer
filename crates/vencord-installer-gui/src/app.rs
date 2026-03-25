@@ -1,9 +1,13 @@
-use std::{error::Error, rc::Rc};
+use std::{
+    error::Error,
+    sync::{Arc, Mutex},
+};
 use tokio::sync::mpsc;
 
 use vencord_installer_core::paths::{
     branch::{DiscordBranch as CoreDiscordBranch, DiscordLocation as CoreDiscordLocation},
     locations::get_discord_locations,
+    shared::get_custom_discord_location,
 };
 
 use crate::operations::{AppActions, AppMessage, AppOperation};
@@ -15,6 +19,7 @@ pub struct VencordInstallerApp {
     app_weak: slint::Weak<AppWindow>,
     operation_tx: mpsc::UnboundedSender<AppOperation>,
     message_rx: mpsc::UnboundedReceiver<AppMessage>,
+    custom_locations: Arc<Mutex<Vec<CoreDiscordLocation>>>,
 }
 
 impl VencordInstallerApp {
@@ -33,6 +38,7 @@ impl VencordInstallerApp {
             app_weak: app_weak.clone(),
             operation_tx,
             message_rx,
+            custom_locations: Arc::new(Mutex::new(Vec::new())),
         };
 
         gui_app.initialize().await?;
@@ -44,7 +50,7 @@ impl VencordInstallerApp {
         self.app.run()
     }
 
-    async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
+    async fn initialize(&self) -> Result<(), Box<dyn Error>> {
         self.app
             .global::<AppInfo>()
             .set_version(env!("CARGO_PKG_VERSION").into());
@@ -56,41 +62,47 @@ impl VencordInstallerApp {
 
     fn setup_callbacks(&self) {
         let callbacks = self.app.global::<RustCallbacks>();
-
         let app_weak = self.app_weak.clone();
-        callbacks.on_refresh_locations(move || {
-            if let Some(app) = app_weak.upgrade() {
-                Self::refresh_locations(&app);
+        let custom_locations = self.custom_locations.clone();
+        let tx = self.operation_tx.clone();
+
+        callbacks.on_refresh_locations({
+            let app_weak = app_weak.clone();
+            let custom_locations = custom_locations.clone();
+            move || {
+                if let Some(app) = app_weak.upgrade() {
+                    Self::refresh_locations(&app, &custom_locations.lock().unwrap());
+                }
             }
         });
 
-        let tx_install = self.operation_tx.clone();
-        callbacks.on_do_install(move |location| {
-            let loc: CoreDiscordLocation = (&location).into();
+        let tx_install = tx.clone();
+        callbacks.on_do_install(move |loc| {
+            let loc: CoreDiscordLocation = (&loc).into();
             if !loc.patched {
                 tx_install.send(AppOperation::Install(loc)).ok();
             }
         });
 
-        let tx_uninstall = self.operation_tx.clone();
-        callbacks.on_do_uninstall(move |location| {
-            let loc: CoreDiscordLocation = (&location).into();
+        let tx_uninstall = tx.clone();
+        callbacks.on_do_uninstall(move |loc| {
+            let loc: CoreDiscordLocation = (&loc).into();
             if loc.patched {
                 tx_uninstall.send(AppOperation::Uninstall(loc)).ok();
             }
         });
 
-        let tx_o_install = self.operation_tx.clone();
-        callbacks.on_do_o_install(move |location| {
-            let loc: CoreDiscordLocation = (&location).into();
+        let tx_o_install = tx.clone();
+        callbacks.on_do_o_install(move |loc| {
+            let loc: CoreDiscordLocation = (&loc).into();
             if !loc.openasar {
                 tx_o_install.send(AppOperation::InstallOpenAsar(loc)).ok();
             }
         });
 
-        let tx_o_uninstall = self.operation_tx.clone();
-        callbacks.on_do_o_uninstall(move |location| {
-            let loc: CoreDiscordLocation = (&location).into();
+        let tx_o_uninstall = tx.clone();
+        callbacks.on_do_o_uninstall(move |loc| {
+            let loc: CoreDiscordLocation = (&loc).into();
             if loc.openasar {
                 tx_o_uninstall
                     .send(AppOperation::UninstallOpenAsar(loc))
@@ -98,60 +110,99 @@ impl VencordInstallerApp {
             }
         });
 
-        let tx_repair = self.operation_tx.clone();
-        callbacks.on_do_repair(move |location| {
-            tx_repair
-                .send(AppOperation::Repair((&location).into()))
-                .ok();
+        let tx_repair = tx.clone();
+        callbacks.on_do_repair(move |loc| {
+            tx_repair.send(AppOperation::Repair((&loc).into())).ok();
         });
 
-        let tx_open_appdata = self.operation_tx.clone();
+        let tx_open_appdata = tx.clone();
         callbacks.on_do_open_appdata(move || {
             tx_open_appdata.send(AppOperation::OpenAppData).ok();
         });
 
-        let tx_open_link = self.operation_tx.clone();
+        let tx_open_link = tx.clone();
         callbacks.on_do_open_link(move |url| {
             tx_open_link
                 .send(AppOperation::OpenLink(url.to_string()))
                 .ok();
         });
+
+        let app_weak_folder = self.app_weak.clone();
+        let custom_locations_folder = self.custom_locations.clone();
+        callbacks.on_do_open_folder_dialog(move || {
+            println!("Opening folder dialog");
+            if let Some(folder) = rfd::FileDialog::new()
+                .set_title("Select Discord Installation Folder")
+                .pick_file_or_folder()
+            {
+                if let Some(path) = folder.to_str() {
+                    if let Some(location) = get_custom_discord_location(&path) {
+                        custom_locations_folder.lock().unwrap().push(location);
+
+                        if let Some(app) = app_weak_folder.upgrade() {
+                            VencordInstallerApp::refresh_locations(
+                                &app,
+                                &custom_locations_folder.lock().unwrap(),
+                            );
+                        }
+                    }
+                }
+            }
+        });
     }
 
     fn refresh_discord_locations(&self) {
-        Self::refresh_locations(&self.app);
+        Self::refresh_locations(&self.app, &self.custom_locations.lock().unwrap());
     }
 
-    fn refresh_locations(app: &AppWindow) {
+    fn refresh_locations(app: &AppWindow, custom_locations: &[CoreDiscordLocation]) {
+        let mut all_locations: Vec<DiscordLocation> = Vec::new();
+        let mut seen_paths = std::collections::HashSet::new();
+
         if let Some(core_locations) = get_discord_locations() {
-            let locations: Vec<DiscordLocation> = core_locations.iter().map(Into::into).collect();
-            let locations_model = Rc::new(slint::VecModel::from(locations));
-            app.global::<DiscordLocationAdapter>()
-                .set_locations(locations_model.into());
+            for loc in &core_locations {
+                if seen_paths.insert(loc.path.clone()) {
+                    all_locations.push(loc.into());
+                }
+            }
         }
+
+        for loc in custom_locations {
+            if seen_paths.insert(loc.path.clone()) {
+                all_locations.push(loc.into());
+            }
+        }
+
+        let locations_model = std::rc::Rc::new(slint::VecModel::from(all_locations));
+        app.global::<DiscordLocationAdapter>()
+            .set_locations(locations_model.into());
+
         app.global::<PageManager>().set_current_page_index(0);
     }
 
     fn start_message_handler(&mut self) {
         let app_weak = self.app_weak.clone();
+        let custom_locations = self.custom_locations.clone();
         let mut message_rx = std::mem::replace(&mut self.message_rx, mpsc::unbounded_channel().1);
 
         tokio::spawn(async move {
             while let Some(message) = message_rx.recv().await {
-                Self::handle_message(message, &app_weak);
+                VencordInstallerApp::handle_message(message, &app_weak, custom_locations.clone());
             }
         });
     }
 
-    fn handle_message(message: AppMessage, app_weak: &slint::Weak<AppWindow>) {
-        Self::invoke_ui_update(app_weak.clone(), |app| {
-            Self::refresh_locations(app);
+    fn handle_message(
+        message: AppMessage,
+        app_weak: &slint::Weak<AppWindow>,
+        custom_locations: Arc<Mutex<Vec<CoreDiscordLocation>>>,
+    ) {
+        Self::invoke_ui_update(app_weak.clone(), move |app| {
+            Self::refresh_locations(app, &custom_locations.lock().unwrap());
         });
-        match message {
-            AppMessage::OperationSuccess => {}
-            AppMessage::OperationError(error, show_open_appdata) => {
-                Self::show_error_dialog(app_weak.clone(), error, show_open_appdata);
-            }
+
+        if let AppMessage::OperationError(error, show_open_appdata) = message {
+            Self::show_error_dialog(app_weak.clone(), error, show_open_appdata);
         }
     }
 
@@ -177,7 +228,7 @@ impl VencordInstallerApp {
     }
 }
 
-// MARK: - Type Conversions
+// MARK: - Type conversions
 impl From<&CoreDiscordLocation> for DiscordLocation {
     fn from(core: &CoreDiscordLocation) -> Self {
         Self {

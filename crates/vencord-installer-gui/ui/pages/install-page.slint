@@ -242,6 +242,31 @@ export component InstallPage inherits Page {
                     }
                 }
             }
+
+            Rectangle {
+                height: 80px;
+                border-radius: 8px;
+                background: GruvboxPalette.bg1;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 6px;
+
+                    Text {
+                        text: "Add a custom Discord instance";
+                        font-size: 14px;
+                        color: GruvboxPalette.fg0;
+                    }
+
+                    ActionButton {
+                        text: "Select Folder";
+                        bg-color: GruvboxPalette.blue;
+                        hover-color: GruvboxPalette.blue-dim;
+                        clicked => RustCallbacks.do_open_folder_dialog();
+                    }
+                }
+
+                callback select_discord_folder;
+            }
         }
     }
 

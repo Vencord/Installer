@@ -17,6 +17,7 @@ export struct DiscordLocation {
 
 export global DiscordLocationAdapter {
     in property <[DiscordLocation]> locations;
+    in property <[DiscordLocation]> custom_locations;
     in property <DiscordLocation> selected_location;
 
     public pure function branch_name(branch: DiscordBranch) -> string {
@@ -51,6 +52,7 @@ export global RustCallbacks {
     pure callback do_uninstall(location: DiscordLocation);
     pure callback do_o_uninstall(location: DiscordLocation);
     pure callback do_repair(location: DiscordLocation);
-    pure callback do_open_appdata();
     pure callback do_open_link(url: string);
+    pure callback do_open_appdata();
+    pure callback do_open_folder_dialog();
 }

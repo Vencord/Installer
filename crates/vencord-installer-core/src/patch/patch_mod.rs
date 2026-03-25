@@ -166,6 +166,8 @@ impl Installer {
 
         let mut opts: Vec<FileOperation> = vec![];
 
+        let mut has_repaired: bool = false;
+
         for asar_name in ASAR_NAMES {
             let asar_path = resource_dir.join(asar_name);
 
@@ -180,12 +182,17 @@ impl Installer {
                     } else {
                         super::rename(&asar_path, &resource_dir.join("app.asar"), &mut opts);
                     }
+                    has_repaired = true;
                 } else if is_asar_considered_openasar(&asar_path) {
                     super::remove(&asar_path, &mut opts);
                 } else {
                     super::remove(&asar_path, &mut opts);
                 }
             }
+        }
+
+        if !has_repaired {
+            return Err(Error::ErrPleaseReinstallDiscord);
         }
 
         super::execute(&opts, &self.discord_location).await?;

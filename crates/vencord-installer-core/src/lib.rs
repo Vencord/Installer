@@ -60,6 +60,8 @@ pub enum Error {
     ErrLocationInvalid,
     #[error("No data path specified for patching.")]
     ErrNoDataPath,
+    #[error("Discord instance is corrupted or missing files. Please reinstall this Discord!")]
+    ErrPleaseReinstallDiscord,
     #[error("Invalid arguments provided: {0}")]
     ErrInvalidArguments(&'static str),
     #[error("Other error: {0}")]

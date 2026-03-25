@@ -12,8 +12,8 @@ pub enum AppOperation {
     Repair(DiscordLocation),
     InstallOpenAsar(DiscordLocation),
     UninstallOpenAsar(DiscordLocation),
-    OpenAppData,
     OpenLink(String),
+    OpenAppData,
 }
 
 #[derive(Debug, Clone)]
@@ -61,9 +61,14 @@ impl AppActions {
             AppOperation::Repair(location) => Self::repair(location).await,
             AppOperation::InstallOpenAsar(location) => Self::install_openasar(location).await,
             AppOperation::UninstallOpenAsar(location) => Self::uninstall_openasar(location).await,
-            AppOperation::OpenAppData => Self::open_appdata().await,
             AppOperation::OpenLink(url) => {
                 open::that(url).map_err(|e| Error::ErrIo(e))?;
+                Ok(())
+            }
+            AppOperation::OpenAppData => {
+                open::that_in_background(
+                    std::env::var("APPDATA").unwrap_or_else(|_| String::from("")),
+                );
                 Ok(())
             }
         }
@@ -106,18 +111,5 @@ impl AppActions {
 
     async fn uninstall_openasar(location: DiscordLocation) -> Result<(), Error> {
         Installer::new(location, None).unpatch_openasar().await
-    }
-
-    async fn open_appdata() -> Result<(), Error> {
-        #[cfg(target_os = "windows")]
-        {
-            use std::process::Command;
-            Command::new("explorer")
-                .arg("%APPDATA%")
-                .spawn()
-                .map_err(|e| Error::ErrIo(e))?;
-        }
-
-        Ok(())
     }
 }
