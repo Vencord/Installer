@@ -49,8 +49,8 @@ jobs:
             VencordInstallerCli-linux
 
 
-  build-mac:
-    runs-on: macos-latest
+  build-mac-amd64:
+    runs-on: macos-13
 
     steps:
       - name: Install Go
@@ -86,6 +86,88 @@ jobs:
 
       - name: Update executable
         run: |
+          chmod +x VencordInstaller
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: VencordInstaller-macos-amd64-bin
+          path: VencordInstaller
+
+
+  build-mac-arm64:
+    runs-on: macos-14
+
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.20"
+
+      - id: go-cache-paths
+        run: |
+          echo "go_build=$(go env GOCACHE)" >> $GITHUB_ENV
+          echo "go_mod=$(go env GOMODCACHE)" >> $GITHUB_ENV
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-go-
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
+        run: brew install pkg-config sdl2
+
+      - name: Install Go dependencies
+        run: go get -v
+
+      - name: Build
+        run: CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -v -tags static -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller
+
+      - name: Update executable
+        run: |
+          chmod +x VencordInstaller
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: VencordInstaller-macos-arm64-bin
+          path: VencordInstaller
+
+
+  build-mac-universal:
+    runs-on: macos-14
+    needs: [build-mac-amd64, build-mac-arm64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: VencordInstaller-macos-amd64-bin
+          path: macos-amd64
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: VencordInstaller-macos-arm64-bin
+          path: macos-arm64
+
+      - name: Create universal binary
+        run: |
+          chmod +x macos-amd64/VencordInstaller
+          chmod +x macos-arm64/VencordInstaller
+          lipo -create \
+            macos-amd64/VencordInstaller \
+            macos-arm64/VencordInstaller \
+            -output VencordInstaller
           chmod +x VencordInstaller
 
       - name: Generate MacOS bundle
@@ -169,7 +251,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: [build-linux, build-mac, build-windows]
+    needs: [build-linux, build-mac-universal, build-windows]
 
     steps:
       - name: Checkout code
