@@ -1,10 +1,10 @@
 pub mod patch_mod;
 
 use crate::{Error, paths::branch::DiscordLocation};
-use std::{
-    os::macos::fs::MetadataExt,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
+
+#[cfg(target_os = "linux")]
+use std::os::linux::fs::MetadataExt;
 
 #[cfg(target_os = "linux")]
 unsafe extern "C" {
