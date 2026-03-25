@@ -98,7 +98,7 @@ pub async fn execute(
                 if std::fs::metadata(parent).is_ok() {
                     let metadata = std::fs::metadata(parent).map_err(|e| Error::from(e))?;
                     if metadata.permissions().readonly()
-                        || unsafe { geteuid() } != 0 && metadata.st_gid() == 0
+                        || unsafe { geteuid() } != 0 && metadata.st_uid() == 0
                     {
                         _needs_elevated = true;
                         break;
