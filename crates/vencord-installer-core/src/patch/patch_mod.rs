@@ -9,6 +9,8 @@ use crate::paths::{branch::DiscordLocation, shared::is_asar_original};
 use crate::update::download::download_file;
 use crate::{Error, patch::FileOperation};
 
+// TODO: integrate repair stuff to standard functioality
+
 pub struct Installer {
     discord_location: DiscordLocation,
     data_path: Option<PathBuf>,
