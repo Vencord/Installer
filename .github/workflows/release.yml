@@ -50,7 +50,7 @@ jobs:
             VencordInstallerCli-linux
 
   build-mac-amd64:
-    runs-on: macos-latest
+    runs-on: macos-26
 
     steps:
       - name: Install Go
@@ -95,7 +95,7 @@ jobs:
           path: VencordInstaller
 
   build-mac-arm64:
-    runs-on: macos-latest
+    runs-on: macos-26-intel
 
     steps:
       - name: Install Go
