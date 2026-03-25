@@ -49,9 +49,8 @@ jobs:
           path: |
             VencordInstallerCli-linux
 
-
   build-mac-amd64:
-    runs-on: macos-13
+    runs-on: macos-latest
 
     steps:
       - name: Install Go
@@ -95,9 +94,8 @@ jobs:
           name: VencordInstaller-macos-amd64-bin
           path: VencordInstaller
 
-
   build-mac-arm64:
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: Install Go
@@ -142,7 +140,6 @@ jobs:
           name: VencordInstaller-macos-arm64-bin
           path: VencordInstaller
 
-
   build-mac-universal:
     runs-on: macos-14
     needs: [build-mac-amd64, build-mac-arm64]
@@ -185,7 +182,6 @@ jobs:
         with:
           name: VencordInstaller-macos
           path: VencordInstaller.MacOS.zip
-
 
   build-windows:
     runs-on: windows-latest
@@ -248,7 +244,6 @@ jobs:
           path: |
             VencordInstaller.exe
             VencordInstallerCli.exe
-
 
   release:
     runs-on: ubuntu-latest
