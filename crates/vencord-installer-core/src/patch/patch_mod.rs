@@ -60,6 +60,11 @@ impl Installer {
         super::copy(&custom_asar, &live_path, &mut opts);
         super::execute(&opts, &self.discord_location).await?;
 
+        #[cfg(target_os = "linux")]
+        if self.discord_location.is_flatpak {
+            super::cmd(&self.grant_flatpak_permissions()?, &mut opts);
+        }
+
         self.discord_location.patched = true;
 
         Ok(())
@@ -134,6 +139,11 @@ impl Installer {
         super::copy(&dl_path, &target, &mut opts);
         super::remove(&dl_path, &mut opts);
         super::execute(&opts, &self.discord_location).await?;
+
+        #[cfg(target_os = "linux")]
+        if self.discord_location.is_flatpak {
+            super::cmd(&self.grant_flatpak_permissions()?, &mut opts);
+        }
 
         self.discord_location.openasar = true;
 
@@ -218,7 +228,7 @@ impl Installer {
     }
 }
 
-// MARK: - Find
+// MARK: - Misc
 
 impl Installer {
     async fn find_root_original(&self) -> Result<PathBuf, Error> {
@@ -243,11 +253,29 @@ impl Installer {
 
         Err(Error::ErrPleaseReinstallDiscord)
     }
-}
 
-// MARK: - Generate
+    #[cfg(target_os = "linux")]
+    pub fn grant_flatpak_permissions(&self) -> Result<String, Error> {
+        let data_path = self.data_path.clone().ok_or(Error::ErrNoDataPath)?;
+        let name = self
+            .discord_location
+            .path
+            .split('/')
+            .find(|s| s.starts_with("com.discordapp."))
+            .unwrap_or("");
 
-impl Installer {
+        let is_system_flatpak = self.discord_location.path.contains("/var");
+        let mut args = vec![];
+        if !is_system_flatpak {
+            args.push("--user");
+        }
+        args.push("override");
+        args.push(name);
+        args.push(&format!("--filesystem={}", &data_path.to_string_lossy()));
+
+        Ok(format!("flatpak {}", args.join(" ")))
+    }
+
     #[cfg(feature = "generate_asar")]
     async fn generate_patcher_asar(
         &self,
