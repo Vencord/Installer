@@ -95,6 +95,11 @@ export component Footer inherits Rectangle {
                 }
             }
 
+            Rectangle {
+                horizontal-stretch: 1;
+                background: transparent;
+            }
+
             IconButton {
                 icon: @image-url("../assets/donate.svg");
                 clicked => {
@@ -102,17 +107,12 @@ export component Footer inherits Rectangle {
                 }
             }
 
-            Rectangle {
-                horizontal-stretch: 1;
-                background: transparent;
-            }
-
-            IconButton {
-                icon: @image-url("../assets/settings.svg");
-                clicked => {
-                    debug("Settings");
-                }
-            }
+            // IconButton {
+            //     icon: @image-url("../assets/settings.svg");
+            //     clicked => {
+            //         debug("Settings");
+            //     }
+            // }
         }
     }
 }
