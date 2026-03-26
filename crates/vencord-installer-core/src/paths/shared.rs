@@ -119,10 +119,8 @@ pub(crate) fn is_location_openasar(path: &Path, patched: bool) -> bool {
 /// * `path` - The path to the Discord installation.
 pub(crate) fn is_location_flatpak(_path: &Path) -> bool {
     #[cfg(target_os = "linux")]
-    if _path.to_string_lossy().contains("/flatpak/") {
-        true
-    } else {
-        false
+    {
+        _path.to_string_lossy().contains("/flatpak/")
     }
 
     #[cfg(not(target_os = "linux"))]
@@ -136,10 +134,8 @@ pub(crate) fn is_location_flatpak(_path: &Path) -> bool {
 /// * `path` - The path to the Discord installation.
 pub(crate) fn is_location_system_electron(_path: &Path) -> bool {
     #[cfg(target_os = "linux")]
-    if !_path.join(get_discord_resource_location()).exists() {
-        true
-    } else {
-        false
+    {
+        !_path.join(get_discord_resource_location()).exists()
     }
 
     #[cfg(not(target_os = "linux"))]
