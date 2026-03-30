@@ -1,6 +1,6 @@
 module vencordinstaller
 
-go 1.20
+go 1.25.0
 
 require (
 	github.com/AllenDang/giu v0.6.2
@@ -21,6 +21,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect
-	golang.org/x/image v0.14.0 // indirect
+	golang.org/x/image v0.38.0 // indirect
 	gopkg.in/eapache/queue.v1 v1.1.0 // indirect
 )
