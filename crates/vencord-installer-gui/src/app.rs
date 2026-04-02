@@ -231,6 +231,7 @@ impl VencordInstallerApp {
             .set_level(rfd::MessageLevel::Error)
             .show();
 
+        #[cfg(target_os = "windows")]
         if show_open_appdata
             && result == rfd::MessageDialogResult::Custom("Take me There".to_owned())
         {
