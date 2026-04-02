@@ -215,6 +215,11 @@ impl Installer {
         let mut opts = vec![];
 
         if root_original != live_path {
+            // edge case on older installs where the app.asar is a directory instead of a proper asar
+            if live_path.is_dir() {
+                super::remove(&live_path, &mut opts);
+            }
+
             super::copy(&root_original, &live_path, &mut opts);
         }
 

@@ -37,14 +37,24 @@ fn parse_discord_location(full_path: &Path) -> Option<DiscordLocation> {
     let app_path = std::fs::read_dir(full_path)
         .ok()?
         .flatten()
-        .find_map(|entry| {
+        .filter_map(|entry| {
             let app_dir = full_path.join(entry.file_name());
-            if app_dir.is_dir() && app_dir.join(get_discord_resource_location()).exists() {
-                Some(app_dir)
-            } else {
-                None
+            if !app_dir.is_dir() || !app_dir.join(get_discord_resource_location()).exists() {
+                return None;
             }
-        })?;
+
+            // for some reason theres many app-* folders, so we try to find the latest
+            let dir_name = app_dir.file_name()?.to_str()?;
+            let version = dir_name
+                .strip_prefix("app-")?
+                .split('.')
+                .map(|part| part.parse::<u64>().ok())
+                .collect::<Option<Vec<_>>>()?;
+
+            Some((version, app_dir))
+        })
+        .max_by(|(a_version, _), (b_version, _)| a_version.cmp(b_version))
+        .map(|(_, path)| path)?;
 
     let patched = is_location_patched(&app_path, &false);
 

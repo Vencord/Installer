@@ -154,9 +154,11 @@ pub async fn execute(
                 }
                 FileOperation::Remove { path } => {
                     if path.exists() {
-                        tokio::fs::remove_file(path)
-                            .await
-                            .map_err(|e| Error::from(e))?;
+                        if path.is_dir() {
+                            tokio::fs::remove_dir_all(path).await?
+                        } else {
+                            tokio::fs::remove_file(path).await?
+                        }
                     }
                 }
                 #[cfg(target_os = "linux")]
