@@ -92,10 +92,12 @@ pub fn get_discord_resource_location() -> PathBuf {
 ///
 /// * `name` - The name of the Discord installation.
 pub fn is_scuffed_install(name: &String) -> bool {
-    let username_dir = std::env::var("USERNAME").ok().unwrap_or_default();
+    get_program_data_path().join(name).exists()
+}
+
+pub fn get_program_data_path() -> PathBuf {
     let program_data_dir = std::env::var("PROGRAMDATA").ok().unwrap_or_default();
+    let username_dir = std::env::var("USERNAME").ok().unwrap_or_default();
 
-    let scuffed_path = Path::new(&program_data_dir).join(username_dir).join(&name);
-
-    scuffed_path.exists()
+    Path::new(&program_data_dir).join(username_dir)
 }
