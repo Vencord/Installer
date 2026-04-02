@@ -20,3 +20,4 @@ rfd = { version = "0.17.2", features = ["common-controls-v6"] } # dialogs
 
 [build-dependencies]
 slint-build = "1.12.1"
+winresource = "0.1"
