@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 
 use vencord_installer_core::paths::{
     branch::{DiscordBranch as CoreDiscordBranch, DiscordLocation as CoreDiscordLocation},
-    locations::{get_discord_locations, get_program_data_path},
+    locations::get_discord_locations,
     shared::get_custom_discord_location,
 };
 
@@ -235,6 +235,7 @@ impl VencordInstallerApp {
         if show_open_appdata
             && result == rfd::MessageDialogResult::Custom("Take me There".to_owned())
         {
+            use vencord_installer_core::paths::locations::get_program_data_path;
             open::that_in_background(get_program_data_path());
         }
     }
