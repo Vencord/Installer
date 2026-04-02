@@ -38,12 +38,6 @@ export global AppInfo {
     in property <string> version: "0.0.0";
 }
 
-export global ErrorDialog {
-    in-out property <bool> visible: false;
-    in-out property <bool> open_appdata: false;
-    in-out property <string> message: "";
-}
-
 export global RustCallbacks {
     pure callback refresh_locations;
 
@@ -53,6 +47,5 @@ export global RustCallbacks {
     pure callback do_o_uninstall(location: DiscordLocation);
     pure callback do_repair(location: DiscordLocation);
     pure callback do_open_link(url: string);
-    pure callback do_open_appdata();
     pure callback do_open_folder_dialog();
 }

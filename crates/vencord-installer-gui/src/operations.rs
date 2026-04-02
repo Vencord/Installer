@@ -13,7 +13,6 @@ pub enum AppOperation {
     InstallOpenAsar(DiscordLocation),
     UninstallOpenAsar(DiscordLocation),
     OpenLink(String),
-    OpenAppData,
 }
 
 #[derive(Debug, Clone)]
@@ -63,12 +62,6 @@ impl AppActions {
             AppOperation::UninstallOpenAsar(location) => Self::uninstall_openasar(location).await,
             AppOperation::OpenLink(url) => {
                 open::that(url).map_err(|e| Error::ErrIo(e))?;
-                Ok(())
-            }
-            AppOperation::OpenAppData => {
-                open::that_in_background(
-                    std::env::var("APPDATA").unwrap_or_else(|_| String::from("")),
-                );
                 Ok(())
             }
         }

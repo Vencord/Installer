@@ -16,7 +16,7 @@ slint = { version = "1.12.1", features = [
     "image-default-formats",
 ] }
 open = "5.3.3" # links
-rfd = "0.17.2" # file dialogs
+rfd = { version = "0.17.2", features = ["common-controls-v6"] } # dialogs
 
 [build-dependencies]
 slint-build = "1.12.1"

@@ -115,11 +115,6 @@ impl VencordInstallerApp {
             tx_repair.send(AppOperation::Repair((&loc).into())).ok();
         });
 
-        let tx_open_appdata = tx.clone();
-        callbacks.on_do_open_appdata(move || {
-            tx_open_appdata.send(AppOperation::OpenAppData).ok();
-        });
-
         let tx_open_link = tx.clone();
         callbacks.on_do_open_link(move |url| {
             tx_open_link
@@ -208,7 +203,7 @@ impl VencordInstallerApp {
         });
 
         if let AppMessage::OperationError(error, show_open_appdata) = message {
-            Self::show_error_dialog(app_weak.clone(), error, show_open_appdata);
+            Self::show_error_dialog(error, show_open_appdata);
         }
     }
 
@@ -224,13 +219,25 @@ impl VencordInstallerApp {
         .ok();
     }
 
-    fn show_error_dialog(app_weak: slint::Weak<AppWindow>, error: String, show_open_appdata: bool) {
-        Self::invoke_ui_update(app_weak, move |app| {
-            app.global::<ErrorDialog>().set_message(error.into());
-            app.global::<ErrorDialog>().set_visible(true);
-            app.global::<ErrorDialog>()
-                .set_open_appdata(show_open_appdata);
-        });
+    fn show_error_dialog(error: String, show_open_appdata: bool) {
+        let result = rfd::MessageDialog::new()
+            .set_title("Operation Failed")
+            .set_description(&error)
+            .set_buttons(if show_open_appdata {
+                rfd::MessageButtons::OkCancelCustom("Take me There".to_owned(), "Ok".to_owned())
+            } else {
+                rfd::MessageButtons::Ok
+            })
+            .set_level(rfd::MessageLevel::Error)
+            .show();
+
+        if show_open_appdata
+            && result == rfd::MessageDialogResult::Custom("Take me There".to_owned())
+        {
+            if let Ok(path) = std::env::var("PROGRAMDATA") {
+                open::that_in_background(path);
+            }
+        }
     }
 }
 
