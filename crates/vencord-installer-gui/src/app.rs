@@ -220,7 +220,7 @@ impl VencordInstallerApp {
     }
 
     fn show_error_dialog(error: String, show_open_appdata: bool) {
-        let result = rfd::MessageDialog::new()
+        let _result = rfd::MessageDialog::new()
             .set_title("Operation Failed")
             .set_description(&error)
             .set_buttons(if show_open_appdata {
@@ -233,7 +233,7 @@ impl VencordInstallerApp {
 
         #[cfg(target_os = "windows")]
         if show_open_appdata
-            && result == rfd::MessageDialogResult::Custom("Take me There".to_owned())
+            && _result == rfd::MessageDialogResult::Custom("Take me There".to_owned())
         {
             use vencord_installer_core::paths::locations::get_program_data_path;
             open::that_in_background(get_program_data_path());
