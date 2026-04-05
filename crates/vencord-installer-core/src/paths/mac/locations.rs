@@ -16,7 +16,6 @@ pub fn get_discord_locations() -> Option<Vec<DiscordLocation>> {
     let home_dir_path = Path::new(&home_dir);
 
     let paths = [
-        // TODO: add ~/Desktop because people are dumb
         Path::new("/Applications"),
         &home_dir_path.join("Applications"),
     ];

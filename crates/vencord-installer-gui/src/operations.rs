@@ -18,7 +18,7 @@ pub enum AppOperation {
 #[derive(Debug, Clone)]
 pub enum AppMessage {
     OperationSuccess,
-    OperationError(String, bool),
+    OperationError(String, bool, bool),
 }
 
 pub struct AppActions {
@@ -39,13 +39,12 @@ impl AppActions {
 
     pub async fn run(mut self) {
         while let Some(operation) = self.operation_rx.recv().await {
-            let result = self.handle_operation(operation).await;
-
-            let message = match result {
+            let message = match self.handle_operation(operation).await {
                 Ok(()) => AppMessage::OperationSuccess,
                 Err(err) => AppMessage::OperationError(
                     err.format_error(),
-                    matches!(err, Error::ErrWindowsMovedDirectory),
+                    err.is_windows_moved_dir(),
+                    err.is_permission_denied(),
                 ),
             };
 

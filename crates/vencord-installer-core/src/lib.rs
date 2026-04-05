@@ -82,39 +82,51 @@ pub enum Error {
 impl Error {
     pub fn format_error(&self) -> String {
         match self {
-            Self::ErrWindowsMovedDirectory => {
-                format!(
-                    "{}\n\nSometimes Discord decides to install to the wrong location for some reason!\n\
-                 You need to fix this before patching, otherwise Vencord will likely not work.\n\n\
-                 Use the below button to jump there and delete any folder called Discord or Squirrel.\n\
-                 If the folder is now empty, feel free to go back a step and delete that folder too.\n\
-                 Then see if Discord still starts. If not, reinstall it.",
-                    self.to_string()
-                )
-            }
-            Self::ErrIo(err) => {
-                #[cfg(target_os = "macos")]
-                {
-                    match err.kind() {
-                        std::io::ErrorKind::PermissionDenied => {
-                            format!(
-                                "{}\n\nOn macOS, you need to grant 'App Management' permissions in System Preferences > Security & Privacy.",
-                                err
-                            )
-                        }
-                        _ => format!("I/O error: {}", err),
-                    }
-                }
-                #[cfg(not(target_os = "macos"))]
-                {
-                    format!("I/O error: {}", err)
-                }
-            }
+            Self::ErrWindowsMovedDirectory => format!(
+                "{}\n\nSometimes Discord installs to the wrong location.\n\
+             Fix this before patching.\n\n\
+             Delete any 'Discord' or 'Squirrel' folders in that location.\n\
+             If empty, remove the parent folder too.\n\
+             Then try launching Discord again.",
+                self
+            ),
+
+            Self::ErrIo(err) => Self::format_io_error(err),
+
             Self::ErrReqwest(err) => format!(
-                "{}\n\nMake sure you're connected to the internet!\n\nIf it's still blocked, github may be blocked in your country or your isp, if thats the case, setup or use a VPN to bypass it.",
+                "{}\n\nMake sure you're connected to the internet.\n\
+             If blocked, GitHub may be restricted — try a VPN.",
                 err
             ),
+
             _ => self.to_string(),
         }
+    }
+
+    fn format_io_error(err: &std::io::Error) -> String {
+        #[cfg(target_os = "macos")]
+        {
+            if err.kind() == std::io::ErrorKind::PermissionDenied {
+                return format!(
+                    "{}\n\nGrant 'App Management' permissions in System Settings.",
+                    err
+                );
+            }
+        }
+
+        format!("I/O error: {}", err)
+    }
+}
+
+impl Error {
+    pub fn is_permission_denied(&self) -> bool {
+        matches!(
+            self,
+            Error::ErrIo(err) if err.kind() == std::io::ErrorKind::PermissionDenied
+        )
+    }
+
+    pub fn is_windows_moved_dir(&self) -> bool {
+        matches!(self, Error::ErrWindowsMovedDirectory)
     }
 }

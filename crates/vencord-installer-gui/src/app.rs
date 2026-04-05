@@ -202,8 +202,10 @@ impl VencordInstallerApp {
             Self::refresh_locations(app, &custom_locations.lock().unwrap());
         });
 
-        if let AppMessage::OperationError(error, show_open_appdata) = message {
-            Self::show_error_dialog(error, show_open_appdata);
+        if let AppMessage::OperationError(error, show_open_appdata, show_permission_denied) =
+            message
+        {
+            Self::show_error_dialog(error, show_open_appdata, show_permission_denied);
         }
     }
 
@@ -219,24 +221,44 @@ impl VencordInstallerApp {
         .ok();
     }
 
-    fn show_error_dialog(error: String, show_open_appdata: bool) {
-        let _result = rfd::MessageDialog::new()
+    fn show_error_dialog(error: String, show_open_appdata: bool, show_permission_denied: bool) {
+        let (custom_label, action) = if show_open_appdata {
+            (Some("Take me There"), Some(0))
+        } else if show_permission_denied {
+            (Some("App Management"), Some(1))
+        } else {
+            (None, None)
+        };
+
+        let buttons = match custom_label {
+            Some(label) => rfd::MessageButtons::OkCancelCustom(label.to_owned(), "Ok".to_owned()),
+            None => rfd::MessageButtons::Ok,
+        };
+
+        let result = rfd::MessageDialog::new()
             .set_title("Operation Failed")
             .set_description(&error)
-            .set_buttons(if show_open_appdata {
-                rfd::MessageButtons::OkCancelCustom("Take me There".to_owned(), "Ok".to_owned())
-            } else {
-                rfd::MessageButtons::Ok
-            })
+            .set_buttons(buttons)
             .set_level(rfd::MessageLevel::Error)
             .show();
 
-        #[cfg(target_os = "windows")]
-        if show_open_appdata
-            && _result == rfd::MessageDialogResult::Custom("Take me There".to_owned())
-        {
-            use vencord_installer_core::paths::locations::get_program_data_path;
-            open::that_in_background(get_program_data_path());
+        if let (Some(label), Some(action)) = (custom_label, action) {
+            if result == rfd::MessageDialogResult::Custom(label.to_owned()) {
+                match action {
+                    #[cfg(target_os = "windows")]
+                    0 => {
+                        use vencord_installer_core::paths::locations::get_program_data_path;
+                        open::that_in_background(get_program_data_path());
+                    }
+                    #[cfg(target_os = "macos")]
+                    1 => {
+                        open::that_in_background(
+                            "x-apple.systempreferences:com.apple.preference.security?Privacy_AppBundles",
+                        );
+                    }
+                    _ => {}
+                }
+            }
         }
     }
 }
