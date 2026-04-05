@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use crate::Error;
 #[cfg(feature = "generate_asar")]
-use crate::asar::write_app_asar;
+use super::asar::write_app_asar;
+use crate::Error;
 #[cfg(target_os = "windows")]
 use crate::paths::locations::is_scuffed_install;
 use crate::paths::shared::resource_dir_path;

@@ -3,8 +3,6 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
-#[cfg(feature = "generate_asar")]
-pub mod asar;
 pub mod patch;
 pub mod paths;
 pub mod update;
