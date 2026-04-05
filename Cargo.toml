@@ -9,7 +9,7 @@ members = [
 [workspace.package]
 edition = "2024"
 version = "2.0.0"
-authors = ["CLARATION <s03781614@icloud.com>", "V <vendicated@riseup.net>"]
+authors = ["CLARATION <claration@riseup.net>", "V <vendicated@riseup.net>"]
 repository = "https://github.com/Vencord/Installer"
 
 [workspace.dependencies]
