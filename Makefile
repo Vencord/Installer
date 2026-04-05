@@ -42,3 +42,14 @@ windows:
 	cp target/x86_64-pc-windows-msvc/release/vencord-installer-cli.exe _out/windows/vencord-installer-cli.exe
 
 linux:
+	rm -rf _out/linux
+	mkdir -p _out/linux
+
+	cargo build \
+		--bin vencord-installer-gui \
+		--bin vencord-installer-cli \
+		--release \
+		--target x86_64-unknown-linux-gnu
+
+	cp target/x86_64-unknown-linux-gnu/release/vencord-installer-gui _out/linux/vencord-installer-gui
+	cp target/x86_64-unknown-linux-gnu/release/vencord-installer-cli _out/linux/vencord-installer-cli
