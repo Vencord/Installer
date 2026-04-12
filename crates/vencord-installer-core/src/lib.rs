@@ -1,5 +1,4 @@
 #![warn(mismatched_lifetime_syntaxes)]
-#![deny(unsafe_code)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
