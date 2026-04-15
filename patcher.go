@@ -7,6 +7,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"github.com/ProtonMail/go-appdir"
 	"os"
@@ -36,6 +37,53 @@ func init() {
 	} else {
 		VencordDirectory = path.Join(BaseDir, "vencord.asar")
 	}
+}
+
+func isVencordLoaderAppAsar(appAsar string) (bool, error) {
+	stat, err := os.Stat(appAsar)
+	if err != nil {
+		return false, err
+	}
+
+	// Our generated loader only contains index.js + package.json and is tiny.
+	// If app.asar is much larger, Discord likely updated it while we were patched.
+	if stat.Size() > 128*1024 {
+		return false, nil
+	}
+
+	b, err := os.ReadFile(appAsar)
+	if err != nil {
+		return false, err
+	}
+
+	return bytes.Contains(b, []byte(PackageJson)) && bytes.Contains(b, []byte("require(")), nil
+}
+
+func cleanupDesyncedPatchedInstall(dir string, isSystemElectron bool) (bool, error) {
+	appAsar := path.Join(dir, "app.asar")
+	_appAsar := path.Join(dir, "_app.asar")
+
+	isLoader, err := isVencordLoaderAppAsar(appAsar)
+	if err != nil {
+		return false, err
+	}
+	if isLoader {
+		return false, nil
+	}
+
+	Log.Warn("Detected a patched install with a non-Vencord app.asar. Discord was likely updated while Vencord was patched; cleaning up stale _app.asar")
+
+	if err = os.Remove(_appAsar); err != nil {
+		return false, CheckIfErrIsCauseItsBusyRn(err)
+	}
+
+	if isSystemElectron {
+		if err = os.RemoveAll(_appAsar + ".unpacked"); err != nil {
+			return false, err
+		}
+	}
+
+	return true, nil
 }
 
 type DiscordInstall struct {
@@ -179,6 +227,14 @@ func unpatchAppAsar(dir string, isSystemElectron bool) (errOut error) {
 	appAsar := path.Join(dir, "app.asar")
 	appAsarTmp := path.Join(dir, "app.asar.tmp")
 	_appAsar := path.Join(dir, "_app.asar")
+
+	cleanedUp, err := cleanupDesyncedPatchedInstall(dir, isSystemElectron)
+	if err != nil {
+		return err
+	}
+	if cleanedUp {
+		return nil
+	}
 
 	var renamesDone [][]string
 	defer func() {
