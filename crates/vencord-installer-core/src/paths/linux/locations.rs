@@ -37,16 +37,18 @@ pub fn get_discord_locations() -> Option<Vec<DiscordLocation>> {
         &home_dir_path.join(".dvm"), // https://github.com/diced/dvm
         // flatpak
         Path::new("/var/lib/flatpak/app"),
-        Path::new(".local/share/flatpak/app"),
+        &home_dir_path.join(".local/share/flatpak/app"),
+        // new locations
+        &home_dir_path.join(".config"),
     ];
-    
+
     let locations: Vec<DiscordLocation> = paths
         .iter()
         .flat_map(|base| {
             DISCORD_LOCATIONS.iter().filter_map(|&discord_location| {
                 let full_path = base.join(discord_location);
                 if full_path.exists() {
-                    Some(parse_discord_location(&full_path))
+                    parse_discord_location(&full_path)
                 } else {
                     None
                 }
@@ -57,7 +59,7 @@ pub fn get_discord_locations() -> Option<Vec<DiscordLocation>> {
     Some(locations).filter(|l| !l.is_empty())
 }
 
-fn parse_discord_location(full_path: &PathBuf) -> DiscordLocation {
+fn parse_discord_location(full_path: &PathBuf) -> Option<DiscordLocation> {
     let mut full_path = full_path.to_path_buf();
 
     let discord_location = full_path
@@ -86,10 +88,43 @@ fn parse_discord_location(full_path: &PathBuf) -> DiscordLocation {
         full_path = full_path.join("current/active/files").join(&discord_name);
     }
 
+    let resources = get_discord_resource_location();
+
+    // For installs that use versioned app-* subdirectories (e.g. ~/.config/discordcanary),
+    // find the latest one if resources aren't directly present.
+    if !full_path.join(&resources).exists() {
+        let app_path = std::fs::read_dir(&full_path)
+            .ok()?
+            .flatten()
+            .filter_map(|entry| {
+                let app_dir = full_path.join(entry.file_name());
+                if !app_dir.is_dir() || !app_dir.join(&resources).exists() {
+                    return None;
+                }
+
+                let dir_name = app_dir.file_name()?.to_str()?.to_string();
+                let version = dir_name
+                    .strip_prefix("app-")?
+                    .split('.')
+                    .map(|part| part.parse::<u64>().ok())
+                    .collect::<Option<Vec<_>>>()?;
+
+                Some((version, app_dir))
+            })
+            .max_by(|(a_version, _), (b_version, _)| a_version.cmp(b_version))
+            .map(|(_, path)| path)?;
+
+        full_path = app_path;
+    }
+
+    if !full_path.join(&resources).join("app.asar").exists() {
+        return None;
+    }
+
     let system_electron = is_location_system_electron(&full_path);
     let patched = is_location_patched(&full_path, &system_electron);
 
-    DiscordLocation {
+    Some(DiscordLocation {
         name: discord_location.to_string(),
         path: full_path.to_string_lossy().into_owned(),
         branch: DiscordBranch::from_path(&discord_location),
@@ -97,7 +132,7 @@ fn parse_discord_location(full_path: &PathBuf) -> DiscordLocation {
         openasar: is_location_openasar(&full_path, patched),
         is_flatpak: is_flatpak,
         is_system_electron: system_electron,
-    }
+    })
 }
 
 /// Returns and creates the data path for the given name.
@@ -167,9 +202,9 @@ pub async fn copy_ownership_permissions(to: &PathBuf) -> Result<(), crate::Error
         .ok_or(crate::Error::ErrPermissionDenied)?;
 
     let to = to.clone();
-    tokio::task::spawn_blocking(move || {
-        chown(to, Some(uid), Some(gid))
-    }).await?.ok();
+    tokio::task::spawn_blocking(move || chown(to, Some(uid), Some(gid)))
+        .await?
+        .ok();
 
     Ok(())
 }
