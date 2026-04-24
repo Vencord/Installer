@@ -11,8 +11,8 @@ impl DiscordBranch {
     /// Returns the DiscordBranch from the given path.
     pub fn from_path(path: &str) -> Self {
         match path {
-            p if p.contains("Canary") => DiscordBranch::Canary,
-            p if p.contains("Development") => DiscordBranch::Development,
+            p if p.contains("anary") => DiscordBranch::Canary,
+            p if p.contains("evelopment") => DiscordBranch::Development,
             p if p.contains("PTB") => DiscordBranch::PTB,
             _ => DiscordBranch::Stable,
         }
