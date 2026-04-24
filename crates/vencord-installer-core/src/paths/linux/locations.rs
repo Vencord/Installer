@@ -98,7 +98,7 @@ fn parse_discord_location(full_path: &PathBuf) -> Option<DiscordLocation> {
             .flatten()
             .filter_map(|entry| {
                 let app_dir = full_path.join(entry.file_name());
-                if !app_dir.is_dir() || !app_dir.join(&resources).exists() {
+                if !app_dir.is_dir() || !app_dir.join(&resources).join("app.asar").exists() {
                     return None;
                 }
 
