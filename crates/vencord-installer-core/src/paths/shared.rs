@@ -168,7 +168,7 @@ pub(crate) async fn is_asar_original(path: &Path) -> bool {
     if let Ok(metadata) = std::fs::metadata(path) {
         // Discord's asar is really big, this number is arbitrary...
         // TODO: extract `package.json` instead
-        if metadata.len() > 3_000_000 {
+        if metadata.len() > 1_000_000 {
             return true;
         }
     }
