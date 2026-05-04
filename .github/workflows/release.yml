@@ -197,7 +197,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: VencordInstaller-macos-arm64
-          path: macos-arm64
+          path: macos
 
       - uses: actions/download-artifact@v3
         with:
@@ -215,5 +215,5 @@ jobs:
           files: |
             linux/VencordInstallerCli-linux
             macos/VencordInstaller.MacOS.zip
-            macos-arm64/VencordInstaller.MacOS-AppleSilicon.zip
+            macos/VencordInstaller.MacOS-AppleSilicon.zip
             windows/VencordInstalle*.exe
