@@ -57,9 +57,73 @@ func init() {
 		"/opt",
 		path.Join(Home, ".local/share"),
 		path.Join(Home, ".dvm"),
+		path.Join(Home, ".config"),
 		"/var/lib/flatpak/app",
 		path.Join(Home, "/.local/share/flatpak/app"),
 	}
+}
+
+// findLatestAppDir returns the path to the highest-versioned `app-*`
+// subdirectory containing a `resources` folder, or "" if none exists.
+// Discord 1.0.136+ installs to ~/.config/<branch>/app-<version>/ on Linux,
+// matching the Windows %LOCALAPPDATA%\<branch>\app-<version>\ layout.
+func parseAppVersion(name string) []int {
+	parts := strings.Split(strings.TrimPrefix(name, "app-"), ".")
+	out := make([]int, len(parts))
+	for i, s := range parts {
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return nil
+		}
+		out[i] = n
+	}
+	return out
+}
+
+func compareAppVersion(a, b []int) int {
+	for i := 0; i < len(a) || i < len(b); i++ {
+		var x, y int
+		if i < len(a) {
+			x = a[i]
+		}
+		if i < len(b) {
+			y = b[i]
+		}
+		if x != y {
+			if x < y {
+				return -1
+			}
+			return 1
+		}
+	}
+	return 0
+}
+
+func findLatestAppDir(p string) string {
+	entries, err := os.ReadDir(p)
+	if err != nil {
+		return ""
+	}
+	latest := ""
+	var latestVer []int
+	for _, e := range entries {
+		if !e.IsDir() || !strings.HasPrefix(e.Name(), "app-") {
+			continue
+		}
+		candidate := path.Join(p, e.Name())
+		if !ExistsFile(path.Join(candidate, "resources")) {
+			continue
+		}
+		ver := parseAppVersion(e.Name())
+		if ver == nil {
+			continue
+		}
+		if latest == "" || compareAppVersion(ver, latestVer) > 0 {
+			latest = candidate
+			latestVer = ver
+		}
+	}
+	return latest
 }
 
 func ParseDiscord(p, _ string) *DiscordInstall {
@@ -85,6 +149,12 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 	} else if ExistsFile(path.Join(p, "app.asar")) { // System electron doesn't have resources folder
 		isSystemElectron = true
 		isPatched = ExistsFile(path.Join(p, "_app.asar.unpacked"))
+	} else if appDir := findLatestAppDir(p); appDir != "" {
+		// New ~/.config/<branch>/app-<version>/ layout (Discord 1.0.136+)
+		p = appDir
+		resources = path.Join(p, "resources")
+		app = path.Join(resources, "app")
+		isPatched = ExistsFile(path.Join(resources, "_app.asar"))
 	} else {
 		Log.Warn("Tried to parse invalid Location:", p)
 		return nil
