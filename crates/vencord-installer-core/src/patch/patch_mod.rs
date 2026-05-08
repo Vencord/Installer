@@ -1,77 +1,54 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-#[cfg(feature = "generate_asar")]
-use super::asar::write_app_asar;
 use crate::Error;
-#[cfg(target_os = "windows")]
-use crate::paths::locations::is_scuffed_install;
-use crate::paths::shared::resource_dir_path;
-use crate::paths::{branch::DiscordLocation, shared::is_asar_original};
+
+use crate::paths::DiscordLocation;
 use crate::update::download::download_file;
 
 pub struct Installer {
     discord_location: DiscordLocation,
-    data_path: Option<PathBuf>,
+    data_path: PathBuf,
 }
 
 impl Installer {
-    pub fn new(discord_location: DiscordLocation, data_path: Option<PathBuf>) -> Self {
-        Installer {
+    pub fn new(
+        discord_location: DiscordLocation,
+        data_path: Option<PathBuf>,
+    ) -> Result<Self, Error> {
+        #[cfg(target_os = "windows")]
+        if discord_location.is_scuffed {
+            log::error!("You have a broken Discord install. Please reinstall Discord!");
+            return Err(Error::ErrWindowsMovedDirectory);
+        }
+
+        let data_path = data_path.ok_or(Error::ErrNoDataPath)?;
+
+        Ok(Installer {
             discord_location,
             data_path,
-        }
+        })
     }
 
     // MARK: - Vencord
 
     pub async fn patch(&mut self) -> Result<(), Error> {
-        if self.discord_location.patched {
-            return Err(Error::ErrLocationPatched);
-        }
+        let live_path = self.discord_location.asar_path();
+        let mod_backup = self.discord_location.asar_patched_path();
+        let custom_asar = self.data_path.join("app.asar");
 
-        let data_path = self.data_path.as_ref().ok_or(Error::ErrNoDataPath)?;
-
-        #[cfg(target_os = "windows")]
-        if is_scuffed_install(&self.discord_location.name) {
-            log::error!("You have a broken Discord install. Please reinstall Discord!");
-            return Err(Error::ErrWindowsMovedDirectory);
-        }
-
-        let res_dir = resource_dir_path(
-            &self.discord_location,
-            self.discord_location.is_system_electron,
-        );
-
-        let live_path = res_dir.join(if self.discord_location.is_system_electron {
-            "app.asar.unpacked"
-        } else {
-            "app.asar"
-        });
-        let mod_backup = live_path.with_file_name("_app.asar");
-        let custom_asar = data_path.join("app.asar");
-
-        #[cfg(feature = "generate_asar")]
-        self.generate_patcher_asar(&custom_asar, data_path).await?;
+        super::asar::generate_patcher_asar(&custom_asar, &self.data_path).await?;
 
         let mut opts = vec![];
 
-        if !self.discord_location.openasar {
-            let root_original = self.find_root_original().await?;
-            if root_original != live_path {
-                super::rename(&root_original, &live_path, &mut opts);
-            }
-        }
-
         super::rename(&live_path, &mod_backup, &mut opts);
         super::copy(&custom_asar, &live_path, &mut opts);
-        super::execute(&opts, &self.discord_location).await?;
 
         #[cfg(target_os = "linux")]
         if self.discord_location.is_flatpak {
             super::cmd(&self.grant_flatpak_permissions()?, &mut opts);
         }
 
-        self.discord_location.patched = true;
+        super::execute(&opts, &self.discord_location).await?;
 
         Ok(())
     }
@@ -79,22 +56,8 @@ impl Installer {
     // MARK: - Vencord (Remove)
 
     pub async fn unpatch(&mut self) -> Result<(), Error> {
-        let res_dir = resource_dir_path(
-            &self.discord_location,
-            self.discord_location.is_system_electron,
-        );
-
-        let live_path = res_dir.join(if self.discord_location.is_system_electron {
-            "app.asar.unpacked"
-        } else {
-            "app.asar"
-        });
-
-        let mod_backup = live_path.with_file_name("_app.asar");
-
-        if !mod_backup.exists() {
-            return Err(Error::ErrLocationNotPatched);
-        }
+        let live_path = self.discord_location.asar_path();
+        let mod_backup = self.discord_location.asar_patched_path();
 
         let mut opts = vec![];
 
@@ -102,36 +65,18 @@ impl Installer {
         super::rename(&mod_backup, &live_path, &mut opts);
         super::execute(&opts, &self.discord_location).await?;
 
-        self.discord_location.patched = false;
-
         Ok(())
     }
 
     // MARK: - OpenAsar
 
     #[cfg(feature = "openasar")]
-    pub async fn patch_openasar(&mut self, url: &str) -> Result<(), Error> {
-        if self.discord_location.openasar {
-            return Err(Error::ErrLocationPatched);
-        }
-        let data_path = self.data_path.as_ref().ok_or(Error::ErrNoDataPath)?;
+    pub async fn patch_openasar(&mut self) -> Result<(), Error> {
+        let root_original = self.discord_location.find_asars()?.0;
+        let permanent_backup = self.discord_location.asar_openasar_path();
+        let dl_path = self.data_path.join("open.asar");
 
-        #[cfg(target_os = "windows")]
-        if is_scuffed_install(&self.discord_location.name) {
-            log::error!("You have a broken Discord install. Please reinstall Discord!");
-            return Err(Error::ErrWindowsMovedDirectory);
-        }
-
-        let res_dir = resource_dir_path(
-            &self.discord_location,
-            self.discord_location.is_system_electron,
-        );
-
-        let root_original = self.find_root_original().await?;
-        let permanent_backup = res_dir.join("app.asar.original");
-        let dl_path = data_path.join("open.asar");
-
-        download_file(url, dl_path.clone()).await?;
+        download_file(crate::OPENASAR_URL, dl_path.clone()).await?;
 
         let mut opts = vec![];
 
@@ -139,14 +84,10 @@ impl Installer {
             super::copy(&root_original, &permanent_backup, &mut opts);
         }
 
-        let target = if self.discord_location.patched {
-            res_dir.join("_app.asar")
+        let target = if self.discord_location.is_vencord {
+            self.discord_location.asar_patched_path()
         } else {
-            res_dir.join(if self.discord_location.is_system_electron {
-                "app.asar.unpacked"
-            } else {
-                "app.asar"
-            })
+            self.discord_location.asar_path()
         };
 
         super::copy(&dl_path, &target, &mut opts);
@@ -158,8 +99,6 @@ impl Installer {
             super::cmd(&self.grant_flatpak_permissions()?, &mut opts);
         }
 
-        self.discord_location.openasar = true;
-
         Ok(())
     }
 
@@ -167,24 +106,12 @@ impl Installer {
 
     #[cfg(feature = "openasar")]
     pub async fn unpatch_openasar(&mut self) -> Result<(), Error> {
-        let res_dir = resource_dir_path(
-            &self.discord_location,
-            self.discord_location.is_system_electron,
-        );
-        let permanent_backup = res_dir.join("app.asar.original");
+        let permanent_backup = self.discord_location.asar_openasar_path();
 
-        if !permanent_backup.exists() {
-            return Err(Error::ErrLocationNotPatched);
-        }
-
-        let target = if self.discord_location.patched {
-            res_dir.join("_app.asar")
+        let target = if self.discord_location.is_vencord {
+            self.discord_location.asar_patched_path()
         } else {
-            res_dir.join(if self.discord_location.is_system_electron {
-                "app.asar.unpacked"
-            } else {
-                "app.asar"
-            })
+            self.discord_location.asar_path()
         };
 
         let mut opts = vec![];
@@ -193,54 +120,23 @@ impl Installer {
         super::remove(&permanent_backup, &mut opts);
         super::execute(&opts, &self.discord_location).await?;
 
-        self.discord_location.openasar = false;
-
         Ok(())
     }
 
     // MARK: - Repair
 
     pub async fn repair(&mut self) -> Result<(), Error> {
-        let res_dir = resource_dir_path(
-            &self.discord_location,
-            self.discord_location.is_system_electron,
-        );
-        let root_original = self.find_root_original().await?;
-        let live_path = res_dir.join(if self.discord_location.is_system_electron {
-            "app.asar.unpacked"
-        } else {
-            "app.asar"
-        });
+        let locations = self.discord_location.find_asars()?;
 
         let mut opts = vec![];
 
-        if root_original != live_path {
-            // edge case on older installs where the app.asar is a directory instead of a proper asar
-            if live_path.is_dir() {
-                super::remove(&live_path, &mut opts);
-            }
-
-            super::copy(&root_original, &live_path, &mut opts);
+        for asar in locations.1 {
+            super::remove(&asar, &mut opts);
         }
 
-        let artifacts = [
-            "_app.asar",
-            "app.asar.backup",
-            "app.asar.original",
-            "_app.asar.unpacked",
-        ];
-
-        for name in artifacts {
-            let path = res_dir.join(name);
-            if path.exists() && path != live_path {
-                super::remove(&path, &mut opts);
-            }
-        }
+        super::rename(&locations.0, &self.discord_location.asar_path(), &mut opts);
 
         super::execute(&opts, &self.discord_location).await?;
-
-        self.discord_location.patched = false;
-        self.discord_location.openasar = false;
 
         Ok(())
     }
@@ -249,36 +145,11 @@ impl Installer {
 // MARK: - Misc
 
 impl Installer {
-    async fn find_root_original(&self) -> Result<PathBuf, Error> {
-        let res_dir = resource_dir_path(
-            &self.discord_location,
-            self.discord_location.is_system_electron,
-        );
-
-        let names = [
-            "app.asar.original",
-            "app.asar.backup",
-            "_app.asar",
-            "app.asar",
-        ];
-
-        for name in names {
-            let path = res_dir.join(name);
-            if path.exists() && is_asar_original(&path).await {
-                return Ok(path);
-            }
-        }
-
-        Err(Error::ErrPleaseReinstallDiscord)
-    }
-
     #[cfg(target_os = "linux")]
     pub fn grant_flatpak_permissions(&self) -> Result<String, Error> {
-        let data_path = self.data_path.clone().ok_or(Error::ErrNoDataPath)?;
-
         log::info!(
             "Location is flatpak, granting perms to {}",
-            data_path.to_string_lossy()
+            self.data_path.to_string_lossy()
         );
 
         let name = self
@@ -297,34 +168,9 @@ impl Installer {
         }
         args.push("override");
         args.push(name);
-        let filesystem_arg = format!("--filesystem={}", &data_path.to_string_lossy());
+        let filesystem_arg = format!("--filesystem={}", &self.data_path.to_string_lossy());
         args.push(&filesystem_arg);
 
         Ok(format!("flatpak {}", args.join(" ")))
-    }
-
-    #[cfg(feature = "generate_asar")]
-    async fn generate_patcher_asar(
-        &self,
-        destination: &Path,
-        data_path: &Path,
-    ) -> Result<(), Error> {
-        use serde_json::json;
-
-        let entries = [
-            (
-                "index.js",
-                &format!(
-                    "require({})",
-                    &serde_json::to_string(&data_path.join("patcher.js"))?
-                ),
-            ),
-            (
-                "package.json",
-                &json!({ "name": "discord", "main": "index.js" }).to_string(),
-            ),
-        ];
-
-        write_app_asar(destination, &entries).await
     }
 }

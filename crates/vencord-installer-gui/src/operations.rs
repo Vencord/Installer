@@ -1,8 +1,9 @@
 use tokio::sync::mpsc;
 
 use vencord_installer_core::{
-    Error, OPENASAR_URL, download, get_dist_path, patch::patch_mod::Installer,
-    paths::branch::DiscordLocation,
+    Error, download,
+    patch::patch_mod::Installer,
+    paths::{DiscordLocation, get_data_path},
 };
 
 #[derive(Debug, Clone)]
@@ -71,37 +72,41 @@ impl AppActions {
             download().await?;
         }
 
-        Installer::new(location.clone(), Some(get_dist_path(None)))
+        Installer::new(location.clone(), get_data_path())?
             .patch()
             .await
     }
 
     async fn uninstall(location: DiscordLocation) -> Result<(), Error> {
-        Installer::new(location.clone(), None).unpatch().await
+        Installer::new(location.clone(), get_data_path())?
+            .unpatch()
+            .await
     }
 
     async fn repair(location: DiscordLocation) -> Result<(), Error> {
-        let mut installer = Installer::new(location.clone(), Some(get_dist_path(None)));
+        let mut installer = Installer::new(location.clone(), get_data_path())?;
         installer.repair().await?;
 
-        if location.patched {
+        if location.is_vencord {
             installer.patch().await?;
         }
 
-        if location.openasar {
-            installer.patch_openasar(OPENASAR_URL).await?;
+        if location.is_openasar {
+            installer.patch_openasar().await?;
         }
 
         Ok(())
     }
 
     async fn install_openasar(location: DiscordLocation) -> Result<(), Error> {
-        Installer::new(location, Some(get_dist_path(None)))
-            .patch_openasar(OPENASAR_URL)
+        Installer::new(location, get_data_path())?
+            .patch_openasar()
             .await
     }
 
     async fn uninstall_openasar(location: DiscordLocation) -> Result<(), Error> {
-        Installer::new(location, None).unpatch_openasar().await
+        Installer::new(location, get_data_path())?
+            .unpatch_openasar()
+            .await
     }
 }

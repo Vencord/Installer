@@ -57,3 +57,23 @@ fn make_asar_files(entries: &[(&str, &String)]) -> HashMap<String, AsarEntry> {
 
     files
 }
+
+pub async fn generate_patcher_asar(destination: &Path, data_path: &Path) -> Result<(), Error> {
+    use serde_json::json;
+
+    let entries = [
+        (
+            "index.js",
+            &format!(
+                "require({})",
+                &serde_json::to_string(&data_path.join("patcher.js"))?
+            ),
+        ),
+        (
+            "package.json",
+            &json!({ "name": "discord", "main": "index.js" }).to_string(),
+        ),
+    ];
+
+    write_app_asar(destination, &entries).await
+}

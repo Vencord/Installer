@@ -1,8 +1,7 @@
-#[cfg(feature = "generate_asar")]
 pub mod asar;
 pub mod patch_mod;
 
-use crate::{Error, paths::branch::DiscordLocation};
+use crate::{Error, paths::DiscordLocation};
 use std::path::PathBuf;
 
 #[cfg(target_os = "linux")]

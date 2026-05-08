@@ -6,12 +6,12 @@ export enum DiscordBranch {
 }
 
 export struct DiscordLocation {
-    name: string,
     path: string,
     branch: DiscordBranch,
-    patched: bool,
-    openasar: bool,
+    is_vencord: bool,
+    is_openasar: bool,
     is_flatpak: bool,
+    is_scuffed: bool,
     is_system_electron: bool,
 }
 

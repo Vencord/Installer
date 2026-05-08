@@ -116,7 +116,7 @@ component DiscordLocationItem inherits Rectangle {
                     HorizontalLayout {
                         spacing: 6px;
                         alignment: end;
-                        if location.patched: Rectangle {
+                        if location.is_vencord: Rectangle {
                             width: 85px;
                             height: 22px;
                             border-radius: 11px;
@@ -131,7 +131,7 @@ component DiscordLocationItem inherits Rectangle {
                                 vertical-alignment: center;
                             }
                         }
-                        if location.openasar: Rectangle {
+                        if location.is_openasar: Rectangle {
                             width: 83px;
                             height: 22px;
                             border-radius: 11px;
@@ -173,7 +173,7 @@ component DiscordLocationItem inherits Rectangle {
                 HorizontalLayout {
                     spacing: 8px;
 
-                    if !location.patched: ActionButton {
+                    if !location.is_vencord: ActionButton {
                         text: "Install Vencord";
                         bg-color: GruvboxPalette.aqua;
                         hover-color: GruvboxPalette.aqua-dim;
@@ -181,7 +181,7 @@ component DiscordLocationItem inherits Rectangle {
                             RustCallbacks.do_install(location);
                         }
                     }
-                    if location.patched: ActionButton {
+                    if location.is_vencord: ActionButton {
                         text: "Uninstall Vencord";
                         bg-color: GruvboxPalette.red;
                         hover-color: GruvboxPalette.red-dim;
@@ -189,7 +189,7 @@ component DiscordLocationItem inherits Rectangle {
                             RustCallbacks.do_uninstall(location);
                         }
                     }
-                    if !location.openasar: ActionButton {
+                    if !location.is_openasar: ActionButton {
                         text: "Install OpenAsar";
                         bg-color: GruvboxPalette.blue;
                         hover-color: GruvboxPalette.blue-dim;
@@ -197,7 +197,7 @@ component DiscordLocationItem inherits Rectangle {
                             RustCallbacks.do_o_install(location);
                         }
                     }
-                    if location.openasar: ActionButton {
+                    if location.is_openasar: ActionButton {
                         text: "Uninstall OpenAsar";
                         bg-color: GruvboxPalette.red;
                         hover-color: GruvboxPalette.red-dim;

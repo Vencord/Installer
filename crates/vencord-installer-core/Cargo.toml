@@ -13,9 +13,9 @@ serde_json = "1.0.133"
 serde = { version = "1.0.215", features = ["derive"] }
 regex = "1.11.1"
 thiserror = "2.0.9"
+readonly = "0.2.13"
 
 [features]
-default = ["openasar", "version_check", "generate_asar"]
+default = ["openasar", "version_check"]
 openasar = []
 version_check = []
-generate_asar = []

@@ -88,26 +88,3 @@ pub fn get_data_path(data_dir: &str) -> PathBuf {
 
     dir
 }
-
-/// Returns the path to the resources directory for Discord.
-pub fn get_discord_resource_location() -> PathBuf {
-    PathBuf::new().join("resources")
-}
-
-/// Checks if the Discord installation is in a scuffed location.
-///
-/// See: https://github.com/Vencord/Installer/issues/9
-///
-/// # Arguments
-///
-/// * `name` - The name of the Discord installation.
-pub fn is_scuffed_install(name: &String) -> bool {
-    get_program_data_path().join(name).exists()
-}
-
-pub fn get_program_data_path() -> PathBuf {
-    let program_data_dir = std::env::var("PROGRAMDATA").ok().unwrap_or_default();
-    let username_dir = std::env::var("USERNAME").ok().unwrap_or_default();
-
-    Path::new(&program_data_dir).join(username_dir)
-}

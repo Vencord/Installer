@@ -3,12 +3,9 @@ use console::style;
 use dialoguer::Select;
 
 use vencord_installer_core::{
-    Error, OPENASAR_URL, download, get_dist_path,
+    Error, download,
     patch::patch_mod::Installer,
-    paths::{
-        branch::DiscordLocation, locations::get_discord_locations,
-        shared::get_custom_discord_location,
-    },
+    paths::{DiscordLocation, get_data_path, get_discord_locations},
 };
 
 #[derive(Debug, Args)]
@@ -73,7 +70,7 @@ async fn install(
     let selected_location: DiscordLocation;
 
     if let Some(path) = custom_path {
-        selected_location = match get_custom_discord_location(&path) {
+        selected_location = match DiscordLocation::from_path(&path) {
             Some(location) => location,
             _ => return Err(Error::ErrLocationInvalid),
         };
@@ -81,16 +78,16 @@ async fn install(
         selected_location = select_location().await?;
     }
 
-    let mut installer = Installer::new(selected_location.clone(), Some(get_dist_path(None)));
+    let mut installer = Installer::new(selected_location.clone(), get_data_path())?;
 
-    if client_mod && !selected_location.patched {
+    if client_mod && !selected_location.is_vencord {
         if std::env::var("VENCORD_DEV_INSTALL").map_or(true, |v| v != "1") {
             download().await?;
         }
 
         installer.patch().await?;
-    } else if openasar && !selected_location.openasar {
-        installer.patch_openasar(OPENASAR_URL).await?;
+    } else if openasar && !selected_location.is_openasar {
+        installer.patch_openasar().await?;
     } else {
         log::info!("Already installed, skipping!");
     }
@@ -106,7 +103,7 @@ async fn uninstall(
     let selected_location: DiscordLocation;
 
     if let Some(path) = custom_path {
-        selected_location = match get_custom_discord_location(&path) {
+        selected_location = match DiscordLocation::from_path(&path) {
             Some(location) => location,
             _ => return Err(Error::ErrLocationInvalid),
         };
@@ -114,11 +111,11 @@ async fn uninstall(
         selected_location = select_location().await?;
     }
 
-    let mut installer = Installer::new(selected_location.clone(), None);
+    let mut installer = Installer::new(selected_location.clone(), get_data_path())?;
 
-    if client_mod && selected_location.patched {
+    if client_mod && selected_location.is_vencord {
         installer.unpatch().await?;
-    } else if openasar && selected_location.openasar {
+    } else if openasar && selected_location.is_openasar {
         installer.unpatch_openasar().await?;
     } else {
         log::info!("Not installed, skipping!");
@@ -131,7 +128,7 @@ async fn repair(custom_path: Option<String>) -> Result<(), Error> {
     let selected_location: DiscordLocation;
 
     if let Some(path) = custom_path {
-        selected_location = match get_custom_discord_location(&path) {
+        selected_location = match DiscordLocation::from_path(&path) {
             Some(location) => location,
             _ => return Err(Error::ErrLocationInvalid),
         };
@@ -143,13 +140,13 @@ async fn repair(custom_path: Option<String>) -> Result<(), Error> {
         download().await?;
     }
 
-    let mut installer = Installer::new(selected_location.clone(), Some(get_dist_path(None)));
+    let mut installer = Installer::new(selected_location.clone(), get_data_path())?;
 
-    if selected_location.patched {
+    if selected_location.is_vencord {
         installer.patch().await?;
     }
-    if selected_location.openasar {
-        installer.patch_openasar(OPENASAR_URL).await?;
+    if selected_location.is_openasar {
+        installer.patch_openasar().await?;
     }
 
     Ok(())
@@ -210,7 +207,7 @@ pub async fn select_options() -> Result<(), Error> {
 }
 
 async fn select_location() -> Result<DiscordLocation, Error> {
-    let locations = get_discord_locations().ok_or(Error::ErrLocationInvalid)?;
+    let locations = get_discord_locations();
 
     let items: Vec<String> = locations
         .iter()
@@ -222,10 +219,10 @@ async fn select_location() -> Result<DiscordLocation, Error> {
             }
 
             let mut tags = Vec::new();
-            if location.patched {
+            if location.is_vencord {
                 tags.push("[INSTALLED]");
             }
-            if location.openasar {
+            if location.is_openasar {
                 tags.push("[OPENASAR]");
             }
 
@@ -235,12 +232,7 @@ async fn select_location() -> Result<DiscordLocation, Error> {
                 format!(" {}", tags.join(" "))
             };
 
-            format!(
-                "{}{} – {}",
-                instance.join(", "),
-                tags_str,
-                location.path.to_string()
-            )
+            format!("{}{} – {:?}", instance.join(", "), tags_str, location.path)
         })
         .collect();
 

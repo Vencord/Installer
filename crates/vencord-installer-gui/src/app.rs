@@ -5,9 +5,8 @@ use std::{
 use tokio::sync::mpsc;
 
 use vencord_installer_core::paths::{
-    branch::{DiscordBranch as CoreDiscordBranch, DiscordLocation as CoreDiscordLocation},
-    locations::get_discord_locations,
-    shared::get_custom_discord_location,
+    get_discord_locations,
+    {DiscordBranch as CoreDiscordBranch, DiscordLocation as CoreDiscordLocation},
 };
 
 use crate::operations::{AppActions, AppMessage, AppOperation};
@@ -79,7 +78,7 @@ impl VencordInstallerApp {
         let tx_install = tx.clone();
         callbacks.on_do_install(move |loc| {
             let loc: CoreDiscordLocation = (&loc).into();
-            if !loc.patched {
+            if !loc.is_vencord {
                 tx_install.send(AppOperation::Install(loc)).ok();
             }
         });
@@ -87,7 +86,7 @@ impl VencordInstallerApp {
         let tx_uninstall = tx.clone();
         callbacks.on_do_uninstall(move |loc| {
             let loc: CoreDiscordLocation = (&loc).into();
-            if loc.patched {
+            if loc.is_vencord {
                 tx_uninstall.send(AppOperation::Uninstall(loc)).ok();
             }
         });
@@ -95,7 +94,7 @@ impl VencordInstallerApp {
         let tx_o_install = tx.clone();
         callbacks.on_do_o_install(move |loc| {
             let loc: CoreDiscordLocation = (&loc).into();
-            if !loc.openasar {
+            if !loc.is_openasar {
                 tx_o_install.send(AppOperation::InstallOpenAsar(loc)).ok();
             }
         });
@@ -103,7 +102,7 @@ impl VencordInstallerApp {
         let tx_o_uninstall = tx.clone();
         callbacks.on_do_o_uninstall(move |loc| {
             let loc: CoreDiscordLocation = (&loc).into();
-            if loc.openasar {
+            if loc.is_openasar {
                 tx_o_uninstall
                     .send(AppOperation::UninstallOpenAsar(loc))
                     .ok();
@@ -137,7 +136,7 @@ impl VencordInstallerApp {
 
             if let Some(selected) = dialog_result {
                 if let Some(path) = selected.to_str() {
-                    if let Some(location) = get_custom_discord_location(&path) {
+                    if let Some(location) = CoreDiscordLocation::from_path(path) {
                         custom_locations_folder.lock().unwrap().push(location);
 
                         if let Some(app) = app_weak_folder.upgrade() {
@@ -160,11 +159,9 @@ impl VencordInstallerApp {
         let mut all_locations: Vec<DiscordLocation> = Vec::new();
         let mut seen_paths = std::collections::HashSet::new();
 
-        if let Some(core_locations) = get_discord_locations() {
-            for loc in &core_locations {
-                if seen_paths.insert(loc.path.clone()) {
-                    all_locations.push(loc.into());
-                }
+        for loc in get_discord_locations() {
+            if seen_paths.insert(loc.path.clone()) {
+                all_locations.push((&loc).into());
             }
         }
 
@@ -267,12 +264,12 @@ impl VencordInstallerApp {
 impl From<&CoreDiscordLocation> for DiscordLocation {
     fn from(core: &CoreDiscordLocation) -> Self {
         Self {
-            name: core.name.clone().into(),
-            path: core.path.clone().into(),
+            path: core.path.to_string_lossy().as_ref().into(),
             branch: convert_branch_to_slint(&core.branch),
-            patched: core.patched,
-            openasar: core.openasar,
+            is_vencord: core.is_vencord,
+            is_openasar: core.is_openasar,
             is_flatpak: core.is_flatpak,
+            is_scuffed: core.is_scuffed,
             is_system_electron: core.is_system_electron,
         }
     }
@@ -281,12 +278,12 @@ impl From<&CoreDiscordLocation> for DiscordLocation {
 impl From<&DiscordLocation> for CoreDiscordLocation {
     fn from(slint_location: &DiscordLocation) -> Self {
         Self {
-            name: slint_location.name.to_string(),
-            path: slint_location.path.to_string(),
+            path: std::path::PathBuf::from(slint_location.path.to_string()),
             branch: convert_branch_to_core(&slint_location.branch),
-            patched: slint_location.patched,
-            openasar: slint_location.openasar,
+            is_vencord: slint_location.is_vencord,
+            is_openasar: slint_location.is_openasar,
             is_flatpak: slint_location.is_flatpak,
+            is_scuffed: slint_location.is_scuffed,
             is_system_electron: slint_location.is_system_electron,
         }
     }

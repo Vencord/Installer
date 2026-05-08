@@ -6,35 +6,27 @@ pub mod patch;
 pub mod paths;
 pub mod update;
 
-pub const USER_AGENT: &str = "VencordInstaller (https://github.com/Vencord/Installer)";
-pub const RELEASE_URL: &str = "https://api.github.com/repos/Vendicated/Vencord/releases/latest";
-pub const RELEASE_URL_FALLBACK: &str = "https://vencord.dev/releases/vencord";
-pub const RELEASE_TAG_DOWNLOAD: &str =
+pub(crate) const USER_AGENT: &str = "VencordInstaller (https://github.com/Vencord/Installer)";
+pub(crate) const RELEASE_URL: &str =
+    "https://api.github.com/repos/Vendicated/Vencord/releases/latest";
+pub(crate) const RELEASE_URL_FALLBACK: &str = "https://vencord.dev/releases/vencord";
+pub(crate) const RELEASE_TAG_DOWNLOAD: &str =
     "https://github.com/Vendicated/Vencord/releases/download/devbuild";
-pub const OPENASAR_URL: &str =
+pub(crate) const OPENASAR_URL: &str =
     "https://github.com/GooseMod/OpenAsar/releases/download/nightly/app.asar";
-
-pub fn get_dist_path(name: Option<&str>) -> std::path::PathBuf {
-    let name = name.unwrap_or("Vencord");
-
-    if let Ok(path) = std::env::var("VENCORD_USER_DATA_DIR") {
-        std::path::PathBuf::from(path).join("dist")
-    } else {
-        paths::locations::get_data_path(name)
-    }
-}
 
 pub async fn download() -> Result<(), Error> {
     let latest_version =
         update::version_check::check_hash_from_release(RELEASE_URL, Some(RELEASE_URL_FALLBACK))
             .await;
 
-    let local_version =
-        update::version_check::check_local_version(&get_dist_path(None), None).await;
+    let data_path = paths::get_data_path().ok_or(Error::ErrNoDataPath)?;
+
+    let local_version = update::version_check::check_local_version(&data_path, None).await;
 
     if latest_version.is_some() && latest_version != local_version {
         update::download::prepare_dist_directory(
-            &get_dist_path(None),
+            &data_path,
             RELEASE_TAG_DOWNLOAD,
             ["patcher.js", "preload.js", "renderer.js", "renderer.css"],
         )
