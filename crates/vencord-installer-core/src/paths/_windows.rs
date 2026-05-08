@@ -1,9 +1,9 @@
+use std::env;
 use std::path::{Path, PathBuf};
 
-use crate::paths::branch::{DiscordBranch, DiscordLocation};
-use crate::paths::shared::{is_location_openasar, is_location_patched};
+use crate::paths::DiscordLocation;
 
-const DISCORD_LOCATIONS: [&str; 4] = [
+const KNOWN_NAMES: [&str; 4] = [
     "Discord",
     "DiscordPTB",
     "DiscordCanary",
@@ -11,63 +11,45 @@ const DISCORD_LOCATIONS: [&str; 4] = [
 ];
 
 /// Returns a list of available DiscordLocations on the machine.
-pub fn get_discord_locations() -> Option<Vec<DiscordLocation>> {
-    let appdata = std::env::var("LOCALAPPDATA").ok()?;
+pub fn get_discord_locations() -> Vec<DiscordLocation> {
+    let Ok(appdata) = std::env::var("LOCALAPPDATA") else {
+        return Vec::new();
+    };
+
     let appdata_path = Path::new(&appdata);
 
-    let locations: Vec<DiscordLocation> = DISCORD_LOCATIONS
-        .iter()
-        .filter_map(|&discord_location| {
-            let full_path = appdata_path.join(discord_location);
-            if full_path.exists() {
-                parse_discord_location(&full_path)
-            } else {
-                None
-            }
-        })
-        .collect();
+    let mut locations = Vec::new();
 
-    Some(locations).filter(|l| !l.is_empty())
+    for base in KNOWN_NAMES {
+        let root = appdata_path.join(base);
+
+        if let Some(loc) = parse_discord_location(&root) {
+            locations.push(loc);
+        }
+    }
+
+    locations
 }
 
 fn parse_discord_location(full_path: &Path) -> Option<DiscordLocation> {
-    let discord_location = full_path.file_name().and_then(|n| n.to_str())?.to_string();
-
-    // Windows my behated
-    let app_path = std::fs::read_dir(full_path)
+    let best = std::fs::read_dir(full_path)
         .ok()?
         .flatten()
         .filter_map(|entry| {
-            let app_dir = full_path.join(entry.file_name());
-            if !app_dir.is_dir() || !app_dir.join(get_discord_resource_location()).exists() {
+            let path = entry.path();
+            let name = path.file_name()?.to_str()?;
+            let ver = name.strip_prefix("app-")?;
+
+            if !path.join("resources").join("app.asar").exists() {
                 return None;
             }
 
-            // for some reason theres many app-* folders, so we try to find the latest
-            let dir_name = app_dir.file_name()?.to_str()?;
-            let version = dir_name
-                .strip_prefix("app-")?
-                .split('.')
-                .map(|part| part.parse::<u64>().ok())
-                .collect::<Option<Vec<_>>>()?;
-
-            Some((version, app_dir))
+            Some((ver.to_string(), path))
         })
-        .max_by(|(a_version, _), (b_version, _)| a_version.cmp(b_version))
+        .max_by(|(a, _), (b, _)| a.cmp(b))
         .map(|(_, path)| path)?;
 
-    let patched = is_location_patched(&app_path, &false);
-
-    Some(DiscordLocation {
-        name: discord_location.to_string(),
-        path: app_path.to_string_lossy().into_owned(),
-        branch: DiscordBranch::from_path(&discord_location),
-        patched,
-        openasar: is_location_openasar(&app_path, patched),
-        // we shouldn't care about these things on Windblows
-        is_flatpak: false,
-        is_system_electron: false,
-    })
+    DiscordLocation::from_path(best)
 }
 
 /// Returns and creates the data path for the given name.
@@ -79,12 +61,26 @@ fn parse_discord_location(full_path: &Path) -> Option<DiscordLocation> {
 /// # Returns
 ///
 /// Returns the path to the data directory.
-pub fn get_data_path(data_dir: &str) -> PathBuf {
-    let appdata = std::env::var("APPDATA").unwrap_or_default();
+pub fn get_data_path_impl() -> Option<PathBuf> {
+    let Ok(appdata) = std::env::var("APPDATA") else {
+        return None;
+    };
 
-    let dir = Path::new(&appdata).join(data_dir).join("dist");
+    let dir = Path::new(&appdata).join("Vencord");
 
     std::fs::create_dir_all(&dir).ok();
 
-    dir
+    Some(dir.clone())
+}
+
+pub fn get_program_data_path() -> Option<PathBuf> {
+    let Some(program_data) = env::var_os("PROGRAMDATA") else {
+        return None;
+    };
+
+    let Some(username) = env::var_os("USERNAME") else {
+        return None;
+    };
+
+    Some(Path::new(&program_data).join(username))
 }

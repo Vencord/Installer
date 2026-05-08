@@ -147,24 +147,17 @@ impl DiscordLocation {
 
 #[cfg(target_os = "windows")]
 fn check_for_scuffed_windows_location<P: AsRef<Path>>(path: P) -> bool {
-    use std::env;
-
     let path = path.as_ref();
-
-    let Some(program_data) = env::var_os("PROGRAMDATA") else {
-        return false;
-    };
-
-    let Some(username) = env::var_os("USERNAME") else {
-        return false;
-    };
 
     let Some(file_name) = path.file_name() else {
         return false;
     };
 
-    Path::new(&program_data)
-        .join(username)
+    let Some(program_data) = crate::paths::get_program_data_path() else {
+        return false;
+    };
+
+    program_data
         .join(file_name)
         .exists()
 }

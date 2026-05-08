@@ -155,11 +155,17 @@ impl Installer {
         let name = self
             .discord_location
             .path
+            .to_str()
+            .unwrap_or("")
             .split('/')
             .find(|s| s.starts_with("com.discordapp."))
             .unwrap_or("");
 
-        let is_system_flatpak = self.discord_location.path.contains("/var");
+        let is_system_flatpak = self
+            .discord_location
+            .path
+            .to_string_lossy()
+            .contains("/var");
 
         let mut args = vec![];
 

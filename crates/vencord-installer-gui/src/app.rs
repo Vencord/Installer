@@ -244,8 +244,9 @@ impl VencordInstallerApp {
                 match action {
                     #[cfg(target_os = "windows")]
                     0 => {
-                        use vencord_installer_core::paths::locations::get_program_data_path;
-                        open::that_in_background(get_program_data_path());
+                        if let Some(program_data) = vencord_installer_core::paths::get_program_data_path() {
+                            open::that_in_background(program_data);
+                        };
                     }
                     #[cfg(target_os = "macos")]
                     1 => {

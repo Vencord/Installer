@@ -147,9 +147,7 @@ pub async fn execute(
                     #[cfg(target_os = "linux")]
                     unsafe {
                         if geteuid() == 0 && !_location.is_flatpak {
-                            crate::paths::locations::copy_ownership_permissions(&to)
-                                .await
-                                .ok();
+                            crate::paths::copy_ownership_permissions(&to).await.ok();
                         }
                     }
                 }

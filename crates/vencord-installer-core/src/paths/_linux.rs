@@ -1,11 +1,8 @@
-use std::path::{Path, PathBuf};
+use std::{fs, path::{Path, PathBuf}};
 
-use crate::paths::branch::{DiscordBranch, DiscordLocation};
-use crate::paths::shared::{
-    is_location_flatpak, is_location_openasar, is_location_patched, is_location_system_electron,
-};
+use super::DiscordLocation;
 
-const DISCORD_LOCATIONS: [&str; 15] = [
+const KNOWN_NAMES: [&str; 15] = [
     "Discord",
     "DiscordPTB",
     "DiscordCanary",
@@ -25,141 +22,102 @@ const DISCORD_LOCATIONS: [&str; 15] = [
 ];
 
 /// Returns a list of available DiscordLocations on the machine.
-pub fn get_discord_locations() -> Option<Vec<DiscordLocation>> {
-    let home_dir = find_home()?;
-    let home_dir_path = Path::new(&home_dir);
+pub fn get_discord_locations() -> Vec<DiscordLocation> {
+    let Some(home) = find_home() else {
+        return Vec::new();
+    };
 
-    let paths = [
-        Path::new("/usr/share"),
-        Path::new("/usr/lib64"),
-        Path::new("/opt"),
-        &home_dir_path.join(".local/share"),
-        &home_dir_path.join(".dvm"), // https://github.com/diced/dvm
-        // flatpak
-        Path::new("/var/lib/flatpak/app"),
-        &home_dir_path.join(".local/share/flatpak/app"),
-        // new locations
-        &home_dir_path.join(".config"),
+    let home = PathBuf::from(home);
+
+    let search_paths = [
+        PathBuf::from("/usr/share"),
+        PathBuf::from("/usr/lib64"),
+        PathBuf::from("/opt"),
+        home.join(".local/share"),
+        home.join(".dvm"),
+        home.join(".config"),
+        PathBuf::from("/var/lib/flatpak/app"),
+        home.join(".var/app"),
+        home.join(".local/share/flatpak/app"),
     ];
 
-    let locations: Vec<DiscordLocation> = paths
-        .iter()
+    search_paths
+        .into_iter()
         .flat_map(|base| {
-            DISCORD_LOCATIONS.iter().filter_map(|&discord_location| {
-                let full_path = base.join(discord_location);
-                if full_path.exists() {
-                    parse_discord_location(&full_path)
-                } else {
-                    None
-                }
+            KNOWN_NAMES.iter().filter_map(move |name| {
+                let path = base.join(name);
+                path.exists().then(|| parse_discord_location(path)).flatten()
             })
         })
-        .collect();
-
-    Some(locations).filter(|l| !l.is_empty())
+        .collect()
 }
 
-fn parse_discord_location(full_path: &PathBuf) -> Option<DiscordLocation> {
-    let mut full_path = full_path.to_path_buf();
+fn parse_discord_location(mut path: PathBuf) -> Option<DiscordLocation> {
+    let path_str = path.to_string_lossy();
 
-    let discord_location = full_path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or_default()
-        .to_string();
+    let is_system_flatpak = path_str.contains("/var/lib/flatpak/");
+    let is_user_flatpak = path_str.contains("/.var/app/");
 
-    let is_flatpak = is_location_flatpak(&full_path);
-
-    if is_flatpak {
-        let name = full_path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("")
-            .strip_prefix("com.discordapp.")
-            .unwrap_or("")
-            .to_lowercase();
-
-        let discord_name = if name != "discord" {
-            format!("{}-{}", &name[..7], &name[7..])
-        } else {
-            name
-        };
-
-        full_path = full_path.join("current/active/files").join(&discord_name);
+    if is_user_flatpak {
+        path = path.join("config").join("discord");
     }
 
-    let resources = get_discord_resource_location();
+    if is_system_flatpak {
+        let flatpak_name = path.file_name()?.to_str()?;
+        let name = flatpak_name.strip_prefix("com.discordapp.")?;
 
-    // For installs that use versioned app-* subdirectories (e.g. ~/.config/discordcanary),
-    // find the latest one if resources aren't directly present.
-    if !full_path.join(&resources).exists() {
-        let app_path = std::fs::read_dir(&full_path)
+        let discord_dir = if name == "discord" {
+            "discord".to_string()
+        } else {
+            format!("{}-{}", &name[..7], &name[7..])
+        };
+
+        path = path
+            .join("current")
+            .join("active")
+            .join("files")
+            .join(discord_dir);
+    }
+
+    let has_asar = path.join("resources").join("app.asar").exists();
+
+    if !has_asar {
+        path = fs::read_dir(&path)
             .ok()?
             .flatten()
             .filter_map(|entry| {
-                let app_dir = full_path.join(entry.file_name());
-                if !app_dir.is_dir() || !app_dir.join(&resources).join("app.asar").exists() {
-                    return None;
-                }
+                let app_dir = entry.path();
 
-                let dir_name = app_dir.file_name()?.to_str()?.to_string();
-                let version = dir_name
+                let version = app_dir
+                    .file_name()?
+                    .to_str()?
                     .strip_prefix("app-")?
                     .split('.')
-                    .map(|part| part.parse::<u64>().ok())
+                    .map(|p| p.parse::<u64>().ok())
                     .collect::<Option<Vec<_>>>()?;
 
                 Some((version, app_dir))
             })
-            .max_by(|(a_version, _), (b_version, _)| a_version.cmp(b_version))
-            .map(|(_, path)| path)?;
-
-        full_path = app_path;
+            .max_by(|a, b| a.0.cmp(&b.0))
+            .map(|(_, dir)| dir)?;
     }
 
-    if !full_path.join(&resources).join("app.asar").exists() {
-        return None;
-    }
+    let location = DiscordLocation::from_path(path)?;
 
-    let system_electron = is_location_system_electron(&full_path);
-    let patched = is_location_patched(&full_path, &system_electron);
-
-    Some(DiscordLocation {
-        name: discord_location.to_string(),
-        path: full_path.to_string_lossy().into_owned(),
-        branch: DiscordBranch::from_path(&discord_location),
-        patched,
-        openasar: is_location_openasar(&full_path, patched),
-        is_flatpak: is_flatpak,
-        is_system_electron: system_electron,
-    })
+    Some(location)
 }
 
 /// Returns and creates the data path for the given name.
-///
-/// # Arguments
-///
-/// * `data_dir` - The name of the data directory.
-///
-/// # Returns
-///
-/// Returns the path to the data directory.
-pub fn get_data_path(data_dir: &str) -> PathBuf {
-    let home_dir = find_home().unwrap_or_default();
+pub fn get_data_path_impl() -> Option<PathBuf> {
+    let home_dir = find_home()?;
 
     let dir = Path::new(&home_dir)
         .join(".config")
-        .join(data_dir)
-        .join("dist");
+        .join("Vencord");
 
     std::fs::create_dir_all(&dir).ok();
 
-    dir
-}
-
-/// Returns the path to the resources directory for Discord.
-pub fn get_discord_resource_location() -> PathBuf {
-    PathBuf::new().join("resources")
+    Some(dir)
 }
 
 fn get_user_info(username: &str) -> Option<(String, u32, u32)> {
