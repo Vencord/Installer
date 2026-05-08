@@ -105,7 +105,7 @@ func ParseDiscordNew(p, branch string, isFlatpak bool) *DiscordInstall {
 	}
 }
 
-func ParseDiscord(p, _ string) *DiscordInstall {
+func ParseDiscord(p, branch string) *DiscordInstall {
 	name := path.Base(p)
 
 	needsFlatpakResolve := strings.Contains(p, "/flatpak/") && !strings.Contains(p, "/current/active/files/")
@@ -130,7 +130,7 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 		isPatched = ExistsFile(path.Join(p, "_app.asar.unpacked"))
 	} else {
 		// Log.Warn("Tried to parse invalid Location:", p)
-		return nil
+		return ParseDiscordNew(p, branch, needsFlatpakResolve)
 	}
 
 	return &DiscordInstall{
