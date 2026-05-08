@@ -78,14 +78,6 @@ impl DiscordLocation {
         Some(discord)
     }
 
-    // pub fn set_is_vencord(&mut self, value: bool) {
-    //     self.is_vencord = value;
-    // }
-
-    // pub fn set_is_openasar(&mut self, value: bool) {
-    //     self.is_openasar = value;
-    // }
-
     pub fn resources_dir(&self) -> PathBuf {
         #[cfg(target_os = "macos")]
         return self.path.join("Contents").join("Resources");
