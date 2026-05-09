@@ -12,12 +12,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
 	"os"
 	"runtime"
 	"strings"
 	"vencordinstaller/buildinfo"
+
+	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
 )
 
 var discords []any
@@ -232,9 +233,12 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 	if dir != "" {
 		if discord := ParseDiscord(dir, branch); discord != nil {
 			return discord
-		} else {
-			die(dir + " is not a valid Discord install. Hint: snap is not supported")
 		}
+		if discord := ParseDiscordNew(dir, branch, strings.Contains(dir, "com.discordapp")); discord != nil {
+			return discord
+		}
+
+		die(dir + " is not a valid Discord install. Hint: snap is not supported")
 	}
 
 	items := SliceMap(discords, func(d any) string {
@@ -261,6 +265,10 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		handlePromptError(err)
 
 		if di := ParseDiscord(custom, ""); di != nil {
+			return di
+		}
+
+		if di := ParseDiscordNew(custom, "", strings.Contains(custom, "com.discordapp")); di != nil {
 			return di
 		}
 
