@@ -32,6 +32,8 @@ export global DiscordLocationAdapter {
 export global PageManager {
     in-out property <int> current_page_index: 0;
     in-out property <int> preserved_expanded_index: -1;
+    in-out property <string> loading_op: "";
+    in-out property <string> loading_path: "";
 }
 
 export global AppInfo {

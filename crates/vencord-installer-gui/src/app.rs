@@ -76,33 +76,60 @@ impl VencordInstallerApp {
         });
 
         let tx_install = tx.clone();
+        let app_weak_install = app_weak.clone();
         callbacks.on_do_install(move |loc| {
             let loc: CoreDiscordLocation = (&loc).into();
             if !loc.is_vencord {
+                if let Some(app) = app_weak_install.upgrade() {
+                    app.global::<PageManager>().set_loading_op("install".into());
+                    app.global::<PageManager>()
+                        .set_loading_path(loc.path.to_string_lossy().as_ref().into());
+                }
                 tx_install.send(AppOperation::Install(loc)).ok();
             }
         });
 
         let tx_uninstall = tx.clone();
+        let app_weak_uninstall = app_weak.clone();
         callbacks.on_do_uninstall(move |loc| {
             let loc: CoreDiscordLocation = (&loc).into();
             if loc.is_vencord {
+                if let Some(app) = app_weak_uninstall.upgrade() {
+                    app.global::<PageManager>()
+                        .set_loading_op("uninstall".into());
+                    app.global::<PageManager>()
+                        .set_loading_path(loc.path.to_string_lossy().as_ref().into());
+                }
                 tx_uninstall.send(AppOperation::Uninstall(loc)).ok();
             }
         });
 
         let tx_o_install = tx.clone();
+        let app_weak_o_install = app_weak.clone();
         callbacks.on_do_o_install(move |loc| {
             let loc: CoreDiscordLocation = (&loc).into();
             if !loc.is_openasar {
+                if let Some(app) = app_weak_o_install.upgrade() {
+                    app.global::<PageManager>()
+                        .set_loading_op("o_install".into());
+                    app.global::<PageManager>()
+                        .set_loading_path(loc.path.to_string_lossy().as_ref().into());
+                }
                 tx_o_install.send(AppOperation::InstallOpenAsar(loc)).ok();
             }
         });
 
         let tx_o_uninstall = tx.clone();
+        let app_weak_o_uninstall = app_weak.clone();
         callbacks.on_do_o_uninstall(move |loc| {
             let loc: CoreDiscordLocation = (&loc).into();
             if loc.is_openasar {
+                if let Some(app) = app_weak_o_uninstall.upgrade() {
+                    app.global::<PageManager>()
+                        .set_loading_op("o_uninstall".into());
+                    app.global::<PageManager>()
+                        .set_loading_path(loc.path.to_string_lossy().as_ref().into());
+                }
                 tx_o_uninstall
                     .send(AppOperation::UninstallOpenAsar(loc))
                     .ok();
@@ -110,7 +137,13 @@ impl VencordInstallerApp {
         });
 
         let tx_repair = tx.clone();
+        let app_weak_repair = app_weak.clone();
         callbacks.on_do_repair(move |loc| {
+            if let Some(app) = app_weak_repair.upgrade() {
+                app.global::<PageManager>().set_loading_op("repair".into());
+                app.global::<PageManager>()
+                    .set_loading_path(loc.path.clone());
+            }
             tx_repair.send(AppOperation::Repair((&loc).into())).ok();
         });
 
@@ -196,6 +229,8 @@ impl VencordInstallerApp {
         custom_locations: Arc<Mutex<Vec<CoreDiscordLocation>>>,
     ) {
         Self::invoke_ui_update(app_weak.clone(), move |app| {
+            app.global::<PageManager>().set_loading_op("".into());
+            app.global::<PageManager>().set_loading_path("".into());
             Self::refresh_locations(app, &custom_locations.lock().unwrap());
         });
 
@@ -244,7 +279,9 @@ impl VencordInstallerApp {
                 match action {
                     #[cfg(target_os = "windows")]
                     0 => {
-                        if let Some(program_data) = vencord_installer_core::paths::get_program_data_path() {
+                        if let Some(program_data) =
+                            vencord_installer_core::paths::get_program_data_path()
+                        {
                             open::that_in_background(program_data);
                         };
                     }
