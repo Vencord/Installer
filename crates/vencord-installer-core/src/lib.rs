@@ -17,14 +17,13 @@ pub(crate) const OPENASAR_URL: &str =
 
 pub async fn download() -> Result<(), Error> {
     let latest_version =
-        update::version_check::check_hash_from_release(RELEASE_URL, Some(RELEASE_URL_FALLBACK))
-            .await;
+        update::version_check::check_hash_from_release(RELEASE_URL, RELEASE_URL_FALLBACK).await?;
 
     let data_path = paths::get_data_path().ok_or(Error::ErrNoDataPath)?;
 
-    let local_version = update::version_check::check_local_version(&data_path, None).await;
+    let local_version = update::version_check::check_local_version(&data_path).await?;
 
-    if latest_version.is_some() && latest_version != local_version {
+    if latest_version != local_version {
         update::download::prepare_dist_directory(
             &data_path,
             RELEASE_TAG_DOWNLOAD,
@@ -70,6 +69,8 @@ pub enum Error {
     ErrIo(#[from] std::io::Error),
     #[error("Tokio Join error: {0}")]
     ErrJoin(#[from] tokio::task::JoinError),
+    #[error("Regex error: {0}")]
+    ErrRegex(#[from] regex::Error),
 }
 
 impl Error {
