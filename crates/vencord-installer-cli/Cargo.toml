@@ -11,5 +11,5 @@ log.workspace = true
 env_logger.workspace = true
 vencord-installer-core = { path = "../vencord-installer-core" }
 clap = { version = "4.0", features = ["derive"] }
-dialoguer = "0.12.0"
-console = "0.16.1"
+dialoguer = "0.12"
+console = "0.16"

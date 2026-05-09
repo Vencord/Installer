@@ -53,7 +53,10 @@ impl DiscordLocation {
             discord.is_system_electron = !discord.resources_dir().exists();
         }
 
-        if !discord.asar_path().exists() {
+        if !(discord.asar_path().exists()
+            || discord.asar_patched_path().exists()
+            || discord.asar_openasar_path().exists())
+        {
             return None;
         }
 
@@ -143,6 +146,76 @@ impl DiscordLocation {
 
         Ok((original, fake))
     }
+
+    #[cfg(target_os = "windows")]
+    pub fn find_process_id(&self) -> u32 {
+        use windows::Win32::System::Diagnostics::ToolHelp::*;
+
+        let target = format!("{}.exe", self.branch.to_string().replace(' ', ""));
+
+        unsafe {
+            let snapshot = match CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) {
+                Ok(s) => s,
+                Err(_) => return 0,
+            };
+
+            let mut entry = PROCESSENTRY32W::default();
+            entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+
+            if Process32FirstW(snapshot, &mut entry).is_err() {
+                return 0;
+            }
+
+            loop {
+                let exe = String::from_utf16_lossy(
+                    &entry.szExeFile[..entry
+                        .szExeFile
+                        .iter()
+                        .position(|&c| c == 0)
+                        .unwrap_or(entry.szExeFile.len())],
+                );
+
+                if exe.eq_ignore_ascii_case(&target) {
+                    return entry.th32ProcessID;
+                }
+
+                if Process32NextW(snapshot, &mut entry).is_err() {
+                    return 0;
+                }
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn kill_process(&self) -> Result<(), Error> {
+        use std::{thread, time::Duration};
+        use windows::Win32::System::Threading::*;
+
+        let pid = self.find_process_id();
+
+        if pid == 0 {
+            return Ok(());
+        }
+
+        unsafe {
+            let handle = OpenProcess(PROCESS_TERMINATE, false, pid)
+                .map_err(|_| Error::ErrDiscordOpened)?;
+
+            let _ = TerminateProcess(handle, 1);
+            let _ = windows::Win32::Foundation::CloseHandle(handle);
+        }
+
+        loop {
+            if self.find_process_id() == 0 {
+                break;
+            }
+
+            thread::sleep(Duration::from_millis(100));
+        }
+
+        Ok(())
+    }
+
 }
 
 #[cfg(target_os = "windows")]

@@ -2,9 +2,16 @@ fn main() {
     let config = slint_build::CompilerConfiguration::new().with_style("fluent".into());
     slint_build::compile_with_config("ui/index.slint", config).expect("Slint build failed");
 
-    #[cfg(target_os = "windows")]
-    {
+    if std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap() == "windows" {
         let mut res = winresource::WindowsResource::new();
+        match std::env::var("CARGO_CFG_TARGET_ENV").unwrap().as_str() {
+            "gnu" => {
+                res.set_ar_path("x86_64-w64-mingw32-ar")
+                    .set_windres_path("x86_64-w64-mingw32-windres");
+            }
+            "msvc" => {}
+            _ => panic!("unsupported env"),
+        };
         res.set_manifest(
             r#"
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>

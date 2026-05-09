@@ -56,6 +56,8 @@ pub enum Error {
     ErrNoDataPath,
     #[error("Discord instance is corrupted or missing files. Please reinstall this Discord!")]
     ErrPleaseReinstallDiscord,
+    #[error("Before patching, please make sure Discord is fully closed!")]
+    ErrDiscordOpened,
     #[error("Invalid arguments provided: {0}")]
     ErrInvalidArguments(&'static str),
     #[error("Other error: {0}")]

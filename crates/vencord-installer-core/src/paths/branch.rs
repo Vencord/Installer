@@ -39,10 +39,10 @@ impl std::fmt::Display for DiscordBranch {
             f,
             "{}",
             match self {
-                DiscordBranch::Canary => "Canary",
-                DiscordBranch::Development => "Development",
-                DiscordBranch::PTB => "PTB",
-                DiscordBranch::Stable => "Stable",
+                DiscordBranch::Canary => "Discord Canary",
+                DiscordBranch::Development => "Discord Development",
+                DiscordBranch::PTB => "Discord PTB",
+                DiscordBranch::Stable => "Discord",
             }
         )
     }

@@ -9,13 +9,13 @@ members = [
 [workspace.package]
 edition = "2024"
 version = "2.0.0"
-authors = ["CLARATION <claration@riseup.net>", "V <vendicated@riseup.net>"]
+authors = ["C <claration@riseup.net>", "V <vendicated@riseup.net>"]
 repository = "https://github.com/Vencord/Installer"
 
 [workspace.dependencies]
-tokio = { version = "1.42.0", features = ["full"] }
-log = "0.4.28"
-env_logger = "0.11.8"
+tokio = { version = "1.52", features = ["full"] }
+log = "0.4"
+env_logger = "0.11"
 
 [profile.release]
 codegen-units = 1

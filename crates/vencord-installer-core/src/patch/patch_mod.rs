@@ -16,9 +16,13 @@ impl Installer {
         data_path: Option<PathBuf>,
     ) -> Result<Self, Error> {
         #[cfg(target_os = "windows")]
-        if discord_location.is_scuffed {
-            log::error!("You have a broken Discord install. Please reinstall Discord!");
-            return Err(Error::ErrWindowsMovedDirectory);
+        {
+            if discord_location.is_scuffed {
+                log::error!("You have a broken Discord install. Please reinstall Discord!");
+                return Err(Error::ErrWindowsMovedDirectory);
+            }
+
+            discord_location.kill_process()?;
         }
 
         let data_path = data_path.ok_or(Error::ErrNoDataPath)?;

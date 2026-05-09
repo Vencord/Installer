@@ -40,10 +40,6 @@ fn parse_discord_location(full_path: &Path) -> Option<DiscordLocation> {
             let name = path.file_name()?.to_str()?;
             let ver = name.strip_prefix("app-")?;
 
-            if !path.join("resources").join("app.asar").exists() {
-                return None;
-            }
-
             Some((ver.to_string(), path))
         })
         .max_by(|(a, _), (b, _)| a.cmp(b))

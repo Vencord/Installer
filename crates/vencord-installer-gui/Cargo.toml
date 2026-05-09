@@ -9,13 +9,13 @@ repository.workspace = true
 tokio.workspace = true
 env_logger.workspace = true
 vencord-installer-core = { path = "../vencord-installer-core" }
-slint = { version = "1.12.1", features = [
+slint = { version = "1.16", features = [
     "i-slint-backend-qt",
     "image-default-formats",
 ] }
-open = "5.3.3" # links
-rfd = { version = "0.17.2", features = ["common-controls-v6"] } # dialogs
+open = "5.3" # links
+rfd = { version = "0.17", features = ["common-controls-v6"] } # dialogs
 
 [build-dependencies]
-slint-build = "1.12.1"
+slint-build = "1.16"
 winresource = "0.1"
