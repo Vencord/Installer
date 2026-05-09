@@ -1,204 +1,182 @@
-use clap::Args;
+use clap::{Args, CommandFactory};
 use console::style;
-use dialoguer::Select;
+use dialoguer::{Input, Select};
 
 use vencord_installer_core::{
-    Error, download,
+    download, Error,
     patch::patch_mod::Installer,
-    paths::{DiscordLocation, get_data_path, get_discord_locations},
+    paths::{get_data_path, get_discord_locations, DiscordLocation},
 };
 
-#[derive(Debug, Args)]
+use crate::commands::Cli;
+
+#[derive(Debug, Args, Clone)]
 pub struct PatchArgs {
-    /// Install Vencord client mod
     #[arg(long, short)]
-    pub install: bool,
-    /// Uninstall Vencord client mod
+    install: bool,
+
     #[arg(long, short)]
-    pub uninstall: bool,
-    /// Repair Vencord client mod
+    uninstall: bool,
+
     #[arg(long, short)]
-    pub repair: bool,
-    /// Install OpenAsar
+    repair: bool,
+
     #[arg(long = "install-openasar", short = 'o')]
-    pub install_openasar: bool,
-    /// Uninstall OpenAsar
+    install_openasar: bool,
+
     #[arg(long = "uninstall-openasar", short = 'x')]
-    pub uninstall_openasar: bool,
-    /// Custom Discord location
+    uninstall_openasar: bool,
+
     #[arg(long, short, value_name = "PATH")]
-    pub custom: Option<String>,
+    location: Option<String>,
 }
 
 pub async fn execute(args: PatchArgs) -> Result<(), Error> {
     if args.install && args.uninstall {
         return Err(Error::ErrInvalidArguments(
-            "You cannot use install and uninstall commands together.",
-        ));
-    }
-
-    if args.custom.is_some() && !(args.install_openasar || args.uninstall_openasar) {
-        return Err(Error::ErrInvalidArguments(
-            "You must specify an install or uninstall when using --custom!",
+            "You cannot use install and uninstall together.",
         ));
     }
 
     if args.repair && (args.install_openasar || args.uninstall_openasar) {
         return Err(Error::ErrInvalidArguments(
-            "Repair cannot be used with OpenAsar install/uninstall commands.",
+            "Repair cannot be used with OpenAsar actions.",
         ));
     }
 
-    if args.install || args.install_openasar {
-        install(args.install, args.install_openasar, args.custom).await?;
-    } else if args.uninstall || args.uninstall_openasar {
-        uninstall(args.uninstall, args.uninstall_openasar, args.custom).await?;
-    } else if args.repair {
-        repair(args.custom).await?;
-    } else {
-        select_options().await?;
+    match (
+        args.install,
+        args.uninstall,
+        args.repair,
+        args.install_openasar,
+        args.uninstall_openasar,
+    ) {
+        (true, _, _, openasar, _) => install(true, openasar, args.location).await?,
+        (_, true, _, _, openasar) => uninstall(true, openasar, args.location).await?,
+        (_, _, true, _, _) => repair(args.location).await?,
+        _ => select_options(args).await?,
+    }
+
+    Ok(())
+}
+
+async fn get_location(path: Option<String>) -> Result<DiscordLocation, Error> {
+    match path {
+        Some(path) => DiscordLocation::from_path(&path)
+            .ok_or(Error::ErrLocationInvalid),
+        None => select_location().await,
+    }
+}
+
+async fn maybe_download() -> Result<(), Error> {
+    if std::env::var("VENCORD_DEV_INSTALL").map_or(true, |v| v != "1") {
+        download().await?;
     }
 
     Ok(())
 }
 
 async fn install(
-    client_mod: bool,
+    vencord: bool,
     openasar: bool,
-    custom_path: Option<String>,
+    path: Option<String>,
 ) -> Result<(), Error> {
-    let selected_location: DiscordLocation;
+    let location = get_location(path).await?;
+    let mut installer = Installer::new(location.clone(), get_data_path())?;
 
-    if let Some(path) = custom_path {
-        selected_location = match DiscordLocation::from_path(&path) {
-            Some(location) => location,
-            _ => return Err(Error::ErrLocationInvalid),
-        };
-    } else {
-        selected_location = select_location().await?;
-    }
-
-    let mut installer = Installer::new(selected_location.clone(), get_data_path())?;
-
-    if client_mod && !selected_location.is_vencord {
-        if std::env::var("VENCORD_DEV_INSTALL").map_or(true, |v| v != "1") {
-            download().await?;
-        }
-
+    if vencord && !location.is_vencord {
+        maybe_download().await?;
         installer.patch().await?;
-    } else if openasar && !selected_location.is_openasar {
+    } else if openasar && !location.is_openasar {
         installer.patch_openasar().await?;
     } else {
-        log::info!("Already installed, skipping!");
+        installer.repair().await?;
+
+        if location.is_vencord {
+            maybe_download().await?;
+            installer.patch().await?;
+        }
+
+        if location.is_openasar {
+            installer.patch_openasar().await?;
+        }
     }
 
     Ok(())
 }
 
 async fn uninstall(
-    client_mod: bool,
+    vencord: bool,
     openasar: bool,
-    custom_path: Option<String>,
+    path: Option<String>,
 ) -> Result<(), Error> {
-    let selected_location: DiscordLocation;
+    let location = get_location(path).await?;
+    let mut installer = Installer::new(location.clone(), get_data_path())?;
 
-    if let Some(path) = custom_path {
-        selected_location = match DiscordLocation::from_path(&path) {
-            Some(location) => location,
-            _ => return Err(Error::ErrLocationInvalid),
-        };
-    } else {
-        selected_location = select_location().await?;
+    if vencord && location.is_vencord {
+        installer.unpatch().await?;
     }
 
-    let mut installer = Installer::new(selected_location.clone(), get_data_path())?;
-
-    if client_mod && selected_location.is_vencord {
-        installer.unpatch().await?;
-    } else if openasar && selected_location.is_openasar {
+    if openasar && location.is_openasar {
         installer.unpatch_openasar().await?;
-    } else {
-        log::info!("Not installed, skipping!");
     }
 
     Ok(())
 }
 
-async fn repair(custom_path: Option<String>) -> Result<(), Error> {
-    let selected_location: DiscordLocation;
+async fn repair(path: Option<String>) -> Result<(), Error> {
+    let location = get_location(path).await?;
 
-    if let Some(path) = custom_path {
-        selected_location = match DiscordLocation::from_path(&path) {
-            Some(location) => location,
-            _ => return Err(Error::ErrLocationInvalid),
-        };
-    } else {
-        selected_location = select_location().await?;
-    }
+    maybe_download().await?;
 
-    if std::env::var("VENCORD_DEV_INSTALL").map_or(true, |v| v != "1") {
-        download().await?;
-    }
+    let mut installer = Installer::new(location.clone(), get_data_path())?;
 
-    let mut installer = Installer::new(selected_location.clone(), get_data_path())?;
+    installer.repair().await?;
 
-    if selected_location.is_vencord {
+    if location.is_vencord {
         installer.patch().await?;
     }
-    if selected_location.is_openasar {
+
+    if location.is_openasar {
         installer.patch_openasar().await?;
     }
 
     Ok(())
 }
 
-pub async fn select_options() -> Result<(), Error> {
-    let options = [
-        "Install Vencord",
-        "Uninstall Vencord",
-        "Repair Vencord",
-        "Install OpenAsar",
-        "Uninstall OpenAsar",
-        "Exit",
+async fn select_options(args: PatchArgs) -> Result<(), Error> {
+    let options: [(&str, fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Error>>>>); 5] = [
+        ("Install Vencord", || Box::pin(install(true, false, None))),
+        ("Uninstall Vencord", || Box::pin(uninstall(true, false, None))),
+        ("Repair Vencord", || Box::pin(repair(None))),
+        ("Install OpenAsar", || Box::pin(install(false, true, None))),
+        ("Uninstall OpenAsar", || Box::pin(uninstall(false, true, None))),
     ];
 
-    let selection = tokio::task::spawn_blocking(move || {
+    let mut items: Vec<_> = options.iter().map(|(name, _)| *name).collect();
+    items.extend(["View Help Menu", "Exit"]);
+
+    let choice = tokio::task::spawn_blocking(move || {
         Select::new()
             .with_prompt(
                 style("Use ↑ ↓ and Enter to select an option")
                     .bold()
                     .to_string(),
             )
-            .items(&options)
+            .items(&items)
             .default(0)
             .interact()
     })
-    .await;
-
-    let Ok(Ok(choice)) = selection else {
-        return Err(Error::ErrOther("Failed to read selection"));
-    };
+    .await?.unwrap();
 
     match choice {
-        0 => {
-            install(true, false, None).await?;
-            Box::pin(select_options()).await?;
+        0..=4 => {
+            options[choice].1().await?;
+            Box::pin(select_options(args)).await?;
         }
-        1 => {
-            uninstall(true, false, None).await?;
-            Box::pin(select_options()).await?;
-        }
-        2 => {
-            repair(None).await?;
-            Box::pin(select_options()).await?;
-        }
-        3 => {
-            install(false, true, None).await?;
-            Box::pin(select_options()).await?;
-        }
-        4 => {
-            uninstall(false, true, None).await?;
-            Box::pin(select_options()).await?;
+        5 => {
+            Cli::command().print_help()?;
+            println!();
         }
         _ => {}
     }
@@ -209,48 +187,53 @@ pub async fn select_options() -> Result<(), Error> {
 async fn select_location() -> Result<DiscordLocation, Error> {
     let locations = get_discord_locations();
 
-    let items: Vec<String> = locations
+    let mut items: Vec<_> = locations
         .iter()
-        .map(|location| {
-            let mut instance = Vec::new();
-            instance.push(location.branch.to_string());
-            if location.is_flatpak {
-                instance.push("Flatpak".to_owned());
-            }
+        .map(|l| {
+            let tags = [
+                l.is_vencord.then_some("INSTALLED"),
+                l.is_openasar.then_some("OPENASAR"),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .join(", ");
 
-            let mut tags = Vec::new();
-            if location.is_vencord {
-                tags.push("[INSTALLED]");
-            }
-            if location.is_openasar {
-                tags.push("[OPENASAR]");
-            }
-
-            let tags_str = if tags.is_empty() {
-                String::new()
-            } else {
-                format!(" {}", tags.join(" "))
-            };
-
-            format!("{}{} – {:?}", instance.join(", "), tags_str, location.path)
+            format!(
+                "{}{} - {:?}",
+                l.branch,
+                if tags.is_empty() {
+                    String::new()
+                } else {
+                    format!(" [{}]", tags)
+                },
+                l.path
+            )
         })
         .collect();
 
-    let selection = tokio::task::spawn_blocking(move || {
+    items.push("Custom Location".into());
+
+    let idx = tokio::task::spawn_blocking(move || {
         Select::new()
-            .with_prompt(
-                style("Use ↑ ↓ and Enter to select a Discord location")
-                    .bold()
-                    .to_string(),
-            )
+            .with_prompt("Select a Discord location")
             .items(&items)
             .default(0)
             .interact()
     })
-    .await;
+    .await?.unwrap();
 
-    match selection {
-        Ok(Ok(idx)) => Ok(locations[idx].clone()),
-        _ => Err(Error::ErrLocationInvalid),
+    if idx == locations.len() {
+        let path = tokio::task::spawn_blocking(|| {
+            Input::<String>::new()
+                .with_prompt("Enter custom Discord path")
+                .interact_text()
+        })
+        .await?.unwrap();
+
+        return DiscordLocation::from_path(&path)
+            .ok_or(Error::ErrLocationInvalid);
     }
+
+    Ok(locations[idx].clone())
 }
