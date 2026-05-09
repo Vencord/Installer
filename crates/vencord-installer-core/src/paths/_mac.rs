@@ -50,7 +50,5 @@ pub(crate) fn get_data_path_impl() -> Option<PathBuf> {
         .join("Application Support")
         .join("Vencord");
 
-    std::fs::create_dir_all(&dir).ok();
-
     Some(dir.clone())
 }

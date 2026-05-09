@@ -27,7 +27,10 @@ pub fn get_data_path() -> Option<std::path::PathBuf> {
         Some(std::path::PathBuf::from(path))
     } else {
         get_data_path_impl()
-    }?;
+    }?
+    .join("dist");
 
-    Some(path.join("dist"))
+    std::fs::create_dir_all(&path).ok();
+
+    Some(path)
 }

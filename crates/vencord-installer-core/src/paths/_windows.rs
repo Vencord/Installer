@@ -57,14 +57,12 @@ fn parse_discord_location(full_path: &Path) -> Option<DiscordLocation> {
 /// # Returns
 ///
 /// Returns the path to the data directory.
-pub fn get_data_path_impl() -> Option<PathBuf> {
+pub(crate) fn get_data_path_impl() -> Option<PathBuf> {
     let Ok(appdata) = std::env::var("APPDATA") else {
         return None;
     };
 
     let dir = Path::new(&appdata).join("Vencord");
-
-    std::fs::create_dir_all(&dir).ok();
 
     Some(dir.clone())
 }

@@ -1,4 +1,7 @@
-use std::{fs, path::{Path, PathBuf}};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use super::DiscordLocation;
 
@@ -46,7 +49,9 @@ pub fn get_discord_locations() -> Vec<DiscordLocation> {
         .flat_map(|base| {
             KNOWN_NAMES.iter().filter_map(move |name| {
                 let path = base.join(name);
-                path.exists().then(|| parse_discord_location(path)).flatten()
+                path.exists()
+                    .then(|| parse_discord_location(path))
+                    .flatten()
             })
         })
         .collect()
@@ -108,14 +113,10 @@ fn parse_discord_location(mut path: PathBuf) -> Option<DiscordLocation> {
 }
 
 /// Returns and creates the data path for the given name.
-pub fn get_data_path_impl() -> Option<PathBuf> {
+pub(crate) fn get_data_path_impl() -> Option<PathBuf> {
     let home_dir = find_home()?;
 
-    let dir = Path::new(&home_dir)
-        .join(".config")
-        .join("Vencord");
-
-    std::fs::create_dir_all(&dir).ok();
+    let dir = Path::new(&home_dir).join(".config").join("Vencord");
 
     Some(dir)
 }
