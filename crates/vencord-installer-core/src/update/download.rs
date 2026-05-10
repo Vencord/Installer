@@ -3,17 +3,6 @@ use std::path::{Path, PathBuf};
 use crate::{Error, USER_AGENT};
 
 /// Prepares a dist directory by downloading the specified files, including a creating a `package.json` file.
-///
-/// # Arguments
-///
-/// * `dir_name` - The name of your config directory.
-/// * `url_path` - The URL path to download the files from.
-/// * `user_agent` - The user agent to use for the request.
-/// * `dist_files` - The list of files to download from the url path.
-///
-/// # Returns
-///
-/// Returns `Ok(())` if the directory was prepared successfully, otherwise an InstallerResult error.
 pub async fn prepare_dist_directory<
     P: AsRef<Path>,
     S: Into<String>,
@@ -48,16 +37,6 @@ pub async fn prepare_dist_directory<
 }
 
 /// Downloads a file from a given URL and saves it to a given path.
-///
-/// # Arguments
-///
-/// * `url` - The URL to download the file from.
-/// * `path` - The path to save the downloaded file to.
-/// * `user_agent` - The user agent to use for the request.
-///
-/// # Returns
-///
-/// Returns `Ok(())` if the file was downloaded successfully, otherwise an InstallerResult error.
 pub async fn download_file(url: &str, path: PathBuf) -> Result<(), Error> {
     let client = reqwest::Client::new();
 

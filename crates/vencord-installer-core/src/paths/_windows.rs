@@ -49,14 +49,6 @@ fn parse_discord_location(full_path: &Path) -> Option<DiscordLocation> {
 }
 
 /// Returns and creates the data path for the given name.
-///
-/// # Arguments
-///
-/// * `data_dir` - The name of the data directory.
-///
-/// # Returns
-///
-/// Returns the path to the data directory.
 pub(crate) fn get_data_path_impl() -> Option<PathBuf> {
     let Ok(appdata) = std::env::var("APPDATA") else {
         return None;

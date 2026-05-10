@@ -1,0 +1,48 @@
+name: Build
+on:
+  push:
+
+env:
+  BINARY_NAME: installer
+  BUNDLE_NAME: Vencord Installer
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build binaries
+        run: |
+          make linux
+          make windows
+
+      - name: Upload linux binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-linux
+          path: _out/linux/*
+
+      - name: Upload windows binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-windows
+          path: _out/windows/*
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build binaries
+        run: |
+          make macos
+          ditto -c -k --sequesterRsrc --keepParent _out/macos/${{ env.BUNDLE_NAME }}.app _out/macos/${{ env.BUNDLE_NAME }}.zip
+
+      - name: Upload macos binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-macos
+          path: _out/macos/${{ env.BUNDLE_NAME }}.zip
