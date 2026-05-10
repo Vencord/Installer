@@ -38,6 +38,7 @@ jobs:
 
       - name: Build binaries
         run: |
+          rustup target add x86_64-apple-darwin aarch64-apple-darwin
           make macos
           ditto -c -k --sequesterRsrc --keepParent _out/macos/${{ env.BUNDLE_NAME }}.app _out/macos/${{ env.BUNDLE_NAME }}.zip
 
