@@ -36,10 +36,10 @@ windows:
 		--bin vencord-installer-gui \
 		--bin vencord-installer-cli \
 		--release \
-		--target x86_64-pc-windows-msvc
+		--target x86_64-pc-windows-gnu
 
-	cp target/x86_64-pc-windows-msvc/release/vencord-installer-gui.exe _out/windows/Vencord\ Installer.exe
-	cp target/x86_64-pc-windows-msvc/release/vencord-installer-cli.exe _out/windows/vencord-installer-cli.exe
+	cp target/x86_64-pc-windows-gnu/release/vencord-installer-gui.exe _out/windows/Vencord\ Installer.exe
+	cp target/x86_64-pc-windows-gnu/release/vencord-installer-cli.exe _out/windows/vencord-installer-cli.exe
 
 linux:
 	rm -rf _out/linux

@@ -16,7 +16,8 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libfontconfig1-dev
+          sudo apt-get install -y pkg-config libfontconfig1-dev mingw-w64
+          rustup target add x86_64-pc-windows-gnu
 
       - name: Build binaries
         run: |
@@ -41,9 +42,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Dependencies
+        run: |
+          rustup target add x86_64-apple-darwin
+
       - name: Build binaries
         run: |
-          rustup target add x86_64-apple-darwin aarch64-apple-darwin
           make macos
           ditto -c -k --sequesterRsrc --keepParent _out/macos/${{ env.BUNDLE_NAME }}.app _out/macos/${{ env.BUNDLE_NAME }}.zip
 
