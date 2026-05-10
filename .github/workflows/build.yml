@@ -49,10 +49,10 @@ jobs:
       - name: Build binaries
         run: |
           make macos
-          ditto -c -k --sequesterRsrc --keepParent _out/macos/${{ env.BUNDLE_NAME }}.app _out/macos/${{ env.BUNDLE_NAME }}.zip
+          ditto -c -k --sequesterRsrc --keepParent _out/macos/Vencord\ Installer.app _out/macos/Vencord\ Installer.zip
 
       - name: Upload macos binaries
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BINARY_NAME }}-macos
-          path: _out/macos/${{ env.BUNDLE_NAME }}.zip
+          path: _out/macos/*.zip
