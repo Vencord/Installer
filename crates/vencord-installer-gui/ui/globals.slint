@@ -1,0 +1,53 @@
+export enum DiscordBranch {
+    Stable,
+    PTB,
+    Canary,
+    Development,
+}
+
+export struct DiscordLocation {
+    path: string,
+    branch: DiscordBranch,
+    is_vencord: bool,
+    is_openasar: bool,
+    is_flatpak: bool,
+    is_scuffed: bool,
+    is_system_electron: bool,
+}
+
+export global DiscordLocationAdapter {
+    in property <[DiscordLocation]> locations;
+    in property <[DiscordLocation]> custom_locations;
+    in property <DiscordLocation> selected_location;
+
+    public pure function branch_name(branch: DiscordBranch) -> string {
+        return branch == DiscordBranch.Stable ? "Stable" : branch == DiscordBranch.PTB ? "PTB" : branch == DiscordBranch.Canary ? "Canary" : branch == DiscordBranch.Development ? "Development" : "";
+    }
+
+    public pure function branch_icon(branch: DiscordBranch) -> image {
+        return branch == DiscordBranch.Stable ? @image-url("assets/stable.svg") : branch == DiscordBranch.PTB ? @image-url("assets/ptb.svg") : branch == DiscordBranch.Canary ? @image-url("assets/canary.svg") : branch == DiscordBranch.Development ? @image-url("assets/development.svg") : @image-url("assets/stable.svg");
+    }
+}
+
+export global PageManager {
+    in-out property <int> current_page_index: 0;
+    in-out property <int> preserved_expanded_index: -1;
+    in-out property <string> loading_op: "";
+    in-out property <string> loading_path: "";
+}
+
+export global AppInfo {
+    in property <string> version: "0.0.0";
+}
+
+export global RustCallbacks {
+    pure callback refresh_locations;
+
+    pure callback do_install(location: DiscordLocation);
+    pure callback do_o_install(location: DiscordLocation);
+    pure callback do_uninstall(location: DiscordLocation);
+    pure callback do_o_uninstall(location: DiscordLocation);
+    pure callback do_repair(location: DiscordLocation);
+    pure callback do_open_link(url: string);
+    pure callback do_open_folder_dialog();
+}

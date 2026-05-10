@@ -1,0 +1,44 @@
+{
+  "fill" : {
+    "automatic-gradient" : "srgb:0.62514,0.51949,0.55399,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "vc_outline.png",
+          "name" : "vc_outline"
+        },
+        {
+          "image-name" : "vc_v.png",
+          "name" : "vc_v"
+        },
+        {
+          "image-name" : "vc_c.png",
+          "name" : "vc_c"
+        }
+      ],
+      "position" : {
+        "scale" : 1.22,
+        "translation-in-points" : [
+          0,
+          0
+        ]
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

@@ -1,0 +1,39 @@
+import { InstallPage } from "install-page.slint";
+import { SettingsPage } from "settings-page.slint";
+import { VerticalBox } from "std-widgets.slint";
+import { PageManager } from "../globals.slint";
+
+export component Pages inherits Rectangle {
+    function next() {
+        PageManager.current_page_index += 1;
+    }
+
+    function back() {
+        if (PageManager.current_page_index > 0) {
+            PageManager.current_page_index -= 1;
+        }
+    }
+
+    InstallPage {
+        width: 100%;
+        height: 100%;
+        opacity: PageManager.current-page-index == 0 ? 1 : 0;
+        visible: PageManager.current-page-index == 0;
+        next => next();
+        animate opacity {
+            duration: 300ms;
+            easing: ease-in-out;
+        }
+    }
+
+    SettingsPage {
+        width: 100%;
+        height: 100%;
+        opacity: PageManager.current-page-index == 1 ? 1 : 0;
+        visible: PageManager.current-page-index == 1;
+        animate opacity {
+            duration: 300ms;
+            easing: ease-in-out;
+        }
+    }
+}

@@ -1,0 +1,305 @@
+import { Page, Header, Footer } from "base.slint";
+import {
+    DiscordLocationAdapter,
+    DiscordLocation,
+    RustCallbacks,
+    PageManager,
+} from "../globals.slint";
+import { GruvboxPalette } from "../gruvbox-palette.slint";
+import {
+    HorizontalBox,
+    VerticalBox,
+    Button,
+    ScrollView,
+    Spinner,
+} from "std-widgets.slint";
+
+component ActionButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in property <bool> loading: false;
+    in property <color> text-color: GruvboxPalette.bg0;
+    in property <color> bg-color: GruvboxPalette.blue;
+    in property <color> hover-color: GruvboxPalette.blue-dim;
+    callback clicked <=> touch.clicked;
+    height: 32px;
+    border-radius: 4px;
+    background: !enabled ? GruvboxPalette.bg2 : touch.has-hover ? hover-color : bg-color;
+    opacity: (enabled || loading) ? 1.0 : 0.5;
+    animate background { duration: 150ms; }
+    animate opacity { duration: 150ms; }
+
+    Text {
+        x: 0;
+        y: 0;
+        width: 100%;
+        height: 100%;
+        text: root.text;
+        color: text-color;
+        font-size: 14px;
+        font-weight: 600;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        opacity: root.loading ? 0.0 : 1.0;
+        animate opacity { duration: 150ms; }
+    }
+
+    Spinner {
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        width: 18px;
+        height: 18px;
+        indeterminate: true;
+        opacity: root.loading ? 1.0 : 0.0;
+        animate opacity { duration: 150ms; }
+    }
+
+    touch := TouchArea {
+        width: 100%;
+        height: 100%;
+        enabled: root.enabled;
+    }
+}
+
+component DiscordLocationItem inherits Rectangle {
+    in property <DiscordLocation> location;
+    in property <bool> is-expanded: false;
+    in property <string> loading-op: "";
+    callback toggle-expand;
+
+    height: is-expanded ? 136px : 80px;
+    border-radius: 8px;
+    background: GruvboxPalette.bg1;
+    clip: true;
+    animate height {
+        duration: 250ms;
+        easing: ease-in-out;
+    }
+
+    VerticalLayout {
+        padding: 0;
+        spacing: 0;
+        header := Rectangle {
+            height: 80px;
+            border-radius: 8px;
+            states [
+                inactive when !header-touch.has-hover && !root.is-expanded: {
+                    header.background: GruvboxPalette.bg1;
+                }
+                hover when header-touch.has-hover && !root.is-expanded: {
+                    header.background: GruvboxPalette.bg2;
+                }
+                expanded when root.is-expanded: {
+                    header.background: GruvboxPalette.bg2;
+                }
+            ]
+            animate background { duration: 150ms; }
+
+            HorizontalBox {
+                padding: 12px;
+                spacing: 12px;
+                HorizontalLayout {
+                    Rectangle {
+                        width: 48px;
+                        Image {
+                            width: 100%;
+                            height: 100%;
+                            image-fit: ImageFit.contain;
+                            image-rendering: ImageRendering.smooth;
+                            source: DiscordLocationAdapter.branch_icon(location.branch);
+                        }
+                    }
+
+                    VerticalBox {
+                        alignment: center;
+                        spacing: 3px;
+                        Text {
+                            text: DiscordLocationAdapter.branch_name(location.branch);
+                            font-size: 18px;
+                            color: GruvboxPalette.fg0;
+                            font-weight: 700;
+                        }
+
+                        Text {
+                            text: location.path;
+                            font-size: 11px;
+                            color: GruvboxPalette.fg3;
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    alignment: center;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        alignment: end;
+                        if location.is_vencord: Rectangle {
+                            width: 85px;
+                            height: 22px;
+                            border-radius: 11px;
+                            background: GruvboxPalette.aqua;
+
+                            Text {
+                                text: "INSTALLED";
+                                color: GruvboxPalette.bg0;
+                                font-size: 12px;
+                                font-weight: 900;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                        if location.is_openasar: Rectangle {
+                            width: 83px;
+                            height: 22px;
+                            border-radius: 11px;
+                            background: GruvboxPalette.blue;
+
+                            Text {
+                                text: "OPENASAR";
+                                color: GruvboxPalette.bg0;
+                                font-size: 12px;
+                                font-weight: 900;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+
+            header-touch := TouchArea {
+                width: 100%;
+                height: 100%;
+                clicked => {
+                    toggle-expand();
+                }
+            }
+        }
+
+        actions-container := Rectangle {
+            height: root.is-expanded ? 80px : 0;
+            clip: true;
+            animate height {
+                duration: 250ms;
+                easing: ease-in-out;
+            }
+            VerticalLayout {
+                padding: 12px;
+                spacing: 8px;
+
+                HorizontalLayout {
+                    spacing: 8px;
+
+                    if !location.is_vencord: ActionButton {
+                        text: "Install Vencord";
+                        enabled: root.loading-op == "";
+                        loading: root.loading-op == "install";
+                        bg-color: GruvboxPalette.aqua;
+                        hover-color: GruvboxPalette.aqua-dim;
+                        clicked => {
+                            RustCallbacks.do_install(location);
+                        }
+                    }
+                    if location.is_vencord: ActionButton {
+                        text: "Uninstall Vencord";
+                        enabled: root.loading-op == "";
+                        loading: root.loading-op == "uninstall";
+                        bg-color: GruvboxPalette.red;
+                        hover-color: GruvboxPalette.red-dim;
+                        clicked => {
+                            RustCallbacks.do_uninstall(location);
+                        }
+                    }
+                    if !location.is_openasar: ActionButton {
+                        text: "Install OpenAsar";
+                        enabled: root.loading-op == "";
+                        loading: root.loading-op == "o_install";
+                        bg-color: GruvboxPalette.blue;
+                        hover-color: GruvboxPalette.blue-dim;
+                        clicked => {
+                            RustCallbacks.do_o_install(location);
+                        }
+                    }
+                    if location.is_openasar: ActionButton {
+                        text: "Uninstall OpenAsar";
+                        enabled: root.loading-op == "";
+                        loading: root.loading-op == "o_uninstall";
+                        bg-color: GruvboxPalette.red;
+                        hover-color: GruvboxPalette.red-dim;
+                        clicked => {
+                            RustCallbacks.do_o_uninstall(location);
+                        }
+                    }
+                    ActionButton {
+                        text: "Repair";
+                        enabled: root.loading-op == "";
+                        loading: root.loading-op == "repair";
+                        text-color: GruvboxPalette.fg0;
+                        bg-color: GruvboxPalette.bg3;
+                        hover-color: GruvboxPalette.bg4;
+                        clicked => {
+                            RustCallbacks.do_repair(location);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component InstallPage inherits Page {
+    Header {
+        name: "Installer";
+    }
+
+    ScrollView {
+        VerticalLayout {
+            spacing: 12px;
+            padding-left: 12px;
+            padding-right: 12px;
+
+            for discord[index] in DiscordLocationAdapter.locations: DiscordLocationItem {
+                location: discord;
+                is-expanded: index == PageManager.preserved-expanded-index;
+                loading-op: PageManager.loading_path == discord.path ? PageManager.loading_op : "";
+                toggle-expand => {
+                    if (PageManager.preserved-expanded-index == index) {
+                        PageManager.preserved-expanded-index = -1;
+                    } else {
+                        PageManager.preserved-expanded-index = index;
+                    }
+                }
+            }
+
+            Rectangle {
+                height: 80px;
+                border-radius: 8px;
+                background: GruvboxPalette.bg1;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 6px;
+
+                    Text {
+                        text: "Add a custom Discord instance";
+                        font-size: 14px;
+                        color: GruvboxPalette.fg0;
+                    }
+
+                    ActionButton {
+                        text: "Select Folder";
+                        bg-color: GruvboxPalette.blue;
+                        hover-color: GruvboxPalette.blue-dim;
+                        clicked => RustCallbacks.do_open_folder_dialog();
+                    }
+                }
+
+                callback select_discord_folder;
+            }
+        }
+    }
+
+    Footer {
+        name: "Settings";
+        target-page: 1;
+    }
+}

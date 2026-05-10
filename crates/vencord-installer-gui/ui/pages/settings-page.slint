@@ -1,0 +1,30 @@
+import { Page, Header, Footer } from "base.slint";
+import { GruvboxPalette } from "../gruvbox-palette.slint";
+import { PageManager, AppInfo } from "../globals.slint";
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export component SettingsPage inherits Page {
+    page-background: GruvboxPalette.bg0-hard;
+
+    Header {
+        name: "Settings";
+        show-version: false;
+    }
+
+    VerticalBox {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 12px;
+        Text {
+            text: "intentionally empty";
+            color: GruvboxPalette.fg2;
+            font-size: 14px;
+            horizontal-alignment: center;
+        }
+    }
+
+    Footer {
+        name: "Back";
+        target-page: 0;
+    }
+}

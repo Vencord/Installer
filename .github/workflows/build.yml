@@ -1,0 +1,58 @@
+name: Build
+on:
+  push:
+
+env:
+  BINARY_NAME: installer
+  BUNDLE_NAME: Vencord Installer
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libfontconfig1-dev mingw-w64
+          rustup target add x86_64-pc-windows-gnu
+
+      - name: Build binaries
+        run: |
+          make linux
+          make windows
+
+      - name: Upload linux binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-linux
+          path: _out/linux/*
+
+      - name: Upload windows binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-windows
+          path: _out/windows/*
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          rustup target add x86_64-apple-darwin
+
+      - name: Build binaries
+        run: |
+          make macos
+          ditto -c -k --sequesterRsrc --keepParent _out/macos/Vencord\ Installer.app _out/macos/Vencord\ Installer.zip
+
+      - name: Upload macos binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-macos
+          path: _out/macos/*.zip

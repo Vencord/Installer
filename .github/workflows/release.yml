@@ -1,0 +1,85 @@
+name: Release
+on:
+  push:
+    tags:
+      - v*
+
+env:
+  BINARY_NAME: installer
+  BUNDLE_NAME: Vencord Installer
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build binaries
+        run: |
+          make linux
+          make windows
+
+      - name: Upload linux binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-linux
+          path: _out/linux/*
+
+      - name: Upload windows binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-windows
+          path: _out/windows/*
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build binaries
+        run: |
+          make macos
+          ditto -c -k --sequesterRsrc --keepParent _out/macos/${{ env.BUNDLE_NAME }}.app _out/macos/${{ env.BUNDLE_NAME }}.zip
+
+      - name: Upload macos binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-macos
+          path: _out/macos/${{ env.BUNDLE_NAME }}.zip
+
+  release:
+    needs: [build, build-macos]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.BINARY_NAME }}-linux
+          path: linux
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.BINARY_NAME }}-windows
+          path: windows
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.BINARY_NAME }}-macos
+          path: macos
+
+      - name: Create the release
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ github.ref_name }}
+          prerelease: false
+          draft: false
+          files: |
+            linux/*
+            windows/*
+            macos/*

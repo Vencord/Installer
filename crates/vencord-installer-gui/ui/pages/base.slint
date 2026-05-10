@@ -1,0 +1,130 @@
+import { VerticalBox, StyleMetrics, HorizontalBox } from "std-widgets.slint";
+import { GruvboxPalette } from "../gruvbox-palette.slint";
+import { AppInfo, RustCallbacks } from "../globals.slint";
+import { PageManager } from "../globals.slint";
+
+component IconButton inherits Rectangle {
+    in property <image> icon;
+    callback clicked;
+
+    width: 37px;
+    height: 37px;
+    border-radius: 8px;
+    background: GruvboxPalette.bg1;
+    animate background { duration: 150ms; }
+    states [
+        hovered when touch.has-hover: {
+            background: GruvboxPalette.bg2;
+        }
+    ]
+
+    Image {
+        source: icon;
+        width: 22px;
+        height: 22px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+    }
+
+    touch := TouchArea {
+        width: 100%;
+        height: 100%;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component Header inherits Rectangle {
+    in property <string> name: "Installer";
+    in property <bool> show-version: true;
+
+    height: 60px;
+    VerticalLayout {
+        alignment: center;
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            alignment: start;
+
+            Image {
+                source: @image-url("../assets/header.png");
+                width: 50px;
+                height: 32px;
+            }
+
+            Image {
+                source: @image-url("../assets/oneko.gif");
+                width: 35px;
+                height: 35px;
+            }
+        }
+    }
+}
+
+export component Footer inherits Rectangle {
+    in property <string> name;
+    in property <int> target-page: 0;
+
+    height: 60px;
+    VerticalLayout {
+        alignment: center;
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            spacing: 12px;
+
+            IconButton {
+                icon: @image-url("../assets/github.svg");
+                clicked => {
+                    RustCallbacks.do_open_link("https://github.com/Vencord/Installer");
+                }
+            }
+
+            IconButton {
+                icon: @image-url("../assets/twitter.svg");
+                clicked => {
+                    RustCallbacks.do_open_link("https://twitter.com/VencordApp");
+                }
+            }
+
+            IconButton {
+                icon: @image-url("../assets/discord.svg");
+                clicked => {
+                    RustCallbacks.do_open_link("https://discord.gg/vencord");
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+                background: transparent;
+            }
+
+            IconButton {
+                icon: @image-url("../assets/donate.svg");
+                clicked => {
+                    RustCallbacks.do_open_link("https://vencord.dev/donate");
+                }
+            }
+
+            // IconButton {
+            //     icon: @image-url("../assets/settings.svg");
+            //     clicked => {
+            //         debug("Settings");
+            //     }
+            // }
+        }
+    }
+}
+
+export component Page inherits Rectangle {
+    in property <color> page-background: GruvboxPalette.bg0;
+    callback next;
+    background: page-background;
+
+    VerticalBox {
+        padding: 0;
+        spacing: 0;
+        @children
+    }
+}

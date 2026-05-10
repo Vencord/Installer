@@ -1,5 +1,28 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/gui",
+    "crates/vencord-installer-cli",
+    "crates/vencord-installer-gui",
+    "crates/vencord-installer-core",
 ]
+
+[workspace.package]
+edition = "2024"
+version = "2.0.0"
+authors = ["C <claration@riseup.net>", "V <vendicated@riseup.net>"]
+repository = "https://github.com/Vencord/Installer"
+
+[workspace.dependencies]
+tokio = { version = "1.52", features = ["full"] }
+log = "0.4"
+env_logger = "0.11"
+
+[profile.release]
+codegen-units = 2
+debug = "full"
+lto = true
+opt-level = "s"
+panic = "abort"
+split-debuginfo = "packed"
+strip = "symbols"
+incremental = false
