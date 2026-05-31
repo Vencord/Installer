@@ -4,6 +4,7 @@ import {
     DiscordLocation,
     RustCallbacks,
     PageManager,
+    LoadingOp,
 } from "../globals.slint";
 import { GruvboxPalette } from "../gruvbox-palette.slint";
 import {
@@ -27,7 +28,6 @@ component ActionButton inherits Rectangle {
     background: !enabled ? GruvboxPalette.bg2 : touch.has-hover ? hover-color : bg-color;
     opacity: (enabled || loading) ? 1.0 : 0.5;
     animate background { duration: 150ms; }
-    animate opacity { duration: 150ms; }
 
     Text {
         x: 0;
@@ -41,7 +41,6 @@ component ActionButton inherits Rectangle {
         horizontal-alignment: center;
         vertical-alignment: center;
         opacity: root.loading ? 0.0 : 1.0;
-        animate opacity { duration: 150ms; }
     }
 
     Spinner {
@@ -51,7 +50,6 @@ component ActionButton inherits Rectangle {
         height: 18px;
         indeterminate: true;
         opacity: root.loading ? 1.0 : 0.0;
-        animate opacity { duration: 150ms; }
     }
 
     touch := TouchArea {
@@ -64,7 +62,7 @@ component ActionButton inherits Rectangle {
 component DiscordLocationItem inherits Rectangle {
     in property <DiscordLocation> location;
     in property <bool> is-expanded: false;
-    in property <string> loading-op: "";
+    in property <LoadingOp> loading-op: LoadingOp.None;
     callback toggle-expand;
 
     height: is-expanded ? 136px : 80px;
@@ -192,8 +190,8 @@ component DiscordLocationItem inherits Rectangle {
 
                     if !location.is_vencord: ActionButton {
                         text: "Install Vencord";
-                        enabled: root.loading-op == "";
-                        loading: root.loading-op == "install";
+                        enabled: root.loading-op == LoadingOp.None;
+                        loading: root.loading-op == LoadingOp.Install;
                         bg-color: GruvboxPalette.aqua;
                         hover-color: GruvboxPalette.aqua-dim;
                         clicked => {
@@ -202,8 +200,8 @@ component DiscordLocationItem inherits Rectangle {
                     }
                     if location.is_vencord: ActionButton {
                         text: "Uninstall Vencord";
-                        enabled: root.loading-op == "";
-                        loading: root.loading-op == "uninstall";
+                        enabled: root.loading-op == LoadingOp.None;
+                        loading: root.loading-op == LoadingOp.Uninstall;
                         bg-color: GruvboxPalette.red;
                         hover-color: GruvboxPalette.red-dim;
                         clicked => {
@@ -212,8 +210,8 @@ component DiscordLocationItem inherits Rectangle {
                     }
                     if !location.is_openasar: ActionButton {
                         text: "Install OpenAsar";
-                        enabled: root.loading-op == "";
-                        loading: root.loading-op == "o_install";
+                        enabled: root.loading-op == LoadingOp.None;
+                        loading: root.loading-op == LoadingOp.OpenAsarInstall;
                         bg-color: GruvboxPalette.blue;
                         hover-color: GruvboxPalette.blue-dim;
                         clicked => {
@@ -222,8 +220,8 @@ component DiscordLocationItem inherits Rectangle {
                     }
                     if location.is_openasar: ActionButton {
                         text: "Uninstall OpenAsar";
-                        enabled: root.loading-op == "";
-                        loading: root.loading-op == "o_uninstall";
+                        enabled: root.loading-op == LoadingOp.None;
+                        loading: root.loading-op == LoadingOp.OpenAsarUninstall;
                         bg-color: GruvboxPalette.red;
                         hover-color: GruvboxPalette.red-dim;
                         clicked => {
@@ -232,8 +230,8 @@ component DiscordLocationItem inherits Rectangle {
                     }
                     ActionButton {
                         text: "Repair";
-                        enabled: root.loading-op == "";
-                        loading: root.loading-op == "repair";
+                        enabled: root.loading-op == LoadingOp.None;
+                        loading: root.loading-op == LoadingOp.Repair;
                         text-color: GruvboxPalette.fg0;
                         bg-color: GruvboxPalette.bg3;
                         hover-color: GruvboxPalette.bg4;
@@ -261,7 +259,7 @@ export component InstallPage inherits Page {
             for discord[index] in DiscordLocationAdapter.locations: DiscordLocationItem {
                 location: discord;
                 is-expanded: index == PageManager.preserved-expanded-index;
-                loading-op: PageManager.loading_path == discord.path ? PageManager.loading_op : "";
+                loading-op: PageManager.loading_path == discord.path ? PageManager.loading_op : LoadingOp.None;
                 toggle-expand => {
                     if (PageManager.preserved-expanded-index == index) {
                         PageManager.preserved-expanded-index = -1;

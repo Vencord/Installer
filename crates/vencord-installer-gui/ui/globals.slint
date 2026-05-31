@@ -5,6 +5,15 @@ export enum DiscordBranch {
     Development,
 }
 
+export enum LoadingOp {
+    None,
+    Install,
+    Uninstall,
+    OpenAsarInstall,
+    OpenAsarUninstall,
+    Repair,
+}
+
 export struct DiscordLocation {
     path: string,
     branch: DiscordBranch,
@@ -32,7 +41,7 @@ export global DiscordLocationAdapter {
 export global PageManager {
     in-out property <int> current_page_index: 0;
     in-out property <int> preserved_expanded_index: -1;
-    in-out property <string> loading_op: "";
+    in-out property <LoadingOp> loading_op: LoadingOp.None;
     in-out property <string> loading_path: "";
 }
 

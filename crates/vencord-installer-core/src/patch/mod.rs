@@ -2,7 +2,7 @@ pub mod asar;
 pub mod patch_mod;
 
 use crate::{Error, paths::DiscordLocation};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(target_os = "linux")]
 use std::os::linux::fs::MetadataExt;
@@ -49,22 +49,24 @@ impl FileOperation {
     }
 }
 
-pub fn rename(from: &PathBuf, to: &PathBuf, opt: &mut Vec<FileOperation>) {
+pub fn rename(from: &Path, to: &Path, opt: &mut Vec<FileOperation>) {
     opt.push(FileOperation::Move {
-        from: from.clone(),
-        to: to.clone(),
+        from: from.to_path_buf(),
+        to: to.to_path_buf(),
     });
 }
 
-pub fn copy(from: &PathBuf, to: &PathBuf, opt: &mut Vec<FileOperation>) {
+pub fn copy(from: &Path, to: &Path, opt: &mut Vec<FileOperation>) {
     opt.push(FileOperation::Copy {
-        from: from.clone(),
-        to: to.clone(),
+        from: from.to_path_buf(),
+        to: to.to_path_buf(),
     });
 }
 
-pub fn remove(path: &PathBuf, opt: &mut Vec<FileOperation>) {
-    opt.push(FileOperation::Remove { path: path.clone() });
+pub fn remove(path: &Path, opt: &mut Vec<FileOperation>) {
+    opt.push(FileOperation::Remove {
+        path: path.to_path_buf(),
+    });
 }
 
 #[cfg(target_os = "linux")]
@@ -135,14 +137,10 @@ pub async fn execute(
         for operation in operations {
             match operation {
                 FileOperation::Move { from, to } => {
-                    tokio::fs::rename(from, to)
-                        .await
-                        .map_err(|e| Error::from(e))?;
+                    tokio::fs::rename(from, to).await?;
                 }
                 FileOperation::Copy { from, to } => {
-                    tokio::fs::copy(from, to)
-                        .await
-                        .map_err(|e| Error::from(e))?;
+                    tokio::fs::copy(from, to).await?;
 
                     #[cfg(target_os = "linux")]
                     unsafe {

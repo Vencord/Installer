@@ -110,9 +110,7 @@ impl Error {
 
         format!("I/O error: {}", err)
     }
-}
 
-impl Error {
     pub fn is_permission_denied(&self) -> bool {
         matches!(
             self,
