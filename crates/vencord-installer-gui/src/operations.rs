@@ -2,7 +2,7 @@ use tokio::sync::mpsc;
 
 use vencord_installer_core::{
     Error, download,
-    patch::patch_mod::Installer,
+    patch::Installer,
     paths::{DiscordLocation, get_data_path},
 };
 

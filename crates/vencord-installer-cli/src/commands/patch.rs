@@ -3,9 +3,9 @@ use console::style;
 use dialoguer::{Input, Select};
 
 use vencord_installer_core::{
-    download, Error,
-    patch::patch_mod::Installer,
-    paths::{get_data_path, get_discord_locations, DiscordLocation},
+    Error, download,
+    patch::Installer,
+    paths::{DiscordLocation, get_data_path, get_discord_locations},
 };
 
 use crate::commands::Cli;
@@ -62,8 +62,7 @@ pub async fn execute(args: PatchArgs) -> Result<(), Error> {
 
 async fn get_location(path: Option<String>) -> Result<DiscordLocation, Error> {
     match path {
-        Some(path) => DiscordLocation::from_path(&path)
-            .ok_or(Error::ErrLocationInvalid),
+        Some(path) => DiscordLocation::from_path(&path).ok_or(Error::ErrLocationInvalid),
         None => select_location().await,
     }
 }
@@ -76,11 +75,7 @@ async fn maybe_download() -> Result<(), Error> {
     Ok(())
 }
 
-async fn install(
-    vencord: bool,
-    openasar: bool,
-    path: Option<String>,
-) -> Result<(), Error> {
+async fn install(vencord: bool, openasar: bool, path: Option<String>) -> Result<(), Error> {
     let location = get_location(path).await?;
     let mut installer = Installer::new(location.clone(), get_data_path())?;
 
@@ -105,11 +100,7 @@ async fn install(
     Ok(())
 }
 
-async fn uninstall(
-    vencord: bool,
-    openasar: bool,
-    path: Option<String>,
-) -> Result<(), Error> {
+async fn uninstall(vencord: bool, openasar: bool, path: Option<String>) -> Result<(), Error> {
     let location = get_location(path).await?;
     let mut installer = Installer::new(location.clone(), get_data_path())?;
 
@@ -145,12 +136,19 @@ async fn repair(path: Option<String>) -> Result<(), Error> {
 }
 
 async fn select_options(args: PatchArgs) -> Result<(), Error> {
-    let options: [(&str, fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Error>>>>); 5] = [
+    let options: [(
+        &str,
+        fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Error>>>>,
+    ); 5] = [
         ("Install Vencord", || Box::pin(install(true, false, None))),
-        ("Uninstall Vencord", || Box::pin(uninstall(true, false, None))),
+        ("Uninstall Vencord", || {
+            Box::pin(uninstall(true, false, None))
+        }),
         ("Repair Vencord", || Box::pin(repair(None))),
         ("Install OpenAsar", || Box::pin(install(false, true, None))),
-        ("Uninstall OpenAsar", || Box::pin(uninstall(false, true, None))),
+        ("Uninstall OpenAsar", || {
+            Box::pin(uninstall(false, true, None))
+        }),
     ];
 
     let mut items: Vec<_> = options.iter().map(|(name, _)| *name).collect();
@@ -167,7 +165,8 @@ async fn select_options(args: PatchArgs) -> Result<(), Error> {
             .default(0)
             .interact()
     })
-    .await?.unwrap();
+    .await?
+    .unwrap();
 
     match choice {
         0..=4 => {
@@ -221,7 +220,8 @@ async fn select_location() -> Result<DiscordLocation, Error> {
             .default(0)
             .interact()
     })
-    .await?.unwrap();
+    .await?
+    .unwrap();
 
     if idx == locations.len() {
         let path = tokio::task::spawn_blocking(|| {
@@ -229,10 +229,10 @@ async fn select_location() -> Result<DiscordLocation, Error> {
                 .with_prompt("Enter custom Discord path")
                 .interact_text()
         })
-        .await?.unwrap();
+        .await?
+        .unwrap();
 
-        return DiscordLocation::from_path(&path)
-            .ok_or(Error::ErrLocationInvalid);
+        return DiscordLocation::from_path(&path).ok_or(Error::ErrLocationInvalid);
     }
 
     Ok(locations[idx].clone())

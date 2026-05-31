@@ -1,5 +1,7 @@
 pub mod asar;
-pub mod patch_mod;
+mod patch;
+
+pub use patch::Installer;
 
 use crate::{Error, paths::DiscordLocation};
 use std::path::{Path, PathBuf};

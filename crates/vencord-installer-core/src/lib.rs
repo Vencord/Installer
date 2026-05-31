@@ -6,14 +6,27 @@ pub mod patch;
 pub mod paths;
 pub mod update;
 
-pub(crate) const USER_AGENT: &str = "VencordInstaller (https://github.com/Vencord/Installer)";
-pub(crate) const RELEASE_URL: &str =
+pub(crate) static USER_AGENT: &str = "VencordInstaller (https://github.com/Vencord/Installer)";
+pub(crate) static RELEASE_URL: &str =
     "https://api.github.com/repos/Vendicated/Vencord/releases/latest";
-pub(crate) const RELEASE_URL_FALLBACK: &str = "https://vencord.dev/releases/vencord";
-pub(crate) const RELEASE_TAG_DOWNLOAD: &str =
+pub(crate) static RELEASE_URL_FALLBACK: &str = "https://vencord.dev/releases/vencord";
+pub(crate) static RELEASE_TAG_DOWNLOAD: &str =
     "https://github.com/Vendicated/Vencord/releases/download/devbuild";
-pub(crate) const OPENASAR_URL: &str =
+pub(crate) static OPENASAR_URL: &str =
     "https://github.com/GooseMod/OpenAsar/releases/download/nightly/app.asar";
+
+pub static RELEASE_ASSETS: &[&str] = &[
+    "patcher.js",
+    "patcher.js.map",
+    "patcher.js.LEGAL.txt",
+    "preload.js",
+    "preload.js.map",
+    "renderer.js",
+    "renderer.js.map",
+    "renderer.js.LEGAL.txt",
+    "renderer.css",
+    "renderer.css.map",
+];
 
 pub async fn download() -> Result<(), Error> {
     let latest_version =
@@ -24,12 +37,8 @@ pub async fn download() -> Result<(), Error> {
     let local_version = update::version_check::check_local_version(&data_path).await?;
 
     if latest_version != local_version {
-        update::download::prepare_dist_directory(
-            &data_path,
-            RELEASE_TAG_DOWNLOAD,
-            ["patcher.js", "preload.js", "renderer.js", "renderer.css"],
-        )
-        .await?;
+        update::download::prepare_dist_directory(&data_path, RELEASE_TAG_DOWNLOAD, RELEASE_ASSETS)
+            .await?;
     }
 
     Ok(())
