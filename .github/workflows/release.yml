@@ -98,7 +98,7 @@ jobs:
           zip -r VencordInstaller.MacOS.zip VencordInstaller.app
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: VencordInstaller-macos
           path: VencordInstaller.MacOS.zip
