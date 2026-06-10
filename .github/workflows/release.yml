@@ -82,7 +82,11 @@ jobs:
         run: go get -v
 
       - name: Build
-        run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller
+        run: |
+          ldflags="-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'"
+          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -v -tags static -ldflags "$ldflags" -o VencordInstaller.arm64
+          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "$ldflags" -o VencordInstaller.amd64
+          lipo -create VencordInstaller.arm64 VencordInstaller.amd64 -output VencordInstaller
 
       - name: Update executable
         run: |
