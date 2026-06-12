@@ -322,7 +322,6 @@ impl From<&CoreDiscordLocation> for DiscordLocation {
             is_openasar: core.is_openasar,
             is_flatpak: core.is_flatpak,
             is_scuffed: core.is_scuffed,
-            is_system_electron: core.is_system_electron,
         }
     }
 }
@@ -336,7 +335,6 @@ impl From<&DiscordLocation> for CoreDiscordLocation {
             is_openasar: loc.is_openasar,
             is_flatpak: loc.is_flatpak,
             is_scuffed: loc.is_scuffed,
-            is_system_electron: loc.is_system_electron,
         }
     }
 }

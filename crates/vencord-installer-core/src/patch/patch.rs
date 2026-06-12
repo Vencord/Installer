@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use crate::Error;
 
 use crate::paths::DiscordLocation;
-use crate::update::download::download_file;
 
 pub struct Installer {
     discord_location: DiscordLocation,
@@ -76,11 +75,13 @@ impl Installer {
 
     #[cfg(feature = "openasar")]
     pub async fn patch_openasar(&mut self) -> Result<(), Error> {
+        use crate::dl::download_openasar;
+
         let root_original = self.discord_location.find_asars()?.0;
         let permanent_backup = self.discord_location.asar_openasar_path();
         let dl_path = self.data_path.join("open.asar");
 
-        download_file(crate::OPENASAR_URL, dl_path.clone()).await?;
+        download_openasar().await?;
 
         let mut opts = vec![];
 

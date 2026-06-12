@@ -12,11 +12,9 @@ const KNOWN_NAMES: [&str; 4] = [
 
 /// Returns a list of available DiscordLocations on the machine.
 pub fn get_discord_locations() -> Vec<DiscordLocation> {
-    let Ok(appdata) = std::env::var("LOCALAPPDATA") else {
+    let Some(local_dir) = dirs::data_local_dir() else {
         return Vec::new();
     };
-
-    let appdata_path = Path::new(&appdata);
 
     let mut locations = Vec::new();
 
@@ -50,13 +48,7 @@ fn parse_discord_location(full_path: &Path) -> Option<DiscordLocation> {
 
 /// Returns and creates the data path for the given name.
 pub(crate) fn get_data_path_impl() -> Option<PathBuf> {
-    let Ok(appdata) = std::env::var("APPDATA") else {
-        return None;
-    };
-
-    let dir = Path::new(&appdata).join("Vencord");
-
-    Some(dir.clone())
+    Some(dirs::data_dir()?.join("Vencord"))
 }
 
 pub fn get_program_data_path() -> Option<PathBuf> {

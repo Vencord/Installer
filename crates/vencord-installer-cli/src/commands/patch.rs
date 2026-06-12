@@ -3,7 +3,8 @@ use console::style;
 use dialoguer::{Input, Select};
 
 use vencord_installer_core::{
-    Error, download,
+    Error,
+    dl::download_latest_assets,
     patch::Installer,
     paths::{DiscordLocation, get_data_path, get_discord_locations},
 };
@@ -69,7 +70,7 @@ async fn get_location(path: Option<String>) -> Result<DiscordLocation, Error> {
 
 async fn maybe_download() -> Result<(), Error> {
     if std::env::var("VENCORD_DEV_INSTALL").map_or(true, |v| v != "1") {
-        download().await?;
+        download_latest_assets().await?;
     }
 
     Ok(())

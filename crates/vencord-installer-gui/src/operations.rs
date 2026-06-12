@@ -1,7 +1,8 @@
 use tokio::sync::mpsc;
 
 use vencord_installer_core::{
-    Error, download,
+    Error,
+    dl::download_latest_assets,
     patch::Installer,
     paths::{DiscordLocation, get_data_path},
 };
@@ -73,7 +74,7 @@ impl AppActions {
 
     async fn install(location: DiscordLocation) -> Result<(), Error> {
         if std::env::var("VENCORD_DEV_INSTALL").map_or(true, |v| v != "1") {
-            download().await?;
+            download_latest_assets().await?;
         }
 
         Installer::new(location, get_data_path())?.patch().await

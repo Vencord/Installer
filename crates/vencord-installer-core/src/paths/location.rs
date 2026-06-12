@@ -19,8 +19,6 @@ pub struct DiscordLocation {
     pub is_flatpak: bool,
     /// If the installation is in a scuffed location on Windows.
     pub is_scuffed: bool,
-    /// Arch package, needs special care: https://aur.archlinux.org/packages/discord_arch_electron
-    pub is_system_electron: bool,
 }
 
 impl Default for DiscordLocation {
@@ -32,7 +30,6 @@ impl Default for DiscordLocation {
             is_openasar: false,
             is_flatpak: false,
             is_scuffed: false,
-            is_system_electron: false,
         }
     }
 }
@@ -89,38 +86,14 @@ impl DiscordLocation {
     }
 
     pub fn asar_path(&self) -> PathBuf {
-        #[cfg(target_os = "linux")]
-        if !self.is_system_electron {
-            self.resources_dir().join("app.asar")
-        } else {
-            self.path.join("app.asar.unpacked")
-        }
-
-        #[cfg(not(target_os = "linux"))]
         self.resources_dir().join("app.asar")
     }
 
     pub fn asar_patched_path(&self) -> PathBuf {
-        #[cfg(target_os = "linux")]
-        if !self.is_system_electron {
-            self.resources_dir().join("_app.asar")
-        } else {
-            self.path.join("_app.asar.unpacked")
-        }
-
-        #[cfg(not(target_os = "linux"))]
         self.resources_dir().join("_app.asar")
     }
 
     pub fn asar_openasar_path(&self) -> PathBuf {
-        #[cfg(target_os = "linux")]
-        if !self.is_system_electron {
-            self.resources_dir().join("app.asar.original")
-        } else {
-            self.path.join("app.asar.original")
-        }
-
-        #[cfg(not(target_os = "linux"))]
         self.resources_dir().join("app.asar.original")
     }
 
@@ -198,8 +171,8 @@ impl DiscordLocation {
         }
 
         unsafe {
-            let handle = OpenProcess(PROCESS_TERMINATE, false, pid)
-                .map_err(|_| Error::ErrDiscordOpened)?;
+            let handle =
+                OpenProcess(PROCESS_TERMINATE, false, pid).map_err(|_| Error::ErrDiscordOpened)?;
 
             let _ = TerminateProcess(handle, 1);
             let _ = windows::Win32::Foundation::CloseHandle(handle);
@@ -215,7 +188,6 @@ impl DiscordLocation {
 
         Ok(())
     }
-
 }
 
 #[cfg(target_os = "windows")]
@@ -230,7 +202,5 @@ fn check_for_scuffed_windows_location<P: AsRef<Path>>(path: P) -> bool {
         return false;
     };
 
-    program_data
-        .join(file_name)
-        .exists()
+    program_data.join(file_name).exists()
 }

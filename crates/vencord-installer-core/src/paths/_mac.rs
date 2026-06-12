@@ -5,7 +5,7 @@ use crate::paths::DiscordLocation;
 
 /// Returns a list of available DiscordLocations on the machine.
 pub fn get_discord_locations() -> Vec<DiscordLocation> {
-    let Some(home_dir) = env::home_dir() else {
+    let Some(home_dir) = dirs::home_dir() else {
         return Vec::new();
     };
 
@@ -16,12 +16,7 @@ pub fn get_discord_locations() -> Vec<DiscordLocation> {
         "Discord Development.app",
     ];
 
-    let search_paths = [
-        Path::new("/Applications"),
-        &home_dir.join("Applications"),
-        // Some users have Discord on their desktop?
-        // &home_dir.join("Desktop"),
-    ];
+    let search_paths = [Path::new("/Applications"), &home_dir.join("Applications")];
 
     let mut locations = Vec::new();
 
@@ -41,14 +36,5 @@ pub fn get_discord_locations() -> Vec<DiscordLocation> {
 
 /// Returns the path to the data directory.
 pub(crate) fn get_data_path_impl() -> Option<PathBuf> {
-    let Some(home_dir) = env::home_dir() else {
-        return None;
-    };
-
-    let dir = &home_dir
-        .join("Library")
-        .join("Application Support")
-        .join("Vencord");
-
-    Some(dir.clone())
+    Some(dirs::data_dir()?.join("Vencord"))
 }
