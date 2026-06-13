@@ -19,7 +19,7 @@ pub fn get_discord_locations() -> Vec<DiscordLocation> {
     let mut locations = Vec::new();
 
     for base in KNOWN_NAMES {
-        let root = appdata_path.join(base);
+        let root = local_dir.join(base);
 
         if let Some(loc) = parse_discord_location(&root) {
             locations.push(loc);
