@@ -44,12 +44,6 @@ impl DiscordLocation {
             ..Default::default()
         };
 
-        // Order matters here, system electron package is jank and needs special treatment.
-        #[cfg(target_os = "linux")]
-        {
-            discord.is_system_electron = !discord.resources_dir().exists();
-        }
-
         if !(discord.asar_path().exists()
             || discord.asar_patched_path().exists()
             || discord.asar_openasar_path().exists())
