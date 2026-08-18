@@ -85,7 +85,7 @@ func GetGithubRelease(url, fallbackUrl string) (*GithubRelease, error) {
 func InitGithubDownloader() {
 	GithubDoneChan = make(chan bool, 1)
 
-	IsDevInstall = os.Getenv("VENCORD_DEV_INSTALL") == "1"
+	IsDevInstall = os.Getenv("FAICORD_DEV_INSTALL") == "1"
 	Log.Debug("Is Dev Install: ", IsDevInstall)
 	if IsDevInstall {
 		GithubDoneChan <- true
@@ -120,11 +120,11 @@ func InitGithubDownloader() {
 	//goland:noinspection GoUnhandledErrorResult
 	defer f.Close()
 
-	Log.Debug("Found existing Vencord Install. Checking for hash...")
+	Log.Debug("Found existing Faicord Install. Checking for hash...")
 	scanner := bufio.NewScanner(f)
 	if scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "// Vencord ") {
+		if strings.HasPrefix(line, "// Faicord ") {
 			InstalledHash = line[11:]
 			Log.Debug("Existing hash is", InstalledHash)
 		} else {
