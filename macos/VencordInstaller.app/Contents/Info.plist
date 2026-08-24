@@ -2,19 +2,23 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
     <dict>
+        <key>CFBundleDevelopmentRegion</key>
+        <string>English</string>
         <key>CFBundleExecutable</key>
         <string>VencordInstaller</string>
-
         <key>CFBundleIconFile</key>
         <string>icon.icns</string>
-
         <key>CFBundleIdentifier</key>
         <string>dev.vendicated.vencordinstaller</string>
-
+        <key>CFBundleInfoDictionaryVersion</key>
+        <string>6.0</string>
+        <key>CFBundleName</key>
+        <string>Vencord Installer</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+        <key>NSHumanReadableCopyright</key>
+        <string>(c) 2026 Vendicated and contributors</string>
         <key>NSHighResolutionCapable</key>
-        <true/>
-
-        <key>LSUIElement</key>
         <true/>
     </dict>
 </plist>
