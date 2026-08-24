@@ -62,7 +62,7 @@ ifeq ($(shell command -v create-dmg 2>/dev/null),)
 endif
 	create-dmg \
 		--volname "Vencord Installer" \
-		--volicon macos/VencordInstaller.app/Contents/Resources/icon.icns \
+		--volicon macos/VencordInstaller.app/Contents/Resources/AppIcon.icns \
 		--background "macos/background.png" \
 		--window-pos 200 120 \
 		--window-size 510 350 \
