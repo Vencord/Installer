@@ -17,7 +17,6 @@ import (
 	"vencordinstaller/buildinfo"
 
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/imgui-go"
 
 	// png decoder for icon
 	_ "image/png"
@@ -29,17 +28,8 @@ import (
 )
 
 var (
-	discords        []any
-	radioIdx        int
-	customChoiceIdx int
-
-	customDir              string
-	autoCompleteDir        string
-	autoCompleteFile       string
-	autoCompleteCandidates []string
-	autoCompleteIdx        int
-	lastAutoComplete       string
-	didAutoComplete        bool
+	discords []any
+	radioIdx int
 
 	modalId      = 0
 	modalTitle   = "Oh No :("
@@ -62,8 +52,6 @@ func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
 
-	customChoiceIdx = len(discords)
-
 	go func() {
 		<-GithubDoneChan
 		g.Update()
@@ -81,7 +69,7 @@ func main() {
 		Log.Warn("Failed to load application icon", err)
 		Log.Debug(iconBytes, len(iconBytes))
 	} else {
-		win.SetIcon([]image.Image{icon})
+		win.SetIcon(icon)
 	}
 	win.Run(loop)
 }
@@ -101,16 +89,7 @@ func (w *CondWidget) Build() {
 }
 
 func getChosenInstall() *DiscordInstall {
-	var choice *DiscordInstall
-	if radioIdx == customChoiceIdx {
-		choice = ParseDiscord(customDir, "")
-		if choice == nil {
-			g.OpenPopup("#invalid-custom-location")
-		}
-	} else {
-		choice = discords[radioIdx].(*DiscordInstall)
-	}
-	return choice
+	return discords[radioIdx].(*DiscordInstall)
 }
 
 func InstallLatestBuilds() (err error) {
@@ -207,63 +186,6 @@ func (di *DiscordInstall) Unpatch() {
 	} else {
 		g.OpenPopup("#unpatched")
 	}
-}
-
-func onCustomInputChanged() {
-	p := customDir
-	if len(p) != 0 {
-		// Select the custom option for people
-		radioIdx = customChoiceIdx
-	}
-
-	dir := path.Dir(p)
-
-	isNewDir := strings.HasSuffix(p, "/")
-	wentUpADir := !isNewDir && dir != autoCompleteDir
-
-	if isNewDir || wentUpADir {
-		autoCompleteDir = dir
-		// reset all the funnies
-		autoCompleteIdx = 0
-		lastAutoComplete = ""
-		autoCompleteFile = ""
-		autoCompleteCandidates = nil
-
-		// Generate autocomplete items
-		files, err := os.ReadDir(dir)
-		if err == nil {
-			for _, file := range files {
-				autoCompleteCandidates = append(autoCompleteCandidates, file.Name())
-			}
-		}
-	} else if !didAutoComplete {
-		// reset auto complete and update our file
-		autoCompleteFile = path.Base(p)
-		lastAutoComplete = ""
-	}
-
-	if wentUpADir {
-		autoCompleteFile = path.Base(p)
-	}
-
-	didAutoComplete = false
-}
-
-// go can you give me []any?
-// to pass to giu RangeBuilder?
-// yeeeeees
-// actually returns []string like a boss
-func makeAutoComplete() []any {
-	input := strings.ToLower(autoCompleteFile)
-
-	var candidates []any
-	for _, e := range autoCompleteCandidates {
-		file := strings.ToLower(e)
-		if autoCompleteFile == "" || strings.HasPrefix(file, input) {
-			candidates = append(candidates, e)
-		}
-	}
-	return candidates
 }
 
 func makeRadioOnChange(i int) func() {
@@ -418,14 +340,10 @@ func ShowModal(title, desc string) {
 }
 
 func renderInstaller() g.Widget {
-	candidates := makeAutoComplete()
 	wi, _ := win.GetSize()
 	w := float32(wi) - 96
 
-	var currentDiscord *DiscordInstall
-	if radioIdx != customChoiceIdx {
-		currentDiscord = discords[radioIdx].(*DiscordInstall)
-	}
+	currentDiscord := discords[radioIdx].(*DiscordInstall)
 	var isOpenAsar = currentDiscord != nil && currentDiscord.IsOpenAsar()
 
 	if CanUpdateSelf() && !showedUpdatePrompt {
@@ -472,57 +390,7 @@ func renderInstaller() g.Widget {
 				return g.RadioButton(text, radioIdx == i).
 					OnChange(makeRadioOnChange(i))
 			}),
-
-			g.RadioButton("Custom Install Location", radioIdx == customChoiceIdx).
-				OnChange(makeRadioOnChange(customChoiceIdx)),
 		),
-
-		g.Dummy(0, 5),
-		g.Style().
-			SetStyle(g.StyleVarFramePadding, 16, 16).
-			SetFontSize(20).
-			To(
-				g.InputText(&customDir).Hint("The custom location").
-					Size(w - 16).
-					Flags(g.InputTextFlagsCallbackCompletion).
-					OnChange(onCustomInputChanged).
-					// this library has its own autocomplete but it's broken
-					Callback(
-						func(data imgui.InputTextCallbackData) int32 {
-							if len(candidates) == 0 {
-								return 0
-							}
-							// just wrap around
-							if autoCompleteIdx >= len(candidates) {
-								autoCompleteIdx = 0
-							}
-
-							// used by change handler
-							didAutoComplete = true
-
-							start := len(customDir)
-							// Delete previous auto complete
-							if lastAutoComplete != "" {
-								start -= len(lastAutoComplete)
-								data.DeleteBytes(start, len(lastAutoComplete))
-							} else if autoCompleteFile != "" { // delete partial input
-								start -= len(autoCompleteFile)
-								data.DeleteBytes(start, len(autoCompleteFile))
-							}
-
-							// Insert auto complete
-							lastAutoComplete = candidates[autoCompleteIdx].(string)
-							data.InsertBytes(start, []byte(lastAutoComplete))
-							autoCompleteIdx++
-
-							return 0
-						},
-					),
-			),
-		g.RangeBuilder("AutoComplete", candidates, func(i int, v any) g.Widget {
-			dir := v.(string)
-			return g.Label(dir)
-		}),
 
 		g.Dummy(0, 20),
 
@@ -611,7 +479,7 @@ func renderErrorCard(col color.Color, message string, height float32) g.Widget {
 				Layout(
 					g.Row(
 						g.Style().SetColor(g.StyleColorText, color.Black).To(
-							g.Markdown(&message),
+							g.Markdown(message),
 						),
 					),
 				),
@@ -622,18 +490,6 @@ func loop() {
 	g.PushWindowPadding(48, 48)
 
 	g.SingleWindow().
-		RegisterKeyboardShortcuts(
-			g.WindowShortcut{Key: g.KeyUp, Callback: func() {
-				if radioIdx > 0 {
-					radioIdx--
-				}
-			}},
-			g.WindowShortcut{Key: g.KeyDown, Callback: func() {
-				if radioIdx < customChoiceIdx {
-					radioIdx++
-				}
-			}},
-		).
 		Layout(
 			g.Align(g.AlignCenter).To(
 				g.Style().SetFontSize(40).To(
