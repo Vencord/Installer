@@ -11,7 +11,7 @@ else
 ARCHS 		:= amd64
 endif
 
-VERSION 	:= $(shell git describe --tags --always)
+VERSION 	?= $(shell git describe --tags --always)
 HASH 		:= $(shell git rev-parse --short HEAD)
 
 ifeq ($(PLATFORM),windows)
