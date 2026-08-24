@@ -52,6 +52,16 @@ func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
 
+	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
+
+	icon, _, err := image.Decode(bytes.NewReader(iconBytes))
+	if err != nil {
+		Log.Warn("Failed to load application icon", err)
+		Log.Debug(iconBytes, len(iconBytes))
+	} else {
+		win.SetIcon(icon)
+	}
+
 	go func() {
 		<-GithubDoneChan
 		g.Update()
@@ -62,15 +72,6 @@ func main() {
 		g.Update()
 	}()
 
-	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
-
-	icon, _, err := image.Decode(bytes.NewReader(iconBytes))
-	if err != nil {
-		Log.Warn("Failed to load application icon", err)
-		Log.Debug(iconBytes, len(iconBytes))
-	} else {
-		win.SetIcon(icon)
-	}
 	win.Run(loop)
 }
 
@@ -232,10 +233,10 @@ func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
 				Flags(g.WindowFlagsNoTitleBar | Ternary(isDynamic, g.WindowFlagsAlwaysAutoResize, 0)).
 				Layout(
 					g.Align(g.AlignCenter).To(
-						g.Style().SetFontSize(30).To(
+						g.Style().SetFontSize(14).To(
 							g.Label(title),
 						),
-						g.Style().SetFontSize(20).To(
+						g.Style().SetFontSize(10).To(
 							g.Label(description).Wrapped(isDynamic),
 						),
 						&CondWidget{id == "#scuffed-install", func() g.Widget {
@@ -288,10 +289,10 @@ func UpdateModal() g.Widget {
 				Flags(g.WindowFlagsNoTitleBar | g.WindowFlagsAlwaysAutoResize).
 				Layout(
 					g.Align(g.AlignCenter).To(
-						g.Style().SetFontSize(30).To(
+						g.Style().SetFontSize(14).To(
 							g.Label("Your Installer is outdated!"),
 						),
-						g.Style().SetFontSize(20).To(
+						g.Style().SetFontSize(10).To(
 							g.Label(
 								"Would you like to update now?\n\n"+
 									"Once you press Update Now, the new installer will automatically be downloaded.\n"+
@@ -356,10 +357,10 @@ func renderInstaller() g.Widget {
 		g.Separator(),
 		g.Dummy(0, 5),
 
-		g.Style().SetFontSize(20).To(
+		g.Style().SetFontSize(10).To(
 			renderErrorCard(
 				DiscordYellow,
-				"**Github** and **vencord.dev** are the only official places to get Vencord. Any other site claiming to be us is malicious.\n"+
+				"Github and vencord.dev are the only official places to get Vencord. Any other site claiming to be us is malicious.\n"+
 					"If you downloaded from any other source, you should delete / uninstall everything immediately, run a malware scan and change your Discord password.",
 				90,
 			),
@@ -367,7 +368,7 @@ func renderInstaller() g.Widget {
 
 		g.Dummy(0, 5),
 
-		g.Style().SetFontSize(30).To(
+		g.Style().SetFontSize(10).To(
 			g.Label("Please select an install to patch"),
 		),
 
@@ -379,7 +380,7 @@ func renderInstaller() g.Widget {
 			return g.Label(s)
 		}, nil},
 
-		g.Style().SetFontSize(20).To(
+		g.Style().SetFontSize(10).To(
 			g.RangeBuilder("Discords", discords, func(i int, v any) g.Widget {
 				d := v.(*DiscordInstall)
 				//goland:noinspection GoDeprecation
@@ -394,7 +395,7 @@ func renderInstaller() g.Widget {
 
 		g.Dummy(0, 20),
 
-		g.Style().SetFontSize(20).To(
+		g.Style().SetFontSize(10).To(
 			g.Row(
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordGreen).
@@ -479,7 +480,7 @@ func renderErrorCard(col color.Color, message string, height float32) g.Widget {
 				Layout(
 					g.Row(
 						g.Style().SetColor(g.StyleColorText, color.Black).To(
-							g.Markdown(message),
+							g.Label(message).Wrapped(true),
 						),
 					),
 				),
@@ -492,13 +493,13 @@ func loop() {
 	g.SingleWindow().
 		Layout(
 			g.Align(g.AlignCenter).To(
-				g.Style().SetFontSize(40).To(
+				g.Style().SetFontSize(13).To(
 					g.Label("Vencord Installer"),
 				),
 			),
 
 			g.Dummy(0, 20),
-			g.Style().SetFontSize(20).To(
+			g.Style().SetFontSize(10).To(
 				g.Row(
 					g.Label(Ternary(IsDevInstall, "Dev Install: ", "Vencord will be downloaded to: ")+FilesDir),
 					g.Style().
