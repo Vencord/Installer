@@ -1,32 +1,35 @@
 .PHONY: all clean build
 
-PLATFORM ?= $(shell go env GOOS)
+PLATFORM 	?= $(shell go env GOOS)
 
 ifeq ($(PLATFORM),darwin)
-ARCHS := amd64 arm64
-IDENTITY ?= -
+ARCHS 		:= amd64 arm64
+IDENTITY 	?= -
 else ifeq ($(PLATFORM),windows)
-ARCHS := amd64 #386
+ARCHS 		:= amd64 #386
 else
-ARCHS := amd64
+ARCHS 		:= amd64
 endif
+
+VERSION 	:= $(shell git describe --tags --always)
+HASH 		:= $(shell git rev-parse --short HEAD)
 
 ifeq ($(PLATFORM),windows)
-LDFLAGS := -s -w -H=windowsgui -extldflags=-static -X 'vencordinstaller/buildinfo.InstallerGitHash=$(shell git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=$(shell git describe --tags --always)'
+LDFLAGS 	:= -s -w -H=windowsgui -extldflags=-static -X 'vencordinstaller/buildinfo.InstallerGitHash=$(HASH)' -X 'vencordinstaller/buildinfo.InstallerTag=$(VERSION)'
 else
-LDFLAGS := -s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(shell git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=$(shell git describe --tags --always)'
+LDFLAGS 	:= -s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(HASH)' -X 'vencordinstaller/buildinfo.InstallerTag=$(VERSION)'
 endif
 
-WITH_GUI ?= 0
-WITH_DMG ?= 0
+WITH_GUI 	?= 0
+WITH_DMG 	?= 0
 ifeq ($(WITH_GUI),0)
-TAGS := "static cli"
-POSTFIX := Cli
-WITH_CGO ?= 0
+TAGS 		:= "static cli"
+POSTFIX 	:= Cli
+WITH_CGO 	?= 0
 else
-TAGS := static
-POSTFIX :=
-WITH_CGO ?= 1
+TAGS 		:= static
+POSTFIX 	:=
+WITH_CGO 	?= 1
 endif
 
 all: build
