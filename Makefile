@@ -44,7 +44,7 @@ build:
 
 ifeq ($(PLATFORM),darwin)
 	for arch in $(ARCHS); do \
-		CGO_ENABLED=$(WITH_CGO) GOOS=$(PLATFORM) GOARCH=$$arch go build \
+		MACOSX_DEPLOYMENT_TARGET=10.13 CGO_ENABLED=$(WITH_CGO) GOOS=$(PLATFORM) GOARCH=$$arch go build \
 			-v \
 			-tags $(TAGS) \
 			-ldflags "$(LDFLAGS)" \

@@ -34,5 +34,7 @@
 	<string>Copyright © 2026 Vendicated and contributors</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.13</string>
 </dict>
 </plist>
