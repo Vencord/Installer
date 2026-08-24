@@ -76,7 +76,7 @@ jobs:
           p12-password: ${{ secrets.DEV_ID_P12_PASSWORD }}
 
       - name: Build
-        run: make WITH_GUI=1 WITH_DMG=1 IDENTITY=${{ secrets.DEV_ID_IDENTITY_NAME }}
+        run: make WITH_GUI=1 WITH_DMG=1 IDENTITY="${{ secrets.DEV_ID_IDENTITY_NAME }}"
 
       - name: Codesign
         run: |
@@ -116,7 +116,7 @@ jobs:
       - name: Install Windows dependencies
         shell: msys2 {0}
         run: |
-          pacman -S --noconfirm git mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-go
+          pacman -S --noconfirm git mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-go make
           export GOROOT=/mingw64/lib/go
           export GOPATH=/mingw64
 
