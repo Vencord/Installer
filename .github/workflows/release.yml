@@ -6,23 +6,20 @@ on:
     tags:
       - v*
 
-env:
-  FORCE_COLOR: true
-
 jobs:
   build-linux:
-    runs-on: ubuntu-20.04 # hopefully older glibc for better compatibility on systems like debian bullseye
+    runs-on: ubuntu-latest # Go without CGO seems to not depend on glibc, so building on latest should be fine
 
     steps:
       - name: Install Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.20"
+          go-version: "1.26"
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/go-build
@@ -35,28 +32,25 @@ jobs:
         run: go get -v
 
       - name: Build Cli
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-linux
-
-      - name: Update executable
         run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -tags "static cli" -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli-linux
           chmod +x VencordInstallerCli-linux
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: VencordInstaller-linux
           path: |
             VencordInstallerCli-linux
-
 
   build-mac:
     runs-on: macos-latest
 
     steps:
       - name: Install Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.20"
+          go-version: "1.26"
 
       - id: go-cache-paths
         run: |
@@ -64,9 +58,9 @@ jobs:
           echo "go_mod=$(go env GOMODCACHE)" >> $GITHUB_ENV
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/Library/Caches/go-build
@@ -82,41 +76,40 @@ jobs:
         run: go get -v
 
       - name: Build
-        run: CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -tags static -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller
-
-      - name: Update executable
         run: |
+          for arch in amd64 arm64; do
+            CGO_ENABLED=1 GOOS=darwin GOARCH=$arch go build -v -tags static -ldflags "-s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstaller-$arch
+          done
+          lipo -create VencordInstaller-amd64 VencordInstaller-arm64 -output VencordInstaller
           chmod +x VencordInstaller
 
       - name: Generate MacOS bundle
         run: |
-          mkdir -p VencordInstaller.app/Contents/MacOS
-          mkdir -p VencordInstaller.app/Contents/Resources
+          mkdir -p VencordInstaller.app/Contents/{MacOS,Resources}
           cp macos/Info.plist VencordInstaller.app/Contents/Info.plist
           mv VencordInstaller VencordInstaller.app/Contents/MacOS/VencordInstaller
           cp macos/icon.icns VencordInstaller.app/Contents/Resources/icon.icns
           zip -r VencordInstaller.MacOS.zip VencordInstaller.app
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: VencordInstaller-macos
           path: VencordInstaller.MacOS.zip
-
 
   build-windows:
     runs-on: windows-latest
 
     steps:
       - name: Install Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.20"
+          go-version: "1.26"
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~\AppData\Local\go-build
@@ -126,7 +119,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
 
       - name: Install Windows dependencies
         shell: msys2 {0}
@@ -159,13 +152,12 @@ jobs:
           CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -v -tags "static cli" -ldflags "-s -w -extldflags=-static -X 'vencordinstaller/buildinfo.InstallerGitHash=$(git rev-parse --short HEAD)' -X 'vencordinstaller/buildinfo.InstallerTag=${{ github.ref_name }}'" -o VencordInstallerCli.exe
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: VencordInstaller-windows
           path: |
             VencordInstaller.exe
             VencordInstallerCli.exe
-
 
   release:
     runs-on: ubuntu-latest
@@ -173,25 +165,25 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: VencordInstaller-linux
           path: linux
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: VencordInstaller-macos
           path: macos
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: VencordInstaller-windows
           path: windows
 
       - name: Create the release
-        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v1
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

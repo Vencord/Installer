@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Submit package to Winget Community Repo (Stable)
-        uses: vedantmgoyal2009/winget-releaser@4614300d5812e5df91cb02ef0edbece623d5dea8
+        uses: vedantmgoyal2009/winget-releaser@4ffc7888bffd451b357355dc214d43bb9f23917e # v2
         with:
           identifier: Vendicated.Vencord
           token: ${{ secrets.WINGET_PAT }}
@@ -25,7 +25,7 @@ jobs:
           fork-user: shiggybot
 
       - name: Submit package to Winget Community Repo (PTB)
-        uses: vedantmgoyal2009/winget-releaser@4614300d5812e5df91cb02ef0edbece623d5dea8
+        uses: vedantmgoyal2009/winget-releaser@4ffc7888bffd451b357355dc214d43bb9f23917e # v2
         with:
           identifier: Vendicated.Vencord.PTB
           token: ${{ secrets.WINGET_PAT }}
@@ -34,7 +34,7 @@ jobs:
           fork-user: shiggybot
 
       - name: Submit package to Winget Community Repo (Canary)
-        uses: vedantmgoyal2009/winget-releaser@4614300d5812e5df91cb02ef0edbece623d5dea8
+        uses: vedantmgoyal2009/winget-releaser@4ffc7888bffd451b357355dc214d43bb9f23917e # v2
         with:
           identifier: Vendicated.Vencord.Canary
           token: ${{ secrets.WINGET_PAT }}
