@@ -3,12 +3,12 @@
 PLATFORM 	?= $(shell go env GOOS)
 
 ifeq ($(PLATFORM),darwin)
-ARCHS 		:= amd64 arm64
+ARCHS 		?= amd64 arm64
 IDENTITY 	?= -
 else ifeq ($(PLATFORM),windows)
-ARCHS 		:= amd64 #386
+ARCHS 		?= amd64 #386
 else
-ARCHS 		:= amd64
+ARCHS 		?= amd64
 endif
 
 VERSION 	?= $(shell git describe --tags --always)
