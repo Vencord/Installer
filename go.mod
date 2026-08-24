@@ -4,7 +4,6 @@ go 1.26.0
 
 require (
 	github.com/AllenDang/giu v0.15.0
-	github.com/AllenDang/imgui-go v1.12.1-0.20221124025851-59b862ca5a0c
 	github.com/ProtonMail/go-appdir v1.1.0
 	github.com/fatih/color v1.19.0
 	github.com/manifoldco/promptui v0.9.0
@@ -16,8 +15,6 @@ require (
 	github.com/AllenDang/go-findfont v0.0.0-20200702051237-9f180485aeb8 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3 // indirect
-	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276 // indirect
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20260823155953-d41da22a9587 // indirect
 	github.com/gucio321/glm-go v0.0.0-20241029220517-e1b5a3e011c8 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect

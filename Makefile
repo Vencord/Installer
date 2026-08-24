@@ -22,8 +22,13 @@ endif
 
 WITH_GUI 	?= 0
 WITH_DMG 	?= 0
+WAYLAND 	?= 0
 ifeq ($(WITH_GUI),0)
+ifeq ($(WAYLAND),0)
 TAGS 		:= "static cli"
+else
+TAGS 		:= "static cli wayland"
+endif # WAYLAND
 POSTFIX 	:= Cli
 WITH_CGO 	?= 0
 else
@@ -75,7 +80,7 @@ else ifeq ($(PLATFORM),windows)
 
 	go-winres make --product-version "$$(git describe --tags --always)"
 	CGO_ENABLED=$(WITH_CGO) GOOS=$(PLATFORM) GOARCH=$$arch \
-		go build -v -tags "$(TAGS)" \
+		go build -v -tags $(TAGS) \
 		-ldflags "$(LDFLAGS)" \
 		-o _build/VencordInstaller$(POSTFIX).exe
 else
