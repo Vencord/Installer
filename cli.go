@@ -234,6 +234,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		if discord := ParseDiscord(dir, branch); discord != nil {
 			return discord
 		}
+
 		if discord := ParseDiscordNew(dir, branch, strings.Contains(dir, "com.discordapp")); discord != nil {
 			return discord
 		}

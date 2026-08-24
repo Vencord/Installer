@@ -23,11 +23,11 @@ endif
 WITH_GUI 	?= 0
 WITH_DMG 	?= 0
 ifeq ($(WITH_GUI),0)
-TAGS 		:= static cli
+TAGS 		:= "static cli"
 POSTFIX 	:= Cli
 WITH_CGO 	?= 0
 else
-TAGS 		:= static
+TAGS 		:= "static"
 POSTFIX 	:=
 WITH_CGO 	?= 1
 endif
@@ -50,7 +50,7 @@ ifeq ($(PLATFORM),darwin)
 ifeq ($(WITH_GUI),1)
 	cp -R macos/VencordInstaller.app _build/VencordInstaller.app
 	mv _build/VencordInstaller _build/VencordInstaller.app/Contents/MacOS/VencordInstaller
-	codesign --force --deep --sign "$(IDENTITY)" _build/VencordInstaller.app
+	codesign --deep --force --options runtime --sign "$(IDENTITY)" _build/VencordInstaller.app
 ifeq ($(WITH_DMG),1)
 ifeq ($(shell command -v create-dmg 2>/dev/null),)
 	$(error create-dmg is not installed)
