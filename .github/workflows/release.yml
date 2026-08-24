@@ -6,8 +6,6 @@ on:
   push:
     tags:
       - v*
-    branches:
-      - notary
 
 jobs:
   build-linux:
@@ -117,8 +115,6 @@ jobs:
         shell: msys2 {0}
         run: |
           pacman -S --noconfirm git mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-go make
-          export GOROOT=/mingw64/lib/go
-          export GOPATH=/mingw64
 
       - name: Install Go dependencies
         shell: msys2 {0}

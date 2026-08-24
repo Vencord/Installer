@@ -54,6 +54,8 @@ ifeq ($(PLATFORM),darwin)
 	rm _build/installer-amd64 _build/installer-arm64
 ifeq ($(WITH_GUI),1)
 	cp -R macos/VencordInstaller.app _build/VencordInstaller.app
+	/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $(VERSION)" _build/VencordInstaller.app/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(HASH)" _build/VencordInstaller.app/Contents/Info.plist
 	mv _build/VencordInstaller _build/VencordInstaller.app/Contents/MacOS/VencordInstaller
 	codesign --deep --force --options runtime --sign "$(IDENTITY)" _build/VencordInstaller.app
 ifeq ($(WITH_DMG),1)
@@ -78,7 +80,7 @@ else ifeq ($(PLATFORM),windows)
 	export GOROOT=/mingw64/lib/go
 	export GOPATH=/mingw64
 
-	go-winres make --product-version "$$(git describe --tags --always)"
+	go-winres make --product-version $(VERSION)
 	CGO_ENABLED=$(WITH_CGO) GOOS=$(PLATFORM) GOARCH=$$arch \
 		go build -v -tags $(TAGS) \
 		-ldflags "$(LDFLAGS)" \
