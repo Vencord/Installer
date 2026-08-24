@@ -23,7 +23,7 @@ endif
 WITH_GUI 	?= 0
 WITH_DMG 	?= 0
 ifeq ($(WITH_GUI),0)
-TAGS 		:= "static cli"
+TAGS 		:= static cli
 POSTFIX 	:= Cli
 WITH_CGO 	?= 0
 else
