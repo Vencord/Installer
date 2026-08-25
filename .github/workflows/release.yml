@@ -9,6 +9,9 @@ on:
     branches:
       - notary
 
+env:
+  VERSION: ${{ github.ref_name }}
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest # Go without CGO seems to not depend on glibc, so building on latest should be fine
@@ -32,7 +35,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Build Cli
-        run: make
+        run: make VERSION=${{ env.VERSION }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -76,7 +79,7 @@ jobs:
           p12-password: ${{ secrets.DEV_ID_P12_PASSWORD }}
 
       - name: Build
-        run: make WITH_GUI=1 WITH_DMG=1 IDENTITY="${{ secrets.DEV_ID_IDENTITY_NAME }}"
+        run: make WITH_GUI=1 WITH_DMG=1 IDENTITY="${{ secrets.DEV_ID_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
 
       - name: Codesign
         run: |
@@ -129,8 +132,8 @@ jobs:
       - name: Build
         shell: msys2 {0}
         run: |
-          make WITH_GUI=1
-          make ARCHS=386
+          make WITH_GUI=1 VERSION=${{ env.VERSION }}
+          make ARCHS=386 VERSION=${{ env.VERSION }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -167,7 +170,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ github.ref_name }}
+          name: ${{ env.VERSION }}
           prerelease: false
           draft: false
           files: |

@@ -11,8 +11,9 @@ else
 ARCHS 		?= amd64
 endif
 
-VERSION 	?= $(shell git describe --tags --abbrev=0 | sed 's/^v//') 	# 1.4.0
-HASH 		:= $(shell git rev-parse --short HEAD) 						# d648938
+VERSION 	?= $(shell git describe --tags --abbrev=0)
+HASH 		:= $(shell git rev-parse --short HEAD | xargs)
+VERSION_RES := $(shell git describe --tags --always)
 
 ifeq ($(PLATFORM),windows)
 LDFLAGS 	:= -s -w -H=windowsgui -extldflags=-static -X 'vencordinstaller/buildinfo.InstallerGitHash=$(HASH)' -X 'vencordinstaller/buildinfo.InstallerTag=$(VERSION)'
@@ -79,7 +80,7 @@ else ifeq ($(PLATFORM),windows)
 	export GOROOT=/mingw64/lib/go
 	export GOPATH=/mingw64
 
-	go-winres make --product-version v$(VERSION)-$(HASH)
+	go-winres make --product-version $(VERSION_RES)
 	CGO_ENABLED=$(WITH_CGO) GOOS=$(PLATFORM) GOARCH=$$arch \
 		go build -v -tags $(TAGS) \
 		-ldflags "$(LDFLAGS)" \
