@@ -355,7 +355,10 @@ func renderInstaller() g.Widget {
 	wi, _ := win.GetSize()
 	w := float32(wi) - 96
 
-	currentDiscord := discords[radioIdx].(*DiscordInstall)
+	var currentDiscord *DiscordInstall
+	if len(discords) > 0 && radioIdx >= 0 && radioIdx < len(discords) {
+		currentDiscord, _ = discords[radioIdx].(*DiscordInstall)
+	}
 	var isOpenAsar = currentDiscord != nil && currentDiscord.IsOpenAsar()
 
 	if CanUpdateSelf() && !showedUpdatePrompt {
