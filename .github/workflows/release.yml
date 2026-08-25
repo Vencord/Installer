@@ -6,6 +6,8 @@ on:
   push:
     tags:
       - v*
+    branches:
+      - notary
 
 jobs:
   build-linux:
