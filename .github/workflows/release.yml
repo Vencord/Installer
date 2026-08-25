@@ -79,7 +79,7 @@ jobs:
           p12-password: ${{ secrets.DEV_ID_P12_PASSWORD }}
 
       - name: Build
-        run: make WITH_GUI=1 WITH_DMG=1 IDENTITY="${{ secrets.DEV_ID_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
+        run: make ARCH=universal WITH_GUI=1 WITH_DMG=1 IDENTITY="${{ secrets.DEV_ID_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
 
       - name: Codesign
         run: |
@@ -133,7 +133,7 @@ jobs:
         shell: msys2 {0}
         run: |
           make WITH_GUI=1 VERSION=${{ env.VERSION }}
-          make ARCHS=386 VERSION=${{ env.VERSION }}
+          make ARCH=386 VERSION=${{ env.VERSION }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
