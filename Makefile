@@ -27,10 +27,9 @@ endif
 endif
 
 ifeq ($(WITH_GUI),0)
-ifeq ($(WAYLAND),0)
 TAGS 		+= cli
-else
-TAGS 		+= cli wayland
+ifeq ($(WAYLAND),0)
+TAGS 		+= wayland
 endif
 POSTFIX 	:= Cli
 else
