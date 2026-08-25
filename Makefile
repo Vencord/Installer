@@ -31,7 +31,7 @@ TAGS 		+= cli
 POSTFIX 	:= Cli
 else
 CGO 		:= 1
-ifeq ($(WAYLAND),0)
+ifeq ($(WAYLAND),1)
 TAGS 		+= wayland
 endif # WAYLAND
 endif # GUI
