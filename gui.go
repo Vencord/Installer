@@ -69,7 +69,7 @@ func main() {
 		Log.Warn("Failed to load application icon", err)
 		Log.Debug(iconBytes, len(iconBytes))
 	} else {
-		win.SetIcon(icon)
+		win.SetIcon([]image.Image{icon})
 	}
 	win.Run(loop)
 }
@@ -479,7 +479,7 @@ func renderErrorCard(col color.Color, message string, height float32) g.Widget {
 				Layout(
 					g.Row(
 						g.Style().SetColor(g.StyleColorText, color.Black).To(
-							g.Markdown(message),
+							g.Markdown(&message),
 						),
 					),
 				),
