@@ -11,7 +11,8 @@ else
 ARCHS 		?= amd64
 endif
 
-VERSION 	?= $(shell git describe --tags --always)
+VERSION 	?= $(shell git describe --tags --abbrev=0)
+VERSION_RES ?= $(shell git describe --tags --always)
 HASH 		:= $(shell git rev-parse --short HEAD)
 
 ifeq ($(PLATFORM),windows)
@@ -80,7 +81,7 @@ else ifeq ($(PLATFORM),windows)
 	export GOROOT=/mingw64/lib/go
 	export GOPATH=/mingw64
 
-	go-winres make --product-version $(VERSION)
+	go-winres make --product-version $(VERSION_RES)
 	CGO_ENABLED=$(WITH_CGO) GOOS=$(PLATFORM) GOARCH=$$arch \
 		go build -v -tags $(TAGS) \
 		-ldflags "$(LDFLAGS)" \
