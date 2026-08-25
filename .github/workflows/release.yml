@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: VencordInstaller-linux
-          path: _build/*
+          path: build/*
 
   build-mac:
     runs-on: macos-latest
@@ -77,18 +77,18 @@ jobs:
           p12-password: ${{ secrets.DEV_ID_P12_PASSWORD }}
 
       - name: Build
-        run: make ARCH=universal WITH_GUI=1 WITH_DMG=1 IDENTITY="${{ secrets.DEV_ID_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
+        run: make ARCH=universal GUI=1 DMG=1 IDENTITY="${{ secrets.DEV_ID_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
 
       - name: Codesign
         run: |
-          xcrun notarytool submit _build/VencordInstaller.dmg --apple-id "${{ secrets.APPLE_ID_EMAIL }}" --password "${{ secrets.APPLE_ID_PASSWORD }}" --team-id "${{ secrets.APPLE_ID_TEAM }}" --wait
-          xcrun stapler staple _build/VencordInstaller.dmg
+          xcrun notarytool submit build/VencordInstaller.dmg --apple-id "${{ secrets.APPLE_ID_EMAIL }}" --password "${{ secrets.APPLE_ID_PASSWORD }}" --team-id "${{ secrets.APPLE_ID_TEAM }}" --wait
+          xcrun stapler staple build/VencordInstaller.dmg
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: VencordInstaller-macos
-          path: _build/VencordInstaller.dmg
+          path: build/VencordInstaller.dmg
 
   build-windows:
     runs-on: windows-latest
@@ -130,14 +130,14 @@ jobs:
       - name: Build
         shell: msys2 {0}
         run: |
-          make WITH_GUI=1 VERSION=${{ env.VERSION }}
+          make GUI=1 VERSION=${{ env.VERSION }}
           make ARCH=386 VERSION=${{ env.VERSION }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: VencordInstaller-windows
-          path: _build/*.exe
+          path: build/*.exe
 
   release:
     runs-on: ubuntu-latest

@@ -9,32 +9,32 @@ HASH 		:= $(shell git rev-parse --short HEAD | xargs)
 # "Developer ID Application: <name> (<team-id>)" or "-"
 IDENTITY 	?= -
 
-WITH_GUI 	?= 0
-WITH_DMG 	?= 0
+GUI 		?= 0
+DMG 		?= 0
 WAYLAND 	?= 0
 
 LDFLAGS 	?= -s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(HASH)' -X 'vencordinstaller/buildinfo.InstallerTag=$(VERSION)'
 TAGS    	?= static
-WITH_CGO 	:= 0
+CGO 		:= 0
 POSTFIX 	:=
 
 ifeq ($(PLATFORM),windows)
-ifeq ($(WITH_GUI),0)
+ifeq ($(GUI),0)
 LDFLAGS 	+= -extldflags=-static
 else
 LDFLAGS 	+= -H=windowsgui -extldflags=-static
-endif # WITH_GUI
+endif # GUI
 endif # PLATFORM
 
-ifeq ($(WITH_GUI),0)
+ifeq ($(GUI),0)
 TAGS 		+= cli
 POSTFIX 	:= Cli
 else
-WITH_CGO 	:= 1
+CGO 		:= 1
 ifeq ($(WAYLAND),0)
 TAGS 		+= wayland
 endif # WAYLAND
-endif # WITH_GUI
+endif # GUI
 
 # macOS specific
 MACOS_ARCHS := $(ARCH)
@@ -45,38 +45,38 @@ endif
 all: build
 
 build:
-	mkdir -p _build
+	mkdir -p build
 
 ifeq ($(PLATFORM),darwin)
 	for arch in $(MACOS_ARCHS); do \
 		MACOSX_DEPLOYMENT_TARGET=10.13 \
-		CGO_ENABLED=$(WITH_CGO) \
+		CGO_ENABLED=$(CGO) \
 		GOOS=$(PLATFORM) \
 		GOARCH=$$arch \
 		go build \
 			-v \
 			-tags "$(TAGS)" \
 			-ldflags "$(LDFLAGS)" \
-			-o _build/installer-$$arch; \
+			-o build/installer-$$arch; \
 	done
 ifeq ($(ARCH),universal)
 	lipo -create \
-		_build/installer-amd64 \
-		_build/installer-arm64 \
-		-output _build/installer-universal
-	rm _build/installer-amd64 _build/installer-arm64
+		build/installer-amd64 \
+		build/installer-arm64 \
+		-output build/installer-universal
+	rm build/installer-amd64 build/installer-arm64
 endif # ARCH
-ifeq ($(WITH_GUI),1)
-	cp -R macos/VencordInstaller.app _build/VencordInstaller.app
-	/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $(VERSION)" _build/VencordInstaller.app/Contents/Info.plist
-	/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(HASH)" _build/VencordInstaller.app/Contents/Info.plist
+ifeq ($(GUI),1)
+	cp -R macos/VencordInstaller.app build/VencordInstaller.app
+	/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $(VERSION)" build/VencordInstaller.app/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(HASH)" build/VencordInstaller.app/Contents/Info.plist
 ifeq ($(ARCH),universal)
-	mv _build/installer-universal _build/VencordInstaller.app/Contents/MacOS/VencordInstaller
+	mv build/installer-universal build/VencordInstaller.app/Contents/MacOS/VencordInstaller
 else
-	mv _build/installer-$(ARCH) _build/VencordInstaller.app/Contents/MacOS/VencordInstaller
+	mv build/installer-$(ARCH) build/VencordInstaller.app/Contents/MacOS/VencordInstaller
 endif # ARCH
-	codesign --deep --force --options runtime --sign "$(IDENTITY)" _build/VencordInstaller.app
-ifeq ($(WITH_DMG),1)
+	codesign --deep --force --options runtime --sign "$(IDENTITY)" build/VencordInstaller.app
+ifeq ($(DMG),1)
 ifeq ($(shell command -v create-dmg 2>/dev/null),)
 	$(error create-dmg is not installed)
 endif
@@ -90,34 +90,34 @@ endif
 		--icon VencordInstaller.app 160 155 \
 		--hide-extension VencordInstaller.app \
 		--app-drop-link 350 155 \
-		_build/VencordInstaller.dmg \
-		_build/VencordInstaller.app
-endif # WITH_DMG
-else # WITH_GUI
-	mv _build/installer-$(ARCH) _build/VencordInstallerCli-$(PLATFORM)
-endif # WITH_GUI
+		build/VencordInstaller.dmg \
+		build/VencordInstaller.app
+endif # DMG
+else # GUI
+	mv build/installer-$(ARCH) build/VencordInstallerCli-$(PLATFORM)
+endif # GUI
 
 else ifeq ($(PLATFORM),windows) # PLATFORM
 	export GOROOT=/mingw64/lib/go
 	export GOPATH=/mingw64
 
 	go-winres make --product-version "git-tag"
-	CGO_ENABLED=$(WITH_CGO) GOOS=$(PLATFORM) GOARCH=$(ARCH) \
+	CGO_ENABLED=$(CGO) GOOS=$(PLATFORM) GOARCH=$(ARCH) \
 		go build -v -tags "$(TAGS)" \
 		-ldflags "$(LDFLAGS)" \
-		-o _build/VencordInstaller$(POSTFIX).exe
+		-o build/VencordInstaller$(POSTFIX).exe
 
 else # PLATFORM
-	CGO_ENABLED=$(WITH_CGO) GOOS=$(PLATFORM) GOARCH=$(ARCH) go build \
+	CGO_ENABLED=$(CGO) GOOS=$(PLATFORM) GOARCH=$(ARCH) go build \
 		-v \
 		-tags "$(TAGS)" \
 		-ldflags "$(LDFLAGS)" \
-		-o _build/VencordInstaller$(POSTFIX)-$(PLATFORM)
-	chmod +x _build/VencordInstaller$(POSTFIX)-$(PLATFORM)
+		-o build/VencordInstaller$(POSTFIX)-$(PLATFORM)
+	chmod +x build/VencordInstaller$(POSTFIX)-$(PLATFORM)
 endif
 
 clean:
-	rm -rf _build
+	rm -rf build
 
 help:
 	@printf '%s\n' \
@@ -129,8 +129,8 @@ help:
 		'  clean    Remove build artifacts' \
 		'' \
 		'Options:' \
-		'  WITH_GUI=1       Build with GUI support' \
-		'  WITH_DMG=1       Build DMG for macOS' \
+		'  GUI=1       Build with GUI support' \
+		'  DMG=1       Build DMG for macOS' \
 		'  WAYLAND=1        Build with Wayland support for Linux' \
 		'  PLATFORM=<os>    Target platform (darwin, windows, linux)' \
 		'  ARCH=<arch>      Target architecture (amd64, arm64, 386, universal (macOS only))' \
@@ -139,6 +139,6 @@ help:
 		'' \
 		'Examples:' \
 		'  make clean' \
-		'  make PLATFORM=universal WITH_GUI=1' \
+		'  make PLATFORM=universal GUI=1' \
 		'  make PLATFORM=linux ARCH=amd64' \
-		'  make WITH_GUI=1 VERSION="1.0.0"'
+		'  make GUI=1 VERSION="1.0.0"'

@@ -49,12 +49,12 @@ go mod tidy
 
 ##### Windows / Mac / Linux X11
 ```sh
-make WITH_GUI=1
+make GUI=1
 ```
 
 ##### Linux Wayland
 ```sh
-make WITH_GUI=1 WAYLAND=1
+make GUI=1 WAYLAND=1
 ```
 
 #### Build the CLI
