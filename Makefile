@@ -15,7 +15,7 @@ WAYLAND 	?= 0
 
 LDFLAGS 	?= -s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(HASH)' -X 'vencordinstaller/buildinfo.InstallerTag=$(VERSION)'
 TAGS    	?= static
-WITH_CGO 	:= 1
+WITH_CGO 	:= 0
 POSTFIX 	:=
 
 ifeq ($(PLATFORM),windows)
@@ -23,18 +23,18 @@ ifeq ($(WITH_GUI),0)
 LDFLAGS 	+= -extldflags=-static
 else
 LDFLAGS 	+= -H=windowsgui -extldflags=-static
-endif
-endif
+endif # WITH_GUI
+endif # PLATFORM
 
 ifeq ($(WITH_GUI),0)
 TAGS 		+= cli
-ifeq ($(WAYLAND),0)
-TAGS 		+= wayland
-endif
 POSTFIX 	:= Cli
 else
 WITH_CGO 	:= 1
-endif
+ifeq ($(WAYLAND),0)
+TAGS 		+= wayland
+endif # WAYLAND
+endif # WITH_GUI
 
 # macOS specific
 MACOS_ARCHS := $(ARCH)
