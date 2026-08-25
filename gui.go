@@ -154,9 +154,8 @@ func handleErr(di *DiscordInstall, err error, action string) {
 		case "windows":
 			err = errors.New("Permission denied. Make sure your Discord is fully closed (from the tray)!")
 		case "darwin":
-			// FIXME: This text is not selectable which is a bit mehhh
-			command := "sudo chown -R \"${USER}:wheel\" " + di.path
-			err = errors.New("Permission denied. Please grant the installer Full Disk Access in the system settings (privacy & security page).\n\nIf that also doesn't work, try running the following command in your terminal:\n" + command)
+			HandleInsufficientPermissions()
+			return
 		default:
 			err = errors.New("Permission denied. Maybe try running me as Administrator/Root?")
 		}
@@ -167,6 +166,10 @@ func handleErr(di *DiscordInstall, err error, action string) {
 
 func HandleScuffedInstall() {
 	g.OpenPopup("#scuffed-install")
+}
+
+func HandleInsufficientPermissions() {
+	g.OpenPopup("#insufficient-permissions")
 }
 
 func (di *DiscordInstall) Patch() {
@@ -250,6 +253,15 @@ func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
 							)
 						}, nil},
 						g.Dummy(0, 20),
+						&CondWidget{id == "#insufficient-permissions", func() g.Widget {
+							return g.Column(
+								g.Dummy(0, 10),
+								g.Button("Open Settings").OnClick(func() {
+									// "App Management" permissions doesnt exist on Monterey, just use full disk access for now
+									g.OpenURL("x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")
+								}).Size(200, 30),
+							)
+						}, nil},
 						&CondWidget{isOpenAsar,
 							func() g.Widget {
 								return g.Row(
@@ -456,6 +468,7 @@ func renderInstaller() g.Widget {
 			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
 			"no support will be provided, join the OpenAsar Server instead!\n\n"+
 			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", true),
+		InfoModal("#insufficient-permissions", "Insufficient Permissions", "Permission denied. Please grant the installer permissions in the settings."),
 		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
 		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
 		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install.\nMake sure you select the base folder.\n\nHint: Discord snap is not supported. use flatpak or .deb"),
