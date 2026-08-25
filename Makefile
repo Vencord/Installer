@@ -68,7 +68,7 @@ endif
 		--volicon macos/VencordInstaller.app/Contents/Resources/AppIcon.icns \
 		--background "macos/background.png" \
 		--window-pos 200 120 \
-		--window-size 510 350 \
+		--window-size 510 340 \
 		--icon-size 100 \
 		--icon VencordInstaller.app 160 155 \
 		--hide-extension VencordInstaller.app \
