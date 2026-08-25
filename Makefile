@@ -1,4 +1,4 @@
-.PHONY: all clean build
+.PHONY: all clean build help
 
 PLATFORM 	?= $(shell go env GOOS)
 
@@ -11,9 +11,8 @@ else
 ARCHS 		?= amd64
 endif
 
-VERSION 	?= $(shell git describe --tags --abbrev=0)
-VERSION_RES ?= $(shell git describe --tags --always)
-HASH 		:= $(shell git rev-parse --short HEAD)
+VERSION 	?= $(shell git describe --tags --abbrev=0 | sed 's/^v//') 	# 1.4.0
+HASH 		:= $(shell git rev-parse --short HEAD) 						# d648938
 
 ifeq ($(PLATFORM),windows)
 LDFLAGS 	:= -s -w -H=windowsgui -extldflags=-static -X 'vencordinstaller/buildinfo.InstallerGitHash=$(HASH)' -X 'vencordinstaller/buildinfo.InstallerTag=$(VERSION)'
@@ -51,13 +50,12 @@ ifeq ($(PLATFORM),darwin)
 			-ldflags "$(LDFLAGS)" \
 			-o _build/installer-$$arch; \
 	done
-	lipo -create _build/installer-amd64 _build/installer-arm64 -output _build/VencordInstaller
-	rm _build/installer-amd64 _build/installer-arm64
 ifeq ($(WITH_GUI),1)
 	cp -R macos/VencordInstaller.app _build/VencordInstaller.app
 	/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $(VERSION)" _build/VencordInstaller.app/Contents/Info.plist
 	/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(HASH)" _build/VencordInstaller.app/Contents/Info.plist
-	mv _build/VencordInstaller _build/VencordInstaller.app/Contents/MacOS/VencordInstaller
+	lipo -create _build/installer-amd64 _build/installer-arm64 -output _build/VencordInstaller.app/Contents/MacOS/VencordInstaller
+	rm _build/installer-amd64 _build/installer-arm64
 	codesign --deep --force --options runtime --sign "$(IDENTITY)" _build/VencordInstaller.app
 ifeq ($(WITH_DMG),1)
 ifeq ($(shell command -v create-dmg 2>/dev/null),)
@@ -81,7 +79,7 @@ else ifeq ($(PLATFORM),windows)
 	export GOROOT=/mingw64/lib/go
 	export GOPATH=/mingw64
 
-	go-winres make --product-version $(VERSION_RES)
+	go-winres make --product-version v$(VERSION)-$(HASH)
 	CGO_ENABLED=$(WITH_CGO) GOOS=$(PLATFORM) GOARCH=$$arch \
 		go build -v -tags $(TAGS) \
 		-ldflags "$(LDFLAGS)" \
@@ -97,3 +95,27 @@ endif
 
 clean:
 	rm -rf _build
+
+help:
+	@printf '%s\n' \
+		'Usage: make <target> [OPTIONS]' \
+		'' \
+		'Targets:' \
+		'  help        Show this help page' \
+		'  build       Build the project (default)' \
+		'  clean       Remove build artifacts' \
+		'' \
+		'Options:' \
+		'  WITH_GUI=1           Build with GUI support' \
+		'  WITH_DMG=1           Build DMG for macOS' \
+		'  WAYLAND=1            Build with Wayland support for Linux' \
+		'  PLATFORM=<os>        Target platform (darwin, windows, linux)' \
+		'  ARCHS=<archs>        Target architectures (amd64, arm64, 386)' \
+		'  IDENTITY=<id>        Code signing identity for macOS (default: -)' \
+		'  VERSION=<ver>        Version string (default: latest git tag)' \
+		'' \
+		'Examples:' \
+		'  make clean' \
+		'  make WITH_GUI=1' \
+		'  make PLATFORM=linux ARCHS=amd64' \
+		'  make WITH_GUI=1 VERSION="1.0.0"'
