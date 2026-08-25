@@ -19,6 +19,10 @@ var macosNames = map[string]string{
 	"dev":    "Discord Development.app",
 }
 
+func ParseDiscordNew(p, branch string, isFlatpak bool) *DiscordInstall {
+	return nil
+}
+
 func ParseDiscord(p, branch string) *DiscordInstall {
 	if !ExistsFile(p) {
 		return nil

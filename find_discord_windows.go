@@ -8,12 +8,13 @@ package main
 
 import (
 	"errors"
-	"golang.org/x/sys/windows"
 	"os"
 	path "path/filepath"
 	"strings"
 	"sync"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 var windowsNames = map[string]string{
@@ -24,6 +25,10 @@ var windowsNames = map[string]string{
 }
 
 var killLock sync.Mutex
+
+func ParseDiscordNew(p, branch string, isFlatpak bool) *DiscordInstall {
+	return nil
+}
 
 func ParseDiscord(p, branch string) *DiscordInstall {
 	entries, err := os.ReadDir(p)
@@ -90,7 +95,7 @@ func FindDiscords() []any {
 func PreparePatch(di *DiscordInstall) {
 	killLock.Lock()
 	defer killLock.Unlock()
-	
+
 	name := windowsNames[di.branch]
 	Log.Debug("Trying to kill", name)
 	pid := findProcessIdByName(name + ".exe")
