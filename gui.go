@@ -225,7 +225,7 @@ func InfoModal(id, title, description string) g.Widget {
 }
 
 func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
-	isDynamic := strings.HasPrefix(id, "#modal") && !strings.Contains(description, "\n")
+	isDynamic := strings.HasPrefix(id, "#modal")
 	return g.Style().
 		SetStyle(g.StyleVarWindowPadding, 30, 30).
 		SetStyleFloat(g.StyleVarWindowRounding, 12).
@@ -393,11 +393,22 @@ func renderInstaller() g.Widget {
 		g.Style().SetFontSize(20).To(
 			g.RangeBuilder("Discords", discords, func(i int, v any) g.Widget {
 				d := v.(*DiscordInstall)
-				//goland:noinspection GoDeprecation
-				text := strings.Title(d.branch)
+				var text string
+				switch d.branch {
+				case "ptb":
+					text = "Discord PTB"
+				case "canary":
+					text = "Discord Canary"
+				case "development":
+					text = "Discord Development"
+				default:
+					text = "Discord"
+				}
+
 				if d.isPatched {
 					text += " (Vencord Installed)"
 				}
+
 				return g.Row(
 					g.RadioButton(text, radioIdx == i).OnChange(makeRadioOnChange(i)),
 					g.Style().SetColor(g.StyleColorText, color.RGBA{0xff, 0xff, 0xff, 0x80}).To(g.Label(" "+d.path)),
