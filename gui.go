@@ -14,7 +14,6 @@ import (
 	"errors"
 	"image"
 	"image/color"
-	"vencordinstaller/buildinfo"
 
 	g "github.com/AllenDang/giu"
 
@@ -367,10 +366,6 @@ func renderInstaller() g.Widget {
 	}
 
 	layout := g.Layout{
-		g.Dummy(0, 20),
-		g.Separator(),
-		g.Dummy(0, 5),
-
 		g.Style().SetFontSize(20).To(
 			renderErrorCard(
 				DiscordYellow,
@@ -380,11 +375,12 @@ func renderInstaller() g.Widget {
 			),
 		),
 
-		g.Dummy(0, 5),
+		g.Dummy(0, 20),
 
 		g.Style().SetFontSize(30).To(
 			g.Label("Please select an install to patch"),
 		),
+		g.Dummy(0, 5),
 
 		&CondWidget{len(discords) == 0, func() g.Widget {
 			s := "No Discord installs found. You first need to install Discord."
@@ -398,12 +394,14 @@ func renderInstaller() g.Widget {
 			g.RangeBuilder("Discords", discords, func(i int, v any) g.Widget {
 				d := v.(*DiscordInstall)
 				//goland:noinspection GoDeprecation
-				text := strings.Title(d.branch) + " - " + d.path
+				text := strings.Title(d.branch)
 				if d.isPatched {
-					text += " [PATCHED]"
+					text += " (Vencord Installed)"
 				}
-				return g.RadioButton(text, radioIdx == i).
-					OnChange(makeRadioOnChange(i))
+				return g.Row(
+					g.RadioButton(text, radioIdx == i).OnChange(makeRadioOnChange(i)),
+					g.Style().SetColor(g.StyleColorText, color.RGBA{0xff, 0xff, 0xff, 0x80}).To(g.Label(" "+d.path)),
+				)
 			}),
 		),
 
@@ -457,9 +455,8 @@ func renderInstaller() g.Widget {
 			),
 		),
 
-		InfoModal("#patched", "Successfully Patched", "If Discord is still open, fully close it first.\n"+
-			"Then, start it and verify Vencord installed successfully by looking for its category in Discord Settings"),
-		InfoModal("#unpatched", "Successfully Unpatched", "If Discord is still open, fully close it first. Then start it again, it should be back to stock!"),
+		InfoModal("#patched", "Installed!", "Vencord was successfully installed!"),
+		InfoModal("#unpatched", "Uninstalled", "Vencord has been uninstalled!"),
 		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
 			"Sometimes Discord decides to install to the wrong location for some reason!\n"+
 			"You need to fix this before patching, otherwise Vencord will likely not work.\n\n"+
@@ -512,38 +509,15 @@ func loop() {
 					g.Label("Vencord Installer"),
 				),
 			),
+			g.Dummy(0, 40),
 
-			g.Dummy(0, 20),
-			g.Style().SetFontSize(20).To(
-				g.Row(
-					g.Label(Ternary(IsDevInstall, "Dev Install: ", "Vencord will be downloaded to: ")+FilesDir),
-					g.Style().
-						SetColor(g.StyleColorButton, DiscordBlue).
-						SetStyle(g.StyleVarFramePadding, 4, 4).
-						To(
-							g.Button("Open Directory").OnClick(func() {
-								g.OpenURL("file://" + FilesDir)
-							}),
-						),
-				),
-				&CondWidget{!IsDevInstall, func() g.Widget {
-					return g.Label("To customise this location, set the environment variable 'VENCORD_USER_DATA_DIR' and restart me").Wrapped(true)
-				}, nil},
-				g.Dummy(0, 10),
-				g.Label("Installer Version: "+buildinfo.InstallerTag+" ("+buildinfo.InstallerGitHash+")"+Ternary(IsSelfOutdated, " - OUTDATED", "")),
-				g.Label("Local Vencord Version: "+InstalledHash),
-				&CondWidget{
-					GithubError == nil,
-					func() g.Widget {
-						if IsDevInstall {
-							return g.Label("Not updating Vencord due to being in DevMode")
-						}
-						return g.Label("Latest Vencord Version: " + LatestHash)
-					}, func() g.Widget {
-						return renderErrorCard(DiscordRed, "Failed to fetch Info from GitHub: "+GithubError.Error(), 40)
-					},
+			&CondWidget{
+				GithubError != nil,
+				func() g.Widget {
+					return renderErrorCard(DiscordRed, "Failed to fetch Info from GitHub: "+GithubError.Error(), 40)
 				},
-			),
+				nil,
+			},
 
 			&CondWidget{
 				predicate:  FilesDirErr != nil,

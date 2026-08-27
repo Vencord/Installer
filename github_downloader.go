@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 type GithubRelease struct {
@@ -147,6 +148,7 @@ func installLatestBuilds() (retErr error) {
 	}
 
 	var wg sync.WaitGroup
+	var downloadedFiles atomic.Uint64
 
 	for _, ass := range ReleaseData.Assets {
 		if strings.HasPrefix(ass.Name, "patcher.js") ||
@@ -189,11 +191,20 @@ func installLatestBuilds() (retErr error) {
 					retErr = err
 					return
 				}
+				downloadedFiles.Add(1)
 			}()
 		}
 	}
 
 	wg.Wait()
+
+	if retErr != nil {
+		return retErr
+	}
+	if downloadedFiles.Load() < 4 {
+		return errors.New("Couldn't find all required files")
+	}
+
 	Log.Debug("Done!")
 	_ = FixOwnership(FilesDir)
 
