@@ -387,7 +387,7 @@ func renderInstaller() g.Widget {
 			if runtime.GOOS == "linux" {
 				s += " snap is not supported."
 			}
-			return g.Label(s)
+			return g.Style().SetFontSize(20).To(g.Label(s))
 		}, nil},
 
 		g.Style().SetFontSize(20).To(
