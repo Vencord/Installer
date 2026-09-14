@@ -33,6 +33,7 @@ var (
 	modalId      = 0
 	modalTitle   = "Oh No :("
 	modalMessage = "You should never see this"
+	modalExtra   = ""
 
 	acceptedOpenAsar   bool
 	showedUpdatePrompt bool
@@ -98,7 +99,7 @@ func InstallLatestBuilds() (err error) {
 
 	err = installLatestBuilds()
 	if err != nil {
-		ShowModal("Uh Oh!", "Failed to install the latest Vencord builds from GitHub:\n"+err.Error())
+		ShowModal("Failed to install the latest Vencord builds from GitHub", "If this issue persists, visit https://vencord.dev/support for help.", err.Error())
 	}
 	return
 }
@@ -160,7 +161,7 @@ func handleErr(di *DiscordInstall, err error, action string) {
 		}
 	}
 
-	ShowModal("Failed to "+action+" this Install", err.Error())
+	ShowModal("Failed to "+action+" this Install.", "If the problem persists, reinstall Discord: https://vencord.dev/support", err.Error())
 }
 
 func HandleScuffedInstall() {
@@ -221,25 +222,37 @@ func Tooltip(label string) g.Widget {
 }
 
 func InfoModal(id, title, description string) g.Widget {
-	return RawInfoModal(id, title, description, false)
+	return RawInfoModal(id, title, description, "", false)
 }
 
-func RawInfoModal(id, title, description string, isOpenAsar bool) g.Widget {
+func InfoModalExtra(id, title, description, extra string) g.Widget {
+	return RawInfoModal(id, title, description, extra, false)
+}
+
+func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widget {
 	isDynamic := strings.HasPrefix(id, "#modal")
 	return g.Style().
 		SetStyle(g.StyleVarWindowPadding, 30, 30).
 		SetStyleFloat(g.StyleVarWindowRounding, 12).
 		To(
 			g.PopupModal(id).
-				Flags(g.WindowFlagsNoTitleBar | Ternary(isDynamic, g.WindowFlagsAlwaysAutoResize, 0)).
+				Flags(g.WindowFlagsNoTitleBar | Ternary(isDynamic, g.WindowFlagsAlwaysAutoResize, 0) | g.WindowFlagsHorizontalScrollbar).
 				Layout(
 					g.Align(g.AlignCenter).To(
 						g.Style().SetFontSize(30).To(
 							g.Label(title),
 						),
 						g.Style().SetFontSize(20).To(
-							g.Label(description).Wrapped(isDynamic),
+							g.Label(description),
 						),
+						&CondWidget{extra != "", func() g.Widget {
+							return g.Column(
+								g.Dummy(0, 10),
+								g.Style().SetFontSize(20).To(
+									g.Label(extra).Wrapped(true),
+								),
+							)
+						}, nil},
 						&CondWidget{id == "#scuffed-install", func() g.Widget {
 							return g.Column(
 								g.Dummy(0, 10),
@@ -324,10 +337,10 @@ func UpdateModal() g.Widget {
 									g.CloseCurrentPopup()
 
 									if err != nil {
-										ShowModal("Failed to update self!", err.Error())
+										ShowModal("Failed to update self!", "Please manually downloaded the latest Installer.", err.Error())
 									} else {
 										if err = RelaunchSelf(); err != nil {
-											ShowModal("Failed to restart self! Please do it manually.", err.Error())
+											ShowModal("Failed to restart self!", "Please manually restart the Installer.", err.Error())
 										}
 									}
 								}).
@@ -343,9 +356,10 @@ func UpdateModal() g.Widget {
 		)
 }
 
-func ShowModal(title, desc string) {
+func ShowModal(title, desc, extra string) {
 	modalTitle = title
 	modalMessage = desc
+	modalExtra = extra
 	modalId++
 	g.OpenPopup("#modal" + strconv.Itoa(modalId))
 }
@@ -369,6 +383,7 @@ func renderInstaller() g.Widget {
 		g.Style().SetFontSize(20).To(
 			renderErrorCard(
 				DiscordYellow,
+				color.Black,
 				"**Github** and **vencord.dev** are the only official places to get Vencord. Any other site claiming to be us is malicious.\n"+
 					"If you downloaded from any other source, you should delete / uninstall everything immediately, run a malware scan and change your Discord password.",
 				90,
@@ -478,12 +493,11 @@ func renderInstaller() g.Widget {
 			"Vencord is in no way affiliated with OpenAsar.\n"+
 			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
 			"no support will be provided, join the OpenAsar Server instead!\n\n"+
-			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", true),
+			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", "", true),
 		InfoModal("#insufficient-permissions", "Insufficient Permissions", "Permission denied. Please grant the installer permissions in the settings."),
 		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
 		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
-		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install.\nMake sure you select the base folder.\n\nHint: Discord snap is not supported. use flatpak or .deb"),
-		InfoModal("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage),
+		InfoModalExtra("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage, modalExtra),
 
 		UpdateModal(),
 	}
@@ -491,9 +505,9 @@ func renderInstaller() g.Widget {
 	return layout
 }
 
-func renderErrorCard(col color.Color, message string, height float32) g.Widget {
+func renderErrorCard(bgColor color.Color, textColor color.Color, message string, height float32) g.Widget {
 	return g.Style().
-		SetColor(g.StyleColorChildBg, col).
+		SetColor(g.StyleColorChildBg, bgColor).
 		SetStyleFloat(g.StyleVarAlpha, 0.9).
 		SetStyle(g.StyleVarWindowPadding, 10, 10).
 		SetStyleFloat(g.StyleVarChildRounding, 5).
@@ -502,7 +516,7 @@ func renderErrorCard(col color.Color, message string, height float32) g.Widget {
 				Size(g.Auto, height).
 				Layout(
 					g.Row(
-						g.Style().SetColor(g.StyleColorText, color.Black).To(
+						g.Style().SetColor(g.StyleColorText, textColor).To(
 							g.Markdown(&message),
 						),
 					),
@@ -525,7 +539,7 @@ func loop() {
 			&CondWidget{
 				GithubError != nil,
 				func() g.Widget {
-					return renderErrorCard(DiscordRed, "Failed to fetch Info from GitHub: "+GithubError.Error(), 40)
+					return g.Style().SetFontSize(20).To(renderErrorCard(DiscordRed, color.White, "Failed to fetch Info from GitHub. If the problem persists, visit https://vencord.dev/support for help.", 40))
 				},
 				nil,
 			},

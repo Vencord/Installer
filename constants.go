@@ -19,9 +19,9 @@ const InstallerReleaseUrlFallback = "https://vencord.dev/releases/installer"
 var UserAgent = "VencordInstaller/" + buildinfo.InstallerGitHash + " (https://github.com/Vencord/Installer)"
 
 var (
-	DiscordGreen  = color.RGBA{R: 0x2D, G: 0x7C, B: 0x46, A: 0xFF}
-	DiscordRed    = color.RGBA{R: 0xEC, G: 0x41, B: 0x44, A: 0xFF}
-	DiscordBlue   = color.RGBA{R: 0x58, G: 0x65, B: 0xF2, A: 0xFF}
+	DiscordGreen  = color.RGBA{R: 0, G: 133, B: 69, A: 0xFF}
+	DiscordRed    = color.RGBA{R: 210, G: 45, B: 57, A: 0xff}
+	DiscordBlue   = color.RGBA{R: 88, G: 101, B: 242, A: 0xFF}
 	DiscordYellow = color.RGBA{R: 0xfe, G: 0xe7, B: 0x5c, A: 0xff}
 )
 
