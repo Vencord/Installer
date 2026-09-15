@@ -162,7 +162,7 @@ func handleErr(di *DiscordInstall, err error, action string) {
 		}
 	}
 
-	ShowModal("Failed to "+action+" this Install.", "If the problem persists, reinstall Discord: https://vencord.dev/support", err.Error())
+	ShowModal("Failed to "+action+" this Install.", "If this issue persists, visit: https://vencord.dev/support", err.Error())
 }
 
 func HandleScuffedInstall() {
@@ -338,7 +338,7 @@ func UpdateModal() g.Widget {
 									g.CloseCurrentPopup()
 
 									if err != nil {
-										ShowModal("Failed to update self!", "Please manually downloaded the latest Installer.", err.Error())
+										ShowModal("Failed to update self!", "Please manually download the latest Installer.", err.Error())
 									} else {
 										if err = RelaunchSelf(); err != nil {
 											ShowModal("Failed to restart self!", "Please manually restart the Installer.", err.Error())
@@ -548,7 +548,7 @@ func loop() {
 			&CondWidget{
 				GithubError != nil,
 				func() g.Widget {
-					return g.Style().SetFontSize(20).To(renderErrorCard(DiscordRed, color.White, "Failed to fetch Info from GitHub. If the problem persists, visit https://vencord.dev/support for help.", 40))
+					return g.Style().SetFontSize(20).To(renderErrorCard(DiscordRed, color.White, "Failed to fetch Info from GitHub. If this issue persists, visit https://vencord.dev/support for help.", 40))
 				},
 				nil,
 			},
