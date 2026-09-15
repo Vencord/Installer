@@ -170,7 +170,7 @@ jobs:
         with:
           name: ${{ env.VERSION }}
           prerelease: false
-          draft: false
+          draft: true
           files: |
             linux/*
             macos/*
