@@ -71,6 +71,7 @@ func main() {
 	} else {
 		win.SetIcon([]image.Image{icon})
 	}
+
 	win.Run(loop)
 }
 
@@ -437,6 +438,8 @@ func renderInstaller() g.Widget {
 			g.Row(
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordGreen).
+					SetColor(g.StyleColorButtonHovered, DiscordGreenHovered).
+					SetStyle(g.StyleVarFrameRounding, 8, 8).
 					SetDisabled(GithubError != nil).
 					To(
 						g.Button("Install").
@@ -446,6 +449,8 @@ func renderInstaller() g.Widget {
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordBlue).
+					SetColor(g.StyleColorButtonHovered, DiscordBlueHovered).
+					SetStyle(g.StyleVarFrameRounding, 8, 8).
 					SetDisabled(GithubError != nil).
 					To(
 						g.Button("Reinstall / Repair").
@@ -464,6 +469,8 @@ func renderInstaller() g.Widget {
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, DiscordRed).
+					SetColor(g.StyleColorButtonHovered, DiscordRedHovered).
+					SetStyle(g.StyleVarFrameRounding, 8, 8).
 					To(
 						g.Button("Uninstall").
 							OnClick(handleUnpatch).
@@ -472,6 +479,8 @@ func renderInstaller() g.Widget {
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, Ternary(isOpenAsar, DiscordRed, DiscordGreen)).
+					SetColor(g.StyleColorButtonHovered, Ternary(isOpenAsar, DiscordRedHovered, DiscordGreenHovered)).
+					SetStyle(g.StyleVarFrameRounding, 8, 8).
 					To(
 						g.Button(Ternary(isOpenAsar, "Uninstall OpenAsar", Ternary(currentDiscord != nil, "Install OpenAsar", "(Un-)Install OpenAsar"))).
 							OnClick(handleOpenAsar).
