@@ -217,7 +217,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 				}
 			}
 		}
-		die("No Discord install found. Try manually specifying it with the --dir flag. Hint: snap is not supported")
+		die("No Discord install found. Before proceeding, make sure Discord is installed. snap is not supported!")
 	}
 
 	if branch != "" {
@@ -245,7 +245,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 	items := SliceMap(discords, func(d any) string {
 		install := d.(*DiscordInstall)
 		//goland:noinspection GoDeprecation
-		return fmt.Sprintf("%s - %s%s", strings.Title(install.branch), install.path, Ternary(install.isPatched, " [PATCHED]", ""))
+		return fmt.Sprintf("%s - %s%s", strings.Title(install.branch), install.path, Ternary(install.isPatched, " [Vencord Installed]", ""))
 	})
 	items = append(items, "Custom Location")
 
