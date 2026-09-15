@@ -125,7 +125,7 @@ jobs:
           export GOROOT=/mingw64/lib/go
           export GOPATH=/mingw64
           go get -v
-          go install github.com/tc-hib/go-winres@latest
+          go install github.com/tc-hib/go-winres@d743268d7ea168077ddd443c4240562d4f5e8c3e  # v0.3.3
 
       - name: Build
         shell: msys2 {0}
