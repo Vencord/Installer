@@ -231,75 +231,74 @@ func InfoModalExtra(id, title, description, extra string) g.Widget {
 }
 
 func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widget {
-	isDynamic := strings.HasPrefix(id, "#modal")
+	isDynamic := strings.HasPrefix(id, "#modal") && extra != ""
 	return g.Style().
 		SetStyle(g.StyleVarWindowPadding, 30, 30).
 		SetStyleFloat(g.StyleVarWindowRounding, 12).
 		To(
 			g.PopupModal(id).
-				Flags(g.WindowFlagsNoTitleBar | Ternary(isDynamic, g.WindowFlagsAlwaysAutoResize, 0) | g.WindowFlagsHorizontalScrollbar).
+				Flags(g.WindowFlagsNoTitleBar|Ternary(isDynamic, g.WindowFlagsAlwaysAutoResize, 0)).
 				Layout(
-					g.Align(g.AlignCenter).To(
-						g.Style().SetFontSize(30).To(
-							g.Label(title),
-						),
-						g.Style().SetFontSize(20).To(
-							g.Label(description),
-						),
-						&CondWidget{extra != "", func() g.Widget {
-							return g.Column(
-								g.Dummy(0, 10),
-								g.Style().SetFontSize(20).To(
-									g.Label(extra).Wrapped(true),
-								),
-							)
-						}, nil},
-						&CondWidget{id == "#scuffed-install", func() g.Widget {
-							return g.Column(
-								g.Dummy(0, 10),
-								g.Button("Take me there!").OnClick(func() {
-									// this issue only exists on windows so using Windows specific path is oki
-									username := os.Getenv("USERNAME")
-									programData := os.Getenv("PROGRAMDATA")
-									g.OpenURL("file://" + path.Join(programData, username))
-								}).Size(200, 30),
-							)
-						}, nil},
-						g.Dummy(0, 20),
-						&CondWidget{id == "#insufficient-permissions", func() g.Widget {
-							return g.Column(
-								g.Dummy(0, 10),
-								g.Button("Open Settings").OnClick(func() {
-									// "App Management" permissions doesnt exist on Monterey, just use full disk access for now
-									g.OpenURL("x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")
-								}).Size(200, 30),
-							)
-						}, nil},
-						&CondWidget{isOpenAsar,
-							func() g.Widget {
-								return g.Row(
-									g.Button("Accept").
-										OnClick(func() {
-											acceptedOpenAsar = true
-											g.CloseCurrentPopup()
-										}).
-										Size(100, 30),
-									g.Button("Cancel").
-										OnClick(func() {
-											g.CloseCurrentPopup()
-										}).
-										Size(100, 30),
-								)
-							},
-							func() g.Widget {
-								return g.Button("Ok").
+					g.Style().SetFontSize(30).To(
+						g.Label(title),
+					),
+					g.Dummy(0, 5),
+					g.Style().SetFontSize(20).To(
+						g.Label(description),
+					),
+					&CondWidget{extra != "", func() g.Widget {
+						return g.Column(
+							g.Dummy(0, 10),
+							g.Style().SetFontSize(20).To(
+								g.Label(extra).Wrapped(true),
+							),
+						)
+					}, nil},
+					&CondWidget{id == "#scuffed-install", func() g.Widget {
+						return g.Column(
+							g.Dummy(0, 10),
+							g.Button("Take me there!").OnClick(func() {
+								// this issue only exists on windows so using Windows specific path is oki
+								username := os.Getenv("USERNAME")
+								programData := os.Getenv("PROGRAMDATA")
+								g.OpenURL("file://" + path.Join(programData, username))
+							}).Size(200, 30),
+						)
+					}, nil},
+					g.Dummy(0, 20),
+					&CondWidget{id == "#insufficient-permissions", func() g.Widget {
+						return g.Column(
+							g.Dummy(0, 10),
+							g.Button("Open Settings").OnClick(func() {
+								// "App Management" permissions doesnt exist on Monterey, just use full disk access for now
+								g.OpenURL("x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")
+							}).Size(200, 30),
+						)
+					}, nil},
+					&CondWidget{isOpenAsar,
+						func() g.Widget {
+							return g.Row(
+								g.Button("Accept").
+									OnClick(func() {
+										acceptedOpenAsar = true
+										g.CloseCurrentPopup()
+									}).
+									Size(100, 30),
+								g.Button("Cancel").
 									OnClick(func() {
 										g.CloseCurrentPopup()
 									}).
-									Size(100, 30)
-							},
+									Size(100, 30),
+							)
 						},
-					),
+						func() g.Widget {
+							return g.Button("Ok").
+								OnClick(func() {
+									g.CloseCurrentPopup()
+								}).
+								Size(100, 30)
+						},
+					},
 				),
 		)
 }
