@@ -73,15 +73,18 @@ jobs:
       - name: Setup Certificates
         uses: apple-actions/import-codesign-certs@5142e029c445c10ffc7149d172e540235a065466 # v7.0.0
         with:
-          p12-file-base64: ${{ secrets.DEV_ID_P12_BASE64 }}
-          p12-password: ${{ secrets.DEV_ID_P12_PASSWORD }}
+          p12-file-base64: ${{ secrets.APPLE_SIGNING_CERT }}
+          p12-password: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
 
       - name: Build
         run: make ARCH=universal GUI=1 DMG=1 IDENTITY="${{ secrets.DEV_ID_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
 
       - name: Codesign
+        env:
+          APP_API_KEY: ${{ secrets.APP_API_KEY }}
         run: |
-          xcrun notarytool submit build/VencordInstaller.dmg --apple-id "${{ secrets.APPLE_ID_EMAIL }}" --password "${{ secrets.APPLE_ID_PASSWORD }}" --team-id "${{ secrets.APPLE_ID_TEAM }}" --wait
+          echo "$APP_API_KEY" > apple.p8
+          xcrun notarytool submit build/VencordInstaller.dmg --key apple.p8 --key-id "${{ secrets.APP_API_KEY_ID }}" --issuer "${{ secrets.APP_API_ISSUER }}" --wait
           xcrun stapler staple build/VencordInstaller.dmg
 
       - name: Upload artifact
