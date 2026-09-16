@@ -52,7 +52,7 @@ func GetInstallerDownloadLink() string {
 		filename := Ternary(buildinfo.UiType == buildinfo.UiTypeCli, "VencordInstallerCli.exe", "VencordInstaller.exe")
 		return BaseUrl + filename
 	case "darwin":
-		return BaseUrl + "VencordInstaller.MacOS.zip"
+		return BaseUrl + "VencordInstaller.dmg"
 	case "linux":
 		return BaseUrl + "VencordInstallerCli-linux"
 	default:
