@@ -151,17 +151,17 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: VencordInstaller-linux
-          path: linux
+          path: build-linux
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: VencordInstaller-macos
-          path: macos
+          path: build-macos
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: VencordInstaller-windows
-          path: windows
+          path: build-windows
 
       - name: Create the release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
@@ -172,6 +172,6 @@ jobs:
           prerelease: false
           draft: true
           files: |
-            linux/*
-            macos/*
-            windows/*
+            build-linux/*
+            build-macos/*
+            build-windows/*
