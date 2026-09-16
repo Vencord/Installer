@@ -77,7 +77,7 @@ jobs:
           p12-password: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
 
       - name: Build
-        run: make ARCH=universal GUI=1 DMG=1 IDENTITY="${{ secrets.DEV_ID_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
+        run: make ARCH=universal GUI=1 DMG=1 IDENTITY="${{ secrets.APPLE_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
 
       - name: Codesign
         env:
