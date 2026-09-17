@@ -101,7 +101,7 @@ func patchAppAsar(dir string, isSystemElectron bool) (err error) {
 
 func (di *DiscordInstall) patch() error {
 	Log.Info("Patching " + di.path + "...")
-	if LatestHash != InstalledHash {
+	if !IsDevInstall && LatestHash != InstalledHash {
 		if err := InstallLatestBuilds(); err != nil {
 			return nil // already shown dialog so don't return same error again
 		}
