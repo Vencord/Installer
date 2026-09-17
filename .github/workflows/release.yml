@@ -77,7 +77,9 @@ jobs:
           p12-password: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
 
       - name: Build
-        run: make ARCH=universal GUI=1 DMG=1 IDENTITY="${{ secrets.APPLE_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
+        run: |
+          make ARCH=universal
+          make ARCH=universal GUI=1 DMG=1 IDENTITY="${{ secrets.APPLE_IDENTITY_NAME }}" VERSION=${{ env.VERSION }}
 
       - name: Codesign
         run: |
@@ -88,7 +90,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: VencordInstaller-macos
-          path: build/VencordInstaller.dmg
+          path: |
+            build/VencordInstaller.dmg
+            build/VencordInstallerCli-darwin
 
   build-windows:
     runs-on: windows-latest
