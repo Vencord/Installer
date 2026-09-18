@@ -16,6 +16,7 @@ import (
 	"image/color"
 
 	g "github.com/AllenDang/giu"
+	"github.com/AllenDang/imgui-go"
 
 	// png decoder for icon
 	_ "image/png"
@@ -27,8 +28,17 @@ import (
 )
 
 var (
-	discords []any
-	radioIdx int
+	discords        []any
+	radioIdx        int
+	customChoiceIdx int
+
+	customDir              string
+	autoCompleteDir        string
+	autoCompleteFile       string
+	autoCompleteCandidates []string
+	autoCompleteIdx        int
+	lastAutoComplete       string
+	didAutoComplete        bool
 
 	modalId      = 0
 	modalTitle   = "Oh No :("
@@ -37,6 +47,7 @@ var (
 
 	acceptedOpenAsar   bool
 	showedUpdatePrompt bool
+	showCustomLocation bool
 
 	win *g.MasterWindow
 )
@@ -51,6 +62,7 @@ func init() {
 func main() {
 	InitGithubDownloader()
 	discords = FindDiscords()
+	customChoiceIdx = len(discords)
 
 	go func() {
 		<-GithubDoneChan
@@ -90,7 +102,20 @@ func (w *CondWidget) Build() {
 }
 
 func getChosenInstall() *DiscordInstall {
-	return discords[radioIdx].(*DiscordInstall)
+	if radioIdx != customChoiceIdx {
+		return discords[radioIdx].(*DiscordInstall)
+	}
+
+	if discord := ParseDiscord(customDir, ""); discord != nil {
+		return discord
+	}
+
+	if discord := ParseDiscordNew(customDir, "", strings.Contains(customDir, "com.discordapp")); discord != nil {
+		return discord
+	}
+
+	g.OpenPopup("#invalid-custom-location")
+	return nil
 }
 
 func InstallLatestBuilds() (err error) {
@@ -190,6 +215,63 @@ func (di *DiscordInstall) Unpatch() {
 	} else {
 		g.OpenPopup("#unpatched")
 	}
+}
+
+func onCustomInputChanged() {
+	p := customDir
+	if len(p) != 0 {
+		// Select the custom option for people
+		radioIdx = customChoiceIdx
+	}
+
+	dir := path.Dir(p)
+
+	isNewDir := strings.HasSuffix(p, "/")
+	wentUpADir := !isNewDir && dir != autoCompleteDir
+
+	if isNewDir || wentUpADir {
+		autoCompleteDir = dir
+		// reset all the funnies
+		autoCompleteIdx = 0
+		lastAutoComplete = ""
+		autoCompleteFile = ""
+		autoCompleteCandidates = nil
+
+		// Generate autocomplete items
+		files, err := os.ReadDir(dir)
+		if err == nil {
+			for _, file := range files {
+				autoCompleteCandidates = append(autoCompleteCandidates, file.Name())
+			}
+		}
+	} else if !didAutoComplete {
+		// reset auto complete and update our file
+		autoCompleteFile = path.Base(p)
+		lastAutoComplete = ""
+	}
+
+	if wentUpADir {
+		autoCompleteFile = path.Base(p)
+	}
+
+	didAutoComplete = false
+}
+
+// go can you give me []any?
+// to pass to giu RangeBuilder?
+// yeeeeees
+// actually returns []string like a boss
+func makeAutoComplete() []any {
+	input := strings.ToLower(autoCompleteFile)
+
+	var candidates []any
+	for _, e := range autoCompleteCandidates {
+		file := strings.ToLower(e)
+		if autoCompleteFile == "" || strings.HasPrefix(file, input) {
+			candidates = append(candidates, e)
+		}
+	}
+	return candidates
 }
 
 func makeRadioOnChange(i int) func() {
@@ -365,12 +447,14 @@ func ShowModal(title, desc, extra string) {
 }
 
 func renderInstaller() g.Widget {
+	candidates := makeAutoComplete()
+
 	wi, _ := win.GetSize()
 	w := float32(wi) - 96
 
 	var currentDiscord *DiscordInstall
-	if len(discords) > 0 && radioIdx >= 0 && radioIdx < len(discords) {
-		currentDiscord, _ = discords[radioIdx].(*DiscordInstall)
+	if radioIdx != customChoiceIdx {
+		currentDiscord = discords[radioIdx].(*DiscordInstall)
 	}
 	var isOpenAsar = currentDiscord != nil && currentDiscord.IsOpenAsar()
 
@@ -395,14 +479,21 @@ func renderInstaller() g.Widget {
 		g.Style().SetFontSize(30).To(
 			g.Label("Please select an install to patch"),
 		),
-		g.Dummy(0, 5),
+		g.Dummy(0, 10),
 
 		&CondWidget{len(discords) == 0, func() g.Widget {
 			s := "No Discord installs found. You first need to install Discord."
 			if runtime.GOOS == "linux" {
 				s += " snap is not supported."
 			}
-			return g.Style().SetFontSize(20).To(g.Label(s))
+
+			return &CondWidget{!showCustomLocation, func() g.Widget {
+				return g.Column(
+					g.Style().SetFontSize(25).To(g.Label(s)),
+					g.Dummy(0, 10),
+					g.Checkbox("I am an advanced user and have Discord installed at a different location", &showCustomLocation),
+				)
+			}, nil}
 		}, nil},
 
 		g.Style().SetFontSize(20).To(
@@ -429,7 +520,61 @@ func renderInstaller() g.Widget {
 					g.Style().SetColor(g.StyleColorText, color.RGBA{0xff, 0xff, 0xff, 0x80}).To(g.Label(" "+d.path)),
 				)
 			}),
+			&CondWidget{showCustomLocation, func() g.Widget {
+				return g.RadioButton("Custom Install Location", radioIdx == customChoiceIdx).OnChange(makeRadioOnChange(customChoiceIdx))
+			}, nil},
 		),
+
+		&CondWidget{showCustomLocation, func() g.Widget {
+			return g.Column(
+				g.Dummy(0, 5),
+				g.Style().
+					SetStyle(g.StyleVarFramePadding, 16, 16).
+					SetFontSize(20).
+					To(
+						g.InputText(&customDir).Hint("The custom location").
+							Size(w-16).
+							Flags(g.InputTextFlagsCallbackCompletion).
+							OnChange(onCustomInputChanged).
+							// this library has its own autocomplete but it's broken
+							Callback(
+								func(data imgui.InputTextCallbackData) int32 {
+									if len(candidates) == 0 {
+										return 0
+									}
+									// just wrap around
+									if autoCompleteIdx >= len(candidates) {
+										autoCompleteIdx = 0
+									}
+
+									// used by change handler
+									didAutoComplete = true
+
+									start := len(customDir)
+									// Delete previous auto complete
+									if lastAutoComplete != "" {
+										start -= len(lastAutoComplete)
+										data.DeleteBytes(start, len(lastAutoComplete))
+									} else if autoCompleteFile != "" { // delete partial input
+										start -= len(autoCompleteFile)
+										data.DeleteBytes(start, len(autoCompleteFile))
+									}
+
+									// Insert auto complete
+									lastAutoComplete = candidates[autoCompleteIdx].(string)
+									data.InsertBytes(start, []byte(lastAutoComplete))
+									autoCompleteIdx++
+
+									return 0
+								},
+							),
+					),
+				g.RangeBuilder("AutoComplete", candidates, func(i int, v any) g.Widget {
+					dir := v.(string)
+					return g.Label(dir)
+				}),
+			)
+		}, nil},
 
 		g.Dummy(0, 20),
 
@@ -505,6 +650,7 @@ func renderInstaller() g.Widget {
 		InfoModal("#insufficient-permissions", "Insufficient Permissions", "Permission denied. Please grant the installer permissions in the settings."),
 		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
 		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
+		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install.\nMake sure you select the base folder.\n\nHint: Discord snap is not supported. use flatpak or .deb"),
 		InfoModalExtra("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage, modalExtra),
 
 		UpdateModal(),
@@ -536,6 +682,18 @@ func loop() {
 	g.PushWindowPadding(48, 48)
 
 	g.SingleWindow().
+		RegisterKeyboardShortcuts(
+			g.WindowShortcut{Key: g.KeyUp, Callback: func() {
+				if radioIdx > 0 {
+					radioIdx--
+				}
+			}},
+			g.WindowShortcut{Key: g.KeyDown, Callback: func() {
+				if radioIdx < customChoiceIdx {
+					radioIdx++
+				}
+			}},
+		).
 		Layout(
 			g.Align(g.AlignCenter).To(
 				g.Style().SetFontSize(40).To(
