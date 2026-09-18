@@ -90,7 +90,7 @@ func main() {
 
 	if *installFlag || *updateFlag {
 		if !<-GithubDoneChan {
-			die("Not " + Ternary(*installFlag, "installing", "updating") + " as fetching release data failed")
+			die("Not " + Ternary(*installFlag, "installing", "updating") + " as fetching release data failed. If this issue persists, see https://vencord.dev/support")
 		}
 	}
 
@@ -195,7 +195,7 @@ func exitSuccess() {
 }
 
 func exitFailure() {
-	color.HiRed("❌ Failed!")
+	color.HiRed("❌ Failed! If this issue persists, see https://vencord.dev/support")
 	exit(1)
 }
 
