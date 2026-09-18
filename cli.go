@@ -278,6 +278,10 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 }
 
 func InstallLatestBuilds() error {
+	if IsDevInstall {
+		return nil
+	}
+
 	return installLatestBuilds()
 }
 
