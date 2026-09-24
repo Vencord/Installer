@@ -66,6 +66,10 @@ func (di *DiscordInstall) IsOpenAsar() (retBool bool) {
 func (di *DiscordInstall) InstallOpenAsar() error {
 	PreparePatch(di)
 
+	if di.isFlatpak {
+		return errors.New("OpenAsar is not supported on Flatpak installs. Flatpak mounts Discord's app directory read-only, so OpenAsar fails at startup and Discord never opens a window. Use Vencord without OpenAsar on Flatpak.")
+	}
+
 	dir := path.Join(di.appPath, "..")
 	asarFile, err := FindAsarFile(dir)
 	if err != nil {

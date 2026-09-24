@@ -109,6 +109,13 @@ func (di *DiscordInstall) patch() error {
 
 	PreparePatch(di)
 
+	if di.isFlatpak && di.IsOpenAsar() {
+		Log.Warn("This is a Flatpak and OpenAsar is installed. OpenAsar cannot work on Flatpak because the app directory is mounted read-only, so it is being removed first...")
+		if err := di.UninstallOpenAsar(); err != nil {
+			Log.Warn("Failed to remove OpenAsar:", err)
+		}
+	}
+
 	if di.isPatched {
 		Log.Info(di.path, "is already patched. Unpatching first...")
 		if err := di.unpatch(); err != nil {
