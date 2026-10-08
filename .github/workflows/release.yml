@@ -151,6 +151,7 @@ jobs:
           organization-id: "bdabc8d4-65e0-4f14-888c-42bed8317dcb"
           project-slug: "Installer"
           signing-policy-slug: "test-signing"
+          artifact-configuration-slug: "installer-zip"
           github-artifact-id: "${{ steps.upload-windows-artifact.outputs.artifact-id }}"
           wait-for-completion: true
           output-artifact-directory: windows-signed/
