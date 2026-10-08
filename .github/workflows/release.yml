@@ -145,7 +145,7 @@ jobs:
           path: build/*.exe
 
       - name: Submit Signpath Request
-        uses: signpath/github-action-submit-signing-request@v3
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
         with:
           api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
           organization-id: "bdabc8d4-65e0-4f14-888c-42bed8317dcb"
