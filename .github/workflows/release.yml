@@ -138,10 +138,29 @@ jobs:
           make ARCH=386 VERSION=${{ env.VERSION }}
 
       - name: Upload artifact
+        id: upload-windows-artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: build/*.exe
+
+      - name: Submit Signpath Request
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
+          organization-id: "bdabc8d4-65e0-4f14-888c-42bed8317dcb"
+          project-slug: "Installer"
+          signing-policy-slug: "test-signing"
+          github-artifact-id: "${{ steps.upload-windows-artifact.outputs.artifact-id }}"
+          wait-for-completion: true
+          output-artifact-directory: windows-signed/
+          parameters: |
+            version: ${{ env.VERSION }}
+
+      - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: VencordInstaller-windows
-          path: build/*.exe
+          path: windows-signed/*.exe
 
   release:
     runs-on: ubuntu-latest
