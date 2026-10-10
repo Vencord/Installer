@@ -10,10 +10,9 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	path "path/filepath"
 	"strings"
-
-	"github.com/ProtonMail/go-appdir"
 )
 
 var BaseDir string
@@ -30,7 +29,11 @@ func init() {
 		BaseDir = path.Join(dir, "..", "VencordData")
 	} else {
 		Log.Debug("Using UserConfig")
-		BaseDir = appdir.New("Vencord").UserConfig()
+		configDir := os.Getenv("XDG_CONFIG_HOME")
+		if configDir == "" {
+			configDir = filepath.Join(os.Getenv("HOME"), ".config")
+		}
+		BaseDir = path.Join(configDir, "Vencord")
 	}
 	FilesDir = path.Join(BaseDir, "dist")
 	if !ExistsFile(FilesDir) {
