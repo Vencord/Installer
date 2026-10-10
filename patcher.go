@@ -8,11 +8,12 @@ package main
 
 import (
 	"errors"
-	"github.com/ProtonMail/go-appdir"
 	"os"
 	"os/exec"
 	path "path/filepath"
 	"strings"
+
+	"github.com/ProtonMail/go-appdir"
 )
 
 var BaseDir string
@@ -44,18 +45,17 @@ func init() {
 }
 
 type DiscordInstall struct {
-	path             string // the base path
-	branch           string // canary / stable / ...
-	appPath          string // List of app folder to patch
-	isPatched        bool
-	isFlatpak        bool
-	isSystemElectron bool // Needs special care https://aur.archlinux.org/packages/discord_arch_electron
-	isOpenAsar       *bool
+	path          string // the base path
+	branch        string // canary / stable / ...
+	resourcesPath string // app-{VERSION}/resources
+	isPatched     bool
+	isFlatpak     bool
+	isOpenAsar    *bool
 }
 
 //region Patch
 
-func patchAppAsar(dir string, isSystemElectron bool) (err error) {
+func patchAppAsar(dir string) (err error) {
 	appAsar := path.Join(dir, "app.asar")
 	_appAsar := path.Join(dir, "_app.asar")
 
@@ -80,16 +80,6 @@ func patchAppAsar(dir string, isSystemElectron bool) (err error) {
 		return err
 	}
 	renamesDone = append(renamesDone, []string{appAsar, _appAsar})
-
-	if isSystemElectron {
-		from, to := appAsar+".unpacked", _appAsar+".unpacked"
-		Log.Debug("Renaming", from, "to", to)
-		err := os.Rename(from, to)
-		if err != nil {
-			return err
-		}
-		renamesDone = append(renamesDone, []string{from, to})
-	}
 
 	Log.Debug("Writing custom app.asar to", appAsar)
 	if err := WriteAppAsar(appAsar, Patcher); err != nil {
@@ -119,14 +109,8 @@ func (di *DiscordInstall) patch() error {
 		}
 	}
 
-	if di.isSystemElectron {
-		if err := patchAppAsar(di.path, true); err != nil {
-			return err
-		}
-	} else {
-		if err := patchAppAsar(path.Join(di.appPath, ".."), false); err != nil {
-			return err
-		}
+	if err := patchAppAsar(di.resourcesPath); err != nil {
+		return err
 	}
 
 	Log.Info("Successfully patched", di.path)
@@ -180,7 +164,7 @@ func (di *DiscordInstall) patch() error {
 
 // region Unpatch
 
-func unpatchAppAsar(dir string, isSystemElectron bool) (errOut error) {
+func unpatchAppAsar(dir string) (errOut error) {
 	appAsar := path.Join(dir, "app.asar")
 	appAsarTmp := path.Join(dir, "app.asar.tmp")
 	_appAsar := path.Join(dir, "_app.asar")
@@ -220,14 +204,6 @@ func unpatchAppAsar(dir string, isSystemElectron bool) (errOut error) {
 	} else {
 		renamesDone = append(renamesDone, []string{_appAsar, appAsar})
 	}
-
-	if isSystemElectron {
-		Log.Debug("Renaming", _appAsar+".unpacked", "to", appAsar+".unpacked")
-		if err := os.Rename(_appAsar+".unpacked", appAsar+".unpacked"); err != nil {
-			Log.Error(err.Error())
-			errOut = err
-		}
-	}
 	return
 }
 
@@ -236,14 +212,8 @@ func (di *DiscordInstall) unpatch() error {
 
 	PreparePatch(di)
 
-	if di.isSystemElectron {
-		if err := unpatchAppAsar(di.path, true); err != nil {
-			return err
-		}
-	} else {
-		if err := unpatchAppAsar(path.Join(di.appPath, ".."), false); err != nil {
-			return err
-		}
+	if err := unpatchAppAsar(di.resourcesPath); err != nil {
+		return err
 	}
 
 	Log.Info("Successfully unpatched", di.path)

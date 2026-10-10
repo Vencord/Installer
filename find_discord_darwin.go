@@ -29,7 +29,7 @@ func ParseDiscord(p, branch string) *DiscordInstall {
 	}
 
 	resources := path.Join(p, "/Contents/Resources")
-	if !ExistsFile(resources) {
+	if !isResourcesFolderValid(resources) {
 		return nil
 	}
 
@@ -37,14 +37,12 @@ func ParseDiscord(p, branch string) *DiscordInstall {
 		branch = GetBranch(strings.TrimSuffix(p, ".app"))
 	}
 
-	app := path.Join(resources, "app")
 	return &DiscordInstall{
-		path:             p,
-		branch:           branch,
-		appPath:          app,
-		isPatched:        ExistsFile(path.Join(resources, "_app.asar")),
-		isFlatpak:        false,
-		isSystemElectron: false,
+		path:          p,
+		branch:        branch,
+		resourcesPath: resources,
+		isPatched:     isResourcesFolderPatched(resources),
+		isFlatpak:     false,
 	}
 }
 

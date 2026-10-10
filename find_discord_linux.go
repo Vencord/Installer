@@ -72,22 +72,22 @@ func ParseDiscordNew(p, branch string, isFlatpak bool) *DiscordInstall {
 	}
 
 	isPatched := false
-	appPath := ""
+	resourcesPath := ""
 	for _, dir := range entries {
 		if dir.IsDir() && strings.HasPrefix(dir.Name(), "app-") {
 			resources := path.Join(p, dir.Name(), "resources")
 			if !ExistsFile(resources) {
 				continue
 			}
-			app := path.Join(resources, "app")
-			if app > appPath {
-				appPath = app
-				isPatched = ExistsFile(path.Join(resources, "_app.asar"))
+
+			if resources > resourcesPath {
+				resourcesPath = resources
+				isPatched = isResourcesFolderPatched(resources)
 			}
 		}
 	}
 
-	if appPath == "" {
+	if resourcesPath == "" {
 		return nil
 	}
 
@@ -96,12 +96,11 @@ func ParseDiscordNew(p, branch string, isFlatpak bool) *DiscordInstall {
 	}
 
 	return &DiscordInstall{
-		path:             p,
-		branch:           branch,
-		appPath:          appPath,
-		isPatched:        isPatched,
-		isFlatpak:        isFlatpak,
-		isSystemElectron: false,
+		path:          p,
+		branch:        branch,
+		resourcesPath: resourcesPath,
+		isPatched:     isPatched,
+		isFlatpak:     isFlatpak,
 	}
 }
 
@@ -119,27 +118,22 @@ func ParseDiscord(p, _ string) *DiscordInstall {
 	}
 
 	resources := path.Join(p, "resources")
-	app := path.Join(resources, "app")
 
-	isPatched, isSystemElectron := false, false
+	isPatched := false
 
-	if ExistsFile(resources) { // normal install
-		isPatched = ExistsFile(path.Join(resources, "_app.asar"))
-	} else if ExistsFile(path.Join(p, "app.asar")) { // System electron doesn't have resources folder
-		isSystemElectron = true
-		isPatched = ExistsFile(path.Join(p, "_app.asar.unpacked"))
+	if isResourcesFolderValid(resources) {
+		isPatched = isResourcesFolderPatched(resources)
 	} else {
 		// Log.Warn("Tried to parse invalid Location:", p)
 		return nil
 	}
 
 	return &DiscordInstall{
-		path:             p,
-		branch:           GetBranch(name),
-		appPath:          app,
-		isPatched:        isPatched,
-		isFlatpak:        needsFlatpakResolve,
-		isSystemElectron: isSystemElectron,
+		path:          p,
+		branch:        GetBranch(name),
+		resourcesPath: resources,
+		isPatched:     isPatched,
+		isFlatpak:     needsFlatpakResolve,
 	}
 }
 
