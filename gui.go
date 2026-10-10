@@ -40,10 +40,11 @@ var (
 	lastAutoComplete       string
 	didAutoComplete        bool
 
-	modalId      = 0
-	modalTitle   = "Oh No :("
-	modalMessage = "You should never see this"
-	modalExtra   = ""
+	modalId          = 0
+	modalTitle       = "Oh No :("
+	modalMessage     = "You should never see this"
+	modalExtra       = ""
+	modalSupportLink = ""
 
 	acceptedOpenAsar   bool
 	showedUpdatePrompt bool
@@ -125,7 +126,7 @@ func InstallLatestBuilds() (err error) {
 
 	err = installLatestBuilds()
 	if err != nil {
-		ShowModal("Failed to install the latest Vencord builds from GitHub", "If this issue persists, visit https://vencord.dev/support for help.", err.Error())
+		ShowErrorModal("Failed to install the latest Vencord builds from GitHub", err.Error(), "https://vencord.dev/support/#Failed-to-install-the-latest-Vencord-builds-from-GitHub")
 	}
 	return
 }
@@ -187,7 +188,7 @@ func handleErr(di *DiscordInstall, err error, action string) {
 		}
 	}
 
-	ShowModal("Failed to "+action+" this Install.", "If this issue persists, visit: https://vencord.dev/support", err.Error())
+	ShowErrorModal("Failed to "+action+" this Install.", err.Error(), "https://vencord.dev/support/#Failed-to-patch-this-Install")
 }
 
 func HandleScuffedInstall() {
@@ -310,6 +311,40 @@ func InfoModal(id, title, description string) g.Widget {
 
 func InfoModalExtra(id, title, description, extra string) g.Widget {
 	return RawInfoModal(id, title, description, extra, false)
+}
+
+func ErrorModal(id, title, error, supportLink string) g.Widget {
+	return g.Style().
+		SetStyle(g.StyleVarWindowPadding, 30, 30).
+		SetStyleFloat(g.StyleVarWindowRounding, 12).
+		To(
+			g.PopupModal(id).
+				Flags(g.WindowFlagsNoTitleBar|g.WindowFlagsAlwaysAutoResize).
+				Layout(
+					g.Style().SetFontSize(35).To(g.Label(title)),
+					g.Dummy(0, 5),
+					g.Style().SetFontSize(25).To(
+						g.Row(
+							g.Label("If this issue persists, visit"),
+							g.Style().
+								SetColor(g.StyleColorButton, DiscordBlue).
+								SetStyle(g.StyleVarFramePadding, 4, 4).
+								To(
+									g.Button("our support page").OnClick(func() {
+										g.OpenURL(supportLink)
+									}),
+								),
+						),
+					),
+					g.Dummy(0, 20),
+					g.Style().SetFontSize(20).To(g.Label("Error Information")),
+					g.Style().SetFontSize(18).To(g.Label(error)),
+					g.Dummy(0, 20),
+					g.Button("Ok").
+						OnClick(func() { g.CloseCurrentPopup() }).
+						Size(100, 30),
+				),
+		)
 }
 
 func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widget {
@@ -444,6 +479,14 @@ func ShowModal(title, desc, extra string) {
 	modalExtra = extra
 	modalId++
 	g.OpenPopup("#modal" + strconv.Itoa(modalId))
+}
+
+func ShowErrorModal(title, extra, supportLink string) {
+	modalTitle = title
+	modalExtra = extra
+	modalSupportLink = supportLink
+	modalId++
+	g.OpenPopup("#error-modal" + strconv.Itoa(modalId))
 }
 
 func renderInstaller() g.Widget {
@@ -652,7 +695,7 @@ func renderInstaller() g.Widget {
 		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
 		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install.\nMake sure you select the base folder.\n\nHint: Discord snap is not supported. use flatpak or .deb"),
 		InfoModalExtra("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage, modalExtra),
-
+		ErrorModal("#error-modal"+strconv.Itoa(modalId), modalTitle, modalExtra, modalSupportLink),
 		UpdateModal(),
 	}
 
