@@ -52,12 +52,34 @@ func FindDiscords() []any {
 		"/Applications",
 		path.Join(os.Getenv("HOME"), "Applications"),
 	}
+	supportBase := path.Join(os.Getenv("HOME"), "Library", "Application Support")
+
 	for branch, dirname := range macosNames {
+		foundInApps := false
+
 		for _, base := range bases {
 			p := path.Join(base, dirname)
 			if discord := ParseDiscord(p, branch); discord != nil {
 				Log.Debug("Found Discord Install at", p)
 				discords = append(discords, discord)
+				foundInApps = true
+			}
+		}
+
+		if !foundInApps {
+			branchDir := "discord" + branch
+			if branch == "stable" {
+				branchDir = "discord"
+			}
+
+			matches, err := path.Glob(path.Join(supportBase, branchDir, "app-*", dirname))
+			if err == nil {
+				for _, match := range matches {
+					if discord := ParseDiscord(match, branch); discord != nil {
+						Log.Debug("Found Discord Install at", match)
+						discords = append(discords, discord)
+					}
+				}
 			}
 		}
 	}

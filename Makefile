@@ -45,6 +45,7 @@ endif
 all: build
 
 build:
+	$(MAKE) -s clean
 	mkdir -p build
 
 ifeq ($(PLATFORM),darwin)
