@@ -140,28 +140,32 @@ func main() {
 		*switches[SliceIndex(choices, choice)] = true
 	}
 
+	var discord *DiscordInstall
 	var err error
 	var errSilent error
 	if install {
-		errSilent = PromptDiscord("patch", *locationFlag, *branchFlag).patch()
+		discord = PromptDiscord("patch", *locationFlag, *branchFlag)
+		errSilent = discord.patch()
 	} else if uninstall {
-		errSilent = PromptDiscord("unpatch", *locationFlag, *branchFlag).unpatch()
+		discord = PromptDiscord("unpatch", *locationFlag, *branchFlag)
+		errSilent = discord.unpatch()
 	} else if update {
 		Log.Info("Downloading latest Vencord files...")
-		err := installLatestBuilds()
+		err = installLatestBuilds()
 		Log.Info("Done!")
 		if err == nil {
-			errSilent = PromptDiscord("repair", *locationFlag, *branchFlag).patch()
+			discord = PromptDiscord("repair", *locationFlag, *branchFlag)
+			errSilent = discord.patch()
 		}
 	} else if installOpenAsar {
-		discord := PromptDiscord("patch", *locationFlag, *branchFlag)
+		discord = PromptDiscord("patch", *locationFlag, *branchFlag)
 		if !discord.IsOpenAsar() {
 			err = discord.InstallOpenAsar()
 		} else {
 			die("OpenAsar already installed")
 		}
 	} else if uninstallOpenAsar {
-		discord := PromptDiscord("patch", *locationFlag, *branchFlag)
+		discord = PromptDiscord("patch", *locationFlag, *branchFlag)
 		if discord.IsOpenAsar() {
 			err = discord.UninstallOpenAsar()
 		} else {
@@ -170,14 +174,68 @@ func main() {
 	}
 
 	if err != nil {
+		if discord != nil {
+			discord.ClearPendingRelaunch()
+		}
 		Log.Error(err)
 		exitFailure()
 	}
 	if errSilent != nil {
+		if discord != nil {
+			discord.ClearPendingRelaunch()
+		}
 		exitFailure()
 	}
 
+	if discord != nil {
+		handleCliPostPatchRelaunch(discord, interactive || (*locationFlag == "" && *branchFlag == ""))
+	}
+
 	exitSuccess()
+}
+
+func isStdinTerminal() bool {
+	info, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
+}
+
+func handleCliPostPatchRelaunch(di *DiscordInstall, canPrompt bool) {
+	name := branchDisplayName(di.branch)
+
+	if runtime.GOOS == "windows" {
+		relaunched, err := di.RelaunchKilled()
+		if err != nil {
+			Log.Warn("Failed to relaunch", name+":", err)
+		} else if relaunched {
+			Log.Info("Relaunched", name)
+		}
+		return
+	}
+
+	if !canPrompt || !isStdinTerminal() {
+		return
+	}
+
+	running := di.FindRunning()
+	if running == nil {
+		return
+	}
+
+	_, choice, err := (&promptui.Select{
+		Label: name + " is currently running. Would you like to relaunch it?",
+		Items: []string{"Yes", "No"},
+	}).Run()
+	handlePromptError(err)
+
+	if choice == "Yes" {
+		Log.Info("Relaunching", name+"...")
+		if err := di.Relaunch(running); err != nil {
+			Log.Warn("Failed to relaunch", name+":", err)
+		}
+	}
 }
 
 func exit(status int) {
