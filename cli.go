@@ -23,6 +23,39 @@ import (
 
 var discords []any
 var interactive = false
+var ansiSupported = false
+
+var (
+	styleBold       = color.New(color.Bold)
+	styleFaint      = color.New(color.Faint)
+	styleCyan       = color.New(color.FgCyan)
+	styleBoldCyan   = color.New(color.FgCyan, color.Bold)
+	styleGreen      = color.New(color.FgGreen)
+	styleRed        = color.New(color.FgRed)
+	styleYellow     = color.New(color.FgYellow)
+	styleBoldYellow = color.New(color.FgYellow, color.Bold)
+)
+
+func selectArrowIcon() string {
+	if runtime.GOOS == "windows" {
+		return ">"
+	}
+	return "▸"
+}
+
+func checkIcon() string {
+	if runtime.GOOS == "windows" {
+		return "v"
+	}
+	return "✔"
+}
+
+func crossIcon() string {
+	if runtime.GOOS == "windows" {
+		return "x"
+	}
+	return "✗"
+}
 
 func isValidBranch(branch string) bool {
 	switch branch {
@@ -39,8 +72,7 @@ func die(msg string) {
 }
 
 func main() {
-	InitGithubDownloader()
-	discords = FindDiscords()
+	ansiSupported = initAnsiColor()
 
 	// Used by log.go init func
 	flag.Bool("debug", false, "Enable debug info")
@@ -63,11 +95,17 @@ func main() {
 	}
 
 	if *versionFlag {
-		fmt.Println("Vencord Installer Cli", buildinfo.InstallerTag, "("+buildinfo.InstallerGitHash+")")
+		fmt.Println(
+			styleBoldCyan.Sprint("Vencord Installer Cli"),
+			styleGreen.Sprint(buildinfo.InstallerTag),
+			styleFaint.Sprint("("+buildinfo.InstallerGitHash+")"),
+		)
 		fmt.Println("Copyright (C) 2023 Vendicated and Vencord contributors")
 		fmt.Println("License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.")
 		return
 	}
+
+	InitGithubDownloader()
 
 	if *updateSelfFlag {
 		if !<-SelfUpdateCheckDoneChan {
@@ -117,10 +155,7 @@ func main() {
 			"Update Vencord Installer",
 			"Quit",
 		}
-		_, choice, err := (&promptui.Select{
-			Label: "What would you like to do? (Press Enter to confirm)",
-			Items: choices,
-		}).Run()
+		_, choice, err := runSelect("What would you like to do?", choices)
 		handlePromptError(err)
 
 		switch choice {
@@ -224,10 +259,10 @@ func handleCliPostPatchRelaunch(di *DiscordInstall, canPrompt bool) {
 		return
 	}
 
-	_, choice, err := (&promptui.Select{
-		Label: name + " is currently running. Would you like to relaunch it?",
-		Items: []string{"Yes", "No"},
-	}).Run()
+	_, choice, err := runSelect(
+		name+" is currently running. Would you like to relaunch it?",
+		[]string{"Yes", "No"},
+	)
 	handlePromptError(err)
 
 	if choice == "Yes" {
@@ -248,12 +283,20 @@ func exit(status int) {
 }
 
 func exitSuccess() {
-	color.HiGreen("✔ Success!")
+	if runtime.GOOS == "windows" {
+		color.HiGreen("Success!")
+	} else {
+		color.HiGreen("✔ Success!")
+	}
 	exit(0)
 }
 
 func exitFailure() {
-	color.HiRed("❌ Failed! If this issue persists, see https://vencord.dev/support")
+	if runtime.GOOS == "windows" {
+		color.HiRed("Failed! If this issue persists, see https://vencord.dev/support")
+	} else {
+		color.HiRed("✗ Failed! If this issue persists, see https://vencord.dev/support")
+	}
 	exit(1)
 }
 
@@ -302,21 +345,10 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 		die(dir + " is not a valid Discord install. Hint: snap is not supported")
 	}
 
-	items := SliceMap(discords, func(d any) string {
-		install := d.(*DiscordInstall)
-		//goland:noinspection GoDeprecation
-		return fmt.Sprintf("%s - %s%s", strings.Title(install.branch), install.path, Ternary(install.isPatched, " [Vencord Installed]", ""))
-	})
-	items = append(items, "Custom Location")
+	idx := promptDiscordSelect(action, discords)
 
-	_, choice, err := (&promptui.Select{
-		Label: "Select Discord install to " + action + " (Press Enter to confirm)",
-		Items: items,
-	}).Run()
-	handlePromptError(err)
-
-	if choice != "Custom Location" {
-		selected := discords[SliceIndex(items, choice)].(*DiscordInstall)
+	if idx < len(discords) {
+		selected := discords[idx].(*DiscordInstall)
 		discords = FindDiscords()
 		if refreshed, _ := findMatchingInstall(discords, selected); refreshed != nil {
 			return refreshed
@@ -325,9 +357,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 	}
 
 	for {
-		custom, err := (&promptui.Prompt{
-			Label: "Custom Discord Location",
-		}).Run()
+		custom, err := runPrompt("Custom Discord Location")
 		handlePromptError(err)
 
 		if di := ParseDiscord(custom, ""); di != nil {
@@ -342,6 +372,304 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 	}
 }
 
+type discordSelectItem struct {
+	Active   string
+	Inactive string
+	Selected string
+	Details  string
+}
+
+func truncateEnd(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	if maxLen <= 0 {
+		return ""
+	}
+	if maxLen <= 3 {
+		return string(runes[:maxLen])
+	}
+	return string(runes[:maxLen-3]) + "..."
+}
+
+func truncateMiddle(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	if maxLen <= 3 {
+		return truncateEnd(s, maxLen)
+	}
+	remaining := maxLen - 3
+	left := remaining / 2
+	right := remaining - left
+	return string(runes[:left]) + "..." + string(runes[len(runes)-right:])
+}
+
+func findWrapBreak(runes []rune, limit int) int {
+	if limit >= len(runes) {
+		return len(runes)
+	}
+
+	minBreak := limit / 2
+	for i := limit - 1; i >= minBreak; i-- {
+		if runes[i] == '/' || runes[i] == '\\' || runes[i] == ' ' {
+			return i + 1
+		}
+	}
+
+	return limit
+}
+
+func wrapDetailLine(label, value string, maxWidth int, valueStyle *color.Color) string {
+	prefix := "  " + label + ": "
+	continuationIndent := "    "
+	runes := []rune(value)
+
+	styleVal := func(s string) string {
+		if valueStyle != nil {
+			return valueStyle.Sprint(s)
+		}
+		return s
+	}
+
+	if len([]rune(prefix))+len(runes) <= maxWidth {
+		return "  " + styleFaint.Sprint(label+":") + " " + styleVal(value)
+	}
+
+	var lines []string
+	firstLimit := maxWidth - len([]rune(prefix))
+	if firstLimit >= 8 {
+		end := findWrapBreak(runes, firstLimit)
+		lines = append(lines, "  "+styleFaint.Sprint(label+":")+" "+styleVal(string(runes[:end])))
+		runes = runes[end:]
+	} else {
+		lines = append(lines, styleFaint.Sprint(truncateEnd("  "+label+":", maxWidth)))
+	}
+
+	contLimit := maxWidth - len([]rune(continuationIndent))
+	if contLimit < 1 {
+		contLimit = 1
+	}
+
+	for len(runes) > 0 {
+		end := findWrapBreak(runes, contLimit)
+		lines = append(lines, continuationIndent+styleVal(string(runes[:end])))
+		runes = runes[end:]
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+func selectLayout(itemCount int, reserveHeight int) (maxWidth, maxLabelWidth, maxItemWidth, size int) {
+	width, height := getTerminalSize()
+
+	maxWidth = width - 1
+	if maxWidth < 20 {
+		maxWidth = 20
+	}
+
+	maxLabelWidth = maxWidth - 4
+	if maxLabelWidth < 10 {
+		maxLabelWidth = 10
+	}
+
+	maxItemWidth = maxWidth - 4
+	if maxItemWidth < 10 {
+		maxItemWidth = 10
+	}
+
+	maxVisible := height - reserveHeight
+	if maxVisible < 5 {
+		maxVisible = 5
+	}
+
+	size = itemCount
+	if size > maxVisible {
+		size = maxVisible
+	}
+
+	return maxWidth, maxLabelWidth, maxItemWidth, size
+}
+
+func buildSelectTemplates(helpText string, labelField, activeField, inactiveField, selectedField string) *promptui.SelectTemplates {
+	templates := &promptui.SelectTemplates{
+		Help: fmt.Sprintf("{{ %q }}", styleFaint.Sprint(helpText)),
+	}
+
+	if ansiSupported {
+		templates.Label = fmt.Sprintf("%s {{ %s | bold }}: ", styleCyan.Sprint("?"), labelField)
+		templates.Active = fmt.Sprintf("%s {{ %s }}", styleBoldCyan.Sprint(selectArrowIcon()), activeField)
+		templates.Inactive = fmt.Sprintf("  {{ %s }}", inactiveField)
+		templates.Selected = fmt.Sprintf("%s {{ %s | faint }}", styleGreen.Sprint(checkIcon()), selectedField)
+	} else {
+		templates.Label = fmt.Sprintf("? {{ %s }}: ", labelField)
+		templates.Active = fmt.Sprintf("> {{ %s }}", activeField)
+		templates.Inactive = fmt.Sprintf("  {{ %s }}", inactiveField)
+		templates.Selected = fmt.Sprintf("  {{ %s }}", selectedField)
+	}
+
+	return templates
+}
+
+func runSelect(label string, items []string) (int, string, error) {
+	maxWidth, maxLabelWidth, maxItemWidth, size := selectLayout(len(items), 6)
+
+	displayItems := SliceMap(items, func(item string) string {
+		return truncateEnd(item, maxItemWidth)
+	})
+
+	helpText := truncateEnd("Use arrow keys to navigate, Enter to confirm", maxWidth)
+	activeField := "."
+	if ansiSupported {
+		activeField = ". | cyan | bold"
+	}
+
+	sel := &promptui.Select{
+		Label:     truncateEnd(label, maxLabelWidth),
+		Items:     displayItems,
+		Size:      size,
+		Templates: buildSelectTemplates(helpText, ".", activeField, ".", "."),
+	}
+
+	Log.Pause()
+	idx, _, err := sel.Run()
+	Log.Resume()
+
+	if err != nil {
+		return 0, "", err
+	}
+
+	return idx, items[idx], nil
+}
+
+func runPrompt(label string) (string, error) {
+	width, _ := getTerminalSize()
+	maxLabelWidth := width - 5
+	if maxLabelWidth < 10 {
+		maxLabelWidth = 10
+	}
+
+	templates := &promptui.PromptTemplates{}
+	if ansiSupported {
+		templates.Prompt = fmt.Sprintf("%s {{ . | bold }}: ", styleCyan.Sprint("?"))
+		templates.Valid = fmt.Sprintf("%s {{ . | bold }}: ", styleGreen.Sprint(checkIcon()))
+		templates.Invalid = fmt.Sprintf("%s {{ . | bold }}: ", styleRed.Sprint(crossIcon()))
+		templates.Success = "{{ . | faint }}: "
+	} else {
+		templates.Prompt = "? {{ . }}: "
+		templates.Valid = "? {{ . }}: "
+		templates.Invalid = "! {{ . }}: "
+		templates.Success = "{{ . }}: "
+	}
+
+	prompt := &promptui.Prompt{
+		Label:     truncateEnd(label, maxLabelWidth),
+		Templates: templates,
+	}
+
+	Log.Pause()
+	res, err := prompt.Run()
+	Log.Resume()
+
+	return res, err
+}
+
+func formatDiscordSelectItem(install *DiscordInstall, maxItemWidth, maxDetailWidth int) (discordSelectItem, bool) {
+	branch := branchDisplayName(install.branch)
+	sep := " - "
+	badge := ""
+	if install.isPatched {
+		badge = " [Vencord Installed]"
+	}
+
+	full := branch + sep + install.path + badge
+	if len([]rune(full)) <= maxItemWidth {
+		return discordSelectItem{
+			Active:   styleBoldCyan.Sprint(branch) + styleCyan.Sprint(sep+install.path) + styleGreen.Sprint(badge),
+			Inactive: styleBold.Sprint(branch) + styleFaint.Sprint(sep+install.path) + styleGreen.Sprint(badge),
+			Selected: full,
+		}, false
+	}
+
+	availPath := maxItemWidth - len([]rune(branch)) - len([]rune(sep)) - len([]rune(badge))
+	var active, inactive, selected string
+	suffixCut := false
+	if availPath >= 10 {
+		shortPath := truncateMiddle(install.path, availPath)
+		active = styleBoldCyan.Sprint(branch) + styleCyan.Sprint(sep+shortPath) + styleGreen.Sprint(badge)
+		inactive = styleBold.Sprint(branch) + styleFaint.Sprint(sep+shortPath) + styleGreen.Sprint(badge)
+		selected = branch + sep + shortPath + badge
+	} else {
+		truncated := truncateEnd(full, maxItemWidth)
+		active = styleBoldCyan.Sprint(truncated)
+		inactive = truncated
+		selected = truncated
+		suffixCut = install.isPatched
+	}
+
+	details := wrapDetailLine("Path", install.path, maxDetailWidth, nil)
+	if suffixCut {
+		details += "\n" + wrapDetailLine("Status", "Vencord Installed", maxDetailWidth, styleGreen)
+	}
+
+	return discordSelectItem{
+		Active:   active,
+		Inactive: inactive,
+		Selected: selected,
+		Details:  details,
+	}, true
+}
+
+func promptDiscordSelect(action string, installs []any) int {
+	maxWidth, maxLabelWidth, maxItemWidth, _ := selectLayout(len(installs)+1, 6)
+
+	anyTruncated := false
+	items := make([]discordSelectItem, 0, len(installs)+1)
+	for _, d := range installs {
+		install := d.(*DiscordInstall)
+		item, truncated := formatDiscordSelectItem(install, maxItemWidth, maxWidth)
+		if truncated {
+			anyTruncated = true
+		}
+		items = append(items, item)
+	}
+
+	customLabel := truncateEnd("Custom Location", maxItemWidth)
+	items = append(items, discordSelectItem{
+		Active:   styleBoldCyan.Sprint(customLabel),
+		Inactive: customLabel,
+		Selected: customLabel,
+	})
+
+	reserveHeight := 6
+	if anyTruncated {
+		reserveHeight = 10
+	}
+	_, _, _, size := selectLayout(len(items), reserveHeight)
+
+	helpText := truncateEnd("Use arrow keys to navigate, Enter to confirm", maxWidth)
+	templates := buildSelectTemplates(helpText, ".", ".Active", ".Inactive", ".Selected")
+	if anyTruncated {
+		templates.Details = "\n{{ .Details }}"
+	}
+
+	sel := &promptui.Select{
+		Label:     truncateEnd("Select Discord install to "+action, maxLabelWidth),
+		Items:     items,
+		Size:      size,
+		Templates: templates,
+	}
+
+	Log.Pause()
+	idx, _, err := sel.Run()
+	Log.Resume()
+	handlePromptError(err)
+
+	return idx
+}
+
 func InstallLatestBuilds() error {
 	if IsDevInstall {
 		return nil
@@ -351,8 +679,8 @@ func InstallLatestBuilds() error {
 }
 
 func HandleScuffedInstall() {
-	fmt.Println("Hold On!")
-	fmt.Println("You have a broken Discord Install.")
-	fmt.Println("Please reinstall Discord before proceeding!")
-	fmt.Println("Otherwise, Vencord will likely not work.")
+	_, _ = styleBoldYellow.Println("Hold On!")
+	_, _ = styleYellow.Println("You have a broken Discord Install.")
+	_, _ = styleYellow.Println("Please reinstall Discord before proceeding!")
+	_, _ = styleYellow.Println("Otherwise, Vencord will likely not work.")
 }
