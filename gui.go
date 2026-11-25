@@ -246,6 +246,22 @@ func main() {
 	win.Run(loop)
 }
 
+func retryGithubFetch() {
+	if !githubDone.CompareAndSwap(true, false) {
+		return
+	}
+
+	FetchGithubRelease()
+	doneCh := GithubDoneChan
+	g.Update()
+
+	go func() {
+		<-doneCh
+		githubDone.Store(true)
+		g.Update()
+	}()
+}
+
 func refreshDiscords() {
 	prev := getSelectedDiscord()
 	wasCustom := showCustomLocation && radioIdx == customChoiceIdx
@@ -1409,26 +1425,32 @@ func loop() {
 								ThemeBgVisualRed,
 								"Failed to fetch release info from GitHub",
 								"Vencord build downloads are currently unavailable.",
-								g.Custom(func() {
-									labelFont := fontRegular(20)
-									linkFont := fontSemiBold(20)
-									padX := scaled(3)
-									padY := scaled(2)
-									var rowH float32
-									g.Style().SetFont(labelFont).To(g.Custom(func() {
-										_, textH := g.CalcTextSize("Ag")
-										rowH = textH + padY*2
-									})).Build()
-									renderAlignedRow(
-										rowH,
-										scaled(2),
-										rowAlignedLabel("If this issue persists, visit", ThemeFg1, labelFont),
-										rowAlignedLink("our support page", "https://vencord.dev/support", linkFont, padX, padY, func() {
-											g.OpenURL("https://vencord.dev/support")
-										}),
-										rowAlignedLabel("for help.", ThemeFg1, labelFont),
-									).Build()
-								}),
+								g.Column(
+									g.Custom(func() {
+										labelFont := fontRegular(20)
+										linkFont := fontSemiBold(20)
+										padX := scaled(3)
+										padY := scaled(2)
+										var rowH float32
+										g.Style().SetFont(labelFont).To(g.Custom(func() {
+											_, textH := g.CalcTextSize("Ag")
+											rowH = textH + padY*2
+										})).Build()
+										renderAlignedRow(
+											rowH,
+											scaled(2),
+											rowAlignedLabel("If this issue persists, visit", ThemeFg1, labelFont),
+											rowAlignedLink("our support page", "https://vencord.dev/support", linkFont, padX, padY, func() {
+												g.OpenURL("https://vencord.dev/support")
+											}),
+											rowAlignedLabel("for help.", ThemeFg1, labelFont),
+										).Build()
+									}),
+									g.Dummy(0, scaled(8)),
+									g.Style().SetFont(fontSemiBold(18)).To(
+										accentButton("Retry", ThemeAccentRed, scaled(115), scaled(34), false, "Retry fetching release info from GitHub", retryGithubFetch),
+									),
+								),
 							),
 							g.Dummy(0, scaled(14)),
 						)

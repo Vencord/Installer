@@ -83,15 +83,9 @@ func GetGithubRelease(url, fallbackUrl string) (*GithubRelease, error) {
 	return &data, nil
 }
 
-func InitGithubDownloader() {
+func FetchGithubRelease() {
 	GithubDoneChan = make(chan bool, 1)
-
-	IsDevInstall = os.Getenv("VENCORD_DEV_INSTALL") == "1"
-	Log.Debug("Is Dev Install: ", IsDevInstall)
-	if IsDevInstall {
-		GithubDoneChan <- true
-		return
-	}
+	GithubError = nil
 
 	go func() {
 		// Make sure UI updates once the request either finished or failed
@@ -112,6 +106,18 @@ func InitGithubDownloader() {
 		Log.Debug("Finished fetching GitHub Data")
 		Log.Debug("Latest hash is", LatestHash, "Local Install is", Ternary(LatestHash == InstalledHash, "up to date!", "outdated!"))
 	}()
+}
+
+func InitGithubDownloader() {
+	IsDevInstall = os.Getenv("VENCORD_DEV_INSTALL") == "1"
+	Log.Debug("Is Dev Install: ", IsDevInstall)
+	if IsDevInstall {
+		GithubDoneChan = make(chan bool, 1)
+		GithubDoneChan <- true
+		return
+	}
+
+	FetchGithubRelease()
 
 	// Check hash of installed version if exists
 	f, err := os.Open(Patcher)

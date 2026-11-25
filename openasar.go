@@ -99,7 +99,7 @@ func (di *DiscordInstall) InstallOpenAsar() error {
 func (di *DiscordInstall) UninstallOpenAsar() error {
 	PreparePatch(di)
 
-	dir := path.Join(di.resourcesPath, "..")
+	dir := di.resourcesPath
 	// .original is our old name
 	// OpenAsar's updater uses .backup, so we now also use that - .original is deprecated
 	for _, file := range []string{path.Join(dir, "app.asar.backup"), path.Join(dir, "app.asar.original")} {
