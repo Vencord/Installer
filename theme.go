@@ -14,8 +14,8 @@ import (
 	"math"
 	"runtime"
 
+	"github.com/AllenDang/cimgui-go/imgui"
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/imgui-go"
 )
 
 //go:embed fonts/Inter-Regular.ttf
@@ -72,8 +72,7 @@ const (
 )
 
 var (
-	zoomScale    float32 = defaultZoomScale
-	uiPixelScale float32 = 1.0
+	zoomScale float32 = defaultZoomScale
 
 	interRegular  *g.FontInfo
 	interSemiBold *g.FontInfo
@@ -91,73 +90,29 @@ func scaled(v float32) float32 {
 	return snap(v * zoomScale)
 }
 
-func setupDefaultFont() {
-	g.SetDefaultFontFromBytes(interRegularBytes, 20)
-}
-
 func initFonts() {
-	syncPixelScale()
-	basePx := snap(20 * uiPixelScale)
-	interRegular = g.AddFontFromBytes("Inter-Regular", interRegularBytes, basePx)
-	interSemiBold = g.AddFontFromBytes("Inter-SemiBold", interSemiBoldBytes, basePx)
-
-	// Pre-register the initial font sizes so the first rendered frame uses crisp Inter immediately.
-	prewarmZoomFonts()
+	atlas := g.Context.FontAtlas
+	atlas.SetDefaultFontFromBytes(interRegularBytes)
+	atlas.SetDefaultFontSize(20)
+	interRegular = atlas.AddFontFromBytes("Inter-Regular", interRegularBytes)
+	interSemiBold = atlas.AddFontFromBytes("Inter-SemiBold", interSemiBoldBytes)
 }
 
-func prewarmZoomFonts() {
-	for _, size := range []float32{18, 20, 24, 28, 30, 40} {
-		_ = fontRegular(size)
-	}
-	for _, size := range []float32{18, 20, 28, 30, 40} {
-		_ = fontSemiBold(size)
-	}
+type textFont struct {
+	face *g.FontInfo
+	size float32
 }
 
-func syncPixelScale() {
-	scale := float32(1.0)
-	// On Windows giu already multiplies font sizes by GetContentScale inside rebuildFontAtlas.
-	if runtime.GOOS != "windows" {
-		if platform := g.Context.GetPlatform(); platform != nil {
-			disp := platform.DisplaySize()
-			fb := platform.FramebufferSize()
-			if disp[0] > 0 && fb[0] > 0 {
-				if s := fb[0] / disp[0]; s > 0.5 && s <= 4.0 {
-					scale = s
-				}
-			}
-		}
-	}
-
-	if math.Abs(float64(scale-uiPixelScale)) > 0.01 {
-		uiPixelScale = scale
-		cardHeights = map[string]float32{}
-	}
-	imgui.CurrentIO().SetFontGlobalScale(1.0 / uiPixelScale)
+func (f textFont) style() *g.StyleSetter {
+	return g.Style().SetFont(f.face).SetFontSize(scaled(f.size))
 }
 
-// fontRegular returns Inter Regular rasterized natively at the exact zoomed physical pixel size.
-func fontRegular(logicalSize float32) *g.FontInfo {
-	if interRegular == nil {
-		return nil
-	}
-	px := snap(logicalSize * zoomScale * uiPixelScale)
-	if px < 8 {
-		px = 8
-	}
-	return interRegular.SetSize(px)
+func fontRegular(size float32) textFont {
+	return textFont{interRegular, size}
 }
 
-// fontSemiBold returns Inter SemiBold rasterized natively at the exact zoomed physical pixel size.
-func fontSemiBold(logicalSize float32) *g.FontInfo {
-	if interSemiBold == nil {
-		return nil
-	}
-	px := snap(logicalSize * zoomScale * uiPixelScale)
-	if px < 8 {
-		px = 8
-	}
-	return interSemiBold.SetSize(px)
+func fontSemiBold(size float32) textFont {
+	return textFont{interSemiBold, size}
 }
 
 // setZoomScale updates zoomScale clamped to [minZoomScale, maxZoomScale] and rounded to 2 decimal places.
@@ -177,7 +132,6 @@ func setZoomScale(next float32) bool {
 
 func applyZoom() {
 	cardHeights = map[string]float32{}
-	prewarmZoomFonts()
 	g.Update()
 }
 
@@ -215,88 +169,95 @@ func accentActive(c color.RGBA) color.RGBA {
 
 // applyTheme applies the vencord.dev dark theme globally to ImGui and the master window.
 func applyTheme(w *g.MasterWindow) {
-	w.SetBgColor(ThemeBg1)
-
-	style := imgui.CurrentStyle()
-	set := func(id imgui.StyleColorID, col color.Color) {
-		style.SetColor(id, g.ToVec4Color(col))
+	// giu now applies monitor DPI to all platforms. On macOS and Linux the
+	// installer uses window coordinates and ImGui handles framebuffer density.
+	if runtime.GOOS != "windows" {
+		style := imgui.NewStyle()
+		imgui.CurrentContext().SetStyle(*style)
+		style.Destroy()
 	}
 
+	w.SetBgColor(ThemeBg1)
+
+	style := g.Style()
+	set := style.SetColor
+
 	// Text
-	set(imgui.StyleColorText, ThemeFg0)
-	set(imgui.StyleColorTextDisabled, ThemeGrey0)
-	set(imgui.StyleColorTextSelectedBg, ThemeSelection)
+	set(g.StyleColorText, ThemeFg0)
+	set(g.StyleColorTextDisabled, ThemeGrey0)
+	set(g.StyleColorTextSelectedBg, ThemeSelection)
 
 	// Window & surface backgrounds
-	set(imgui.StyleColorWindowBg, ThemeBg1)
-	set(imgui.StyleColorChildBg, ThemeBgCurrentWord)
-	set(imgui.StyleColorPopupBg, ThemeBg0)
-	set(imgui.StyleColorMenuBarBg, ThemeBg0)
+	set(g.StyleColorWindowBg, ThemeBg1)
+	set(g.StyleColorChildBg, ThemeBgCurrentWord)
+	set(g.StyleColorPopupBg, ThemeBg0)
+	set(g.StyleColorMenuBarBg, ThemeBg0)
 
 	// Borders & separators
-	set(imgui.StyleColorBorder, ThemeFg0Muted2)
-	set(imgui.StyleColorBorderShadow, color.RGBA{0, 0, 0, 0})
-	set(imgui.StyleColorSeparator, ThemeFg0Muted2)
-	set(imgui.StyleColorSeparatorHovered, ThemeAccentPurple)
-	set(imgui.StyleColorSeparatorActive, ThemeAccentPurple)
+	set(g.StyleColorBorder, ThemeFg0Muted2)
+	set(g.StyleColorBorderShadow, color.RGBA{0, 0, 0, 0})
+	set(g.StyleColorSeparator, ThemeFg0Muted2)
+	set(g.StyleColorSeparatorHovered, ThemeAccentPurple)
+	set(g.StyleColorSeparatorActive, ThemeAccentPurple)
 
 	// Frames (inputs, checkboxes, radio circles)
-	set(imgui.StyleColorFrameBg, ThemeBg3)
-	set(imgui.StyleColorFrameBgHovered, ThemeBg5)
-	set(imgui.StyleColorFrameBgActive, ThemeBgCurrentWord)
+	set(g.StyleColorFrameBg, ThemeBg3)
+	set(g.StyleColorFrameBgHovered, ThemeBg5)
+	set(g.StyleColorFrameBgActive, ThemeBgCurrentWord)
 
 	// Title bars
-	set(imgui.StyleColorTitleBg, ThemeBg0)
-	set(imgui.StyleColorTitleBgActive, ThemeBg0)
-	set(imgui.StyleColorTitleBgCollapsed, ThemeBgDim)
+	set(g.StyleColorTitleBg, ThemeBg0)
+	set(g.StyleColorTitleBgActive, ThemeBg0)
+	set(g.StyleColorTitleBgCollapsed, ThemeBgDim)
 
 	// Scrollbars
-	set(imgui.StyleColorScrollbarBg, withAlpha(ThemeBg0, 0x80))
-	set(imgui.StyleColorScrollbarGrab, ThemeBg3)
-	set(imgui.StyleColorScrollbarGrabHovered, ThemeBg5)
-	set(imgui.StyleColorScrollbarGrabActive, ThemeGrey0)
+	set(g.StyleColorScrollbarBg, withAlpha(ThemeBg0, 0x80))
+	set(g.StyleColorScrollbarGrab, ThemeBg3)
+	set(g.StyleColorScrollbarGrabHovered, ThemeBg5)
+	set(g.StyleColorScrollbarGrabActive, ThemeGrey0)
 
 	// Interactive controls (checkmarks, sliders, default secondary buttons)
-	set(imgui.StyleColorCheckMark, ThemeAccentPurple)
-	set(imgui.StyleColorSliderGrab, ThemeAccentPurple)
-	set(imgui.StyleColorSliderGrabActive, ThemeFg1)
+	set(g.StyleColorCheckMark, ThemeAccentPurple)
+	set(g.StyleColorSliderGrab, ThemeAccentPurple)
+	set(g.StyleColorSliderGrabActive, ThemeFg1)
 
-	set(imgui.StyleColorButton, ThemeBg3)
-	set(imgui.StyleColorButtonHovered, ThemeBg5)
-	set(imgui.StyleColorButtonActive, ThemeBgCurrentWord)
+	set(g.StyleColorButton, ThemeBg3)
+	set(g.StyleColorButtonHovered, ThemeBg5)
+	set(g.StyleColorButtonActive, ThemeBgCurrentWord)
 
 	// Headers & selectables
-	set(imgui.StyleColorHeader, ThemeBg3)
-	set(imgui.StyleColorHeaderHovered, ThemeBg5)
-	set(imgui.StyleColorHeaderActive, withAlpha(ThemeAccentPurple, 0x45))
+	set(g.StyleColorHeader, ThemeBg3)
+	set(g.StyleColorHeaderHovered, ThemeBg5)
+	set(g.StyleColorHeaderActive, withAlpha(ThemeAccentPurple, 0x45))
 
 	// Resize grips
-	set(imgui.StyleColorResizeGrip, withAlpha(ThemeAccentPurple, 0x40))
-	set(imgui.StyleColorResizeGripHovered, withAlpha(ThemeAccentPurple, 0x99))
-	set(imgui.StyleColorResizeGripActive, ThemeAccentPurple)
+	set(g.StyleColorResizeGrip, withAlpha(ThemeAccentPurple, 0x40))
+	set(g.StyleColorResizeGripHovered, withAlpha(ThemeAccentPurple, 0x99))
+	set(g.StyleColorResizeGripActive, ThemeAccentPurple)
 
 	// Tabs
-	set(imgui.StyleColorTab, ThemeBg0)
-	set(imgui.StyleColorTabHovered, ThemeBg5)
-	set(imgui.StyleColorTabActive, ThemeBg3)
-	set(imgui.StyleColorTabUnfocused, ThemeBg0)
-	set(imgui.StyleColorTabUnfocusedActive, ThemeBgCurrentWord)
+	set(g.StyleColorTab, ThemeBg0)
+	set(g.StyleColorTabHovered, ThemeBg5)
+	set(g.StyleColorTabActive, ThemeBg3)
+	set(g.StyleColorTabUnfocused, ThemeBg0)
+	set(g.StyleColorTabUnfocusedActive, ThemeBgCurrentWord)
 
 	// Plots & tables
-	set(imgui.StyleColorPlotLines, ThemeAccentBlue)
-	set(imgui.StyleColorPlotLinesHovered, ThemeAccentPurple)
-	set(imgui.StyleColorPlotHistogram, ThemeAccentYellow)
-	set(imgui.StyleColorPlotHistogramHovered, ThemeAccentOrange)
-	set(imgui.StyleColorTableHeaderBg, ThemeBg0)
-	set(imgui.StyleColorTableBorderStrong, ThemeFg0Muted)
-	set(imgui.StyleColorTableBorderLight, ThemeFg0Muted2)
+	set(g.StyleColorPlotLines, ThemeAccentBlue)
+	set(g.StyleColorPlotLinesHovered, ThemeAccentPurple)
+	set(g.StyleColorPlotHistogram, ThemeAccentYellow)
+	set(g.StyleColorPlotHistogramHovered, ThemeAccentOrange)
+	set(g.StyleColorTableHeaderBg, ThemeBg0)
+	set(g.StyleColorTableBorderStrong, ThemeFg0Muted)
+	set(g.StyleColorTableBorderLight, ThemeFg0Muted2)
 
 	// Navigation & modal dimming
-	set(imgui.StyleColorDragDropTarget, ThemeAccentYellow)
-	set(imgui.StyleColorNavHighlight, ThemeAccentPurple)
-	set(imgui.StyleColorNavWindowingHighlight, ThemeFg1)
-	set(imgui.StyleColorNavWindowingDimBg, ThemeModalDimBg)
-	set(imgui.StyleColorModalWindowDimBg, ThemeModalDimBg)
+	set(g.StyleColorDragDropTarget, ThemeAccentYellow)
+	set(g.StyleColorID(imgui.ColNavCursor), ThemeAccentPurple)
+	set(g.StyleColorNavWindowingHighlight, ThemeFg1)
+	set(g.StyleColorNavWindowingDimBg, ThemeModalDimBg)
+	set(g.StyleColorModalWindowDimBg, ThemeModalDimBg)
+	w.SetStyle(style)
 }
 
 // pushGlobalStyleVars applies consistent vencord.dev rounding, border, and spacing vars for the frame.
@@ -374,7 +335,7 @@ func buildInlineActionLink(label, tip string, padX, padY float32, onClick func()
 		SetStyle(g.StyleVarFramePadding, padX, padY).
 		To(g.Custom(func() {
 			g.Button(label).OnClick(onClick).Build()
-			width = imgui.GetItemRectSize().X
+			width = imgui.ItemRectSize().X
 			if g.IsItemHovered() {
 				g.SetMouseCursor(g.MouseCursorHand)
 				if tip != "" {
@@ -417,13 +378,12 @@ func renderAlignedRow(rowH float32, itemGap float32, items ...alignedRowItem) g.
 	})
 }
 
-func rowAlignedLabel(text string, col color.Color, font *g.FontInfo) alignedRowItem {
+func rowAlignedLabel(text string, col color.Color, font textFont) alignedRowItem {
 	return alignedRowItem{
 		render: func(x, rowY, rowH float32) float32 {
 			var itemW float32
-			g.Style().
+			font.style().
 				SetColor(g.StyleColorText, col).
-				SetFont(font).
 				To(g.Custom(func() {
 					_, textH := g.CalcTextSize(text)
 					y := snap(rowY + (rowH-textH)/2)
@@ -432,19 +392,18 @@ func rowAlignedLabel(text string, col color.Color, font *g.FontInfo) alignedRowI
 					}
 					imgui.SetCursorPos(imgui.Vec2{X: x, Y: y})
 					g.Label(text).Build()
-					itemW = imgui.GetItemRectSize().X
+					itemW = imgui.ItemRectSize().X
 				})).Build()
 			return itemW
 		},
 	}
 }
 
-func rowAlignedRadio(label string, active bool, font *g.FontInfo, onChange func()) alignedRowItem {
+func rowAlignedRadio(label string, active bool, font textFont, onChange func()) alignedRowItem {
 	return alignedRowItem{
 		render: func(x, rowY, rowH float32) float32 {
 			var itemW float32
-			g.Style().
-				SetFont(font).
+			font.style().
 				To(g.Custom(func() {
 					_, framePadY := g.GetFramePadding()
 					_, textH := g.CalcTextSize("Ag")
@@ -455,19 +414,18 @@ func rowAlignedRadio(label string, active bool, font *g.FontInfo, onChange func(
 					}
 					imgui.SetCursorPos(imgui.Vec2{X: x, Y: y})
 					g.RadioButton(label, active).OnChange(onChange).Build()
-					itemW = imgui.GetItemRectSize().X
+					itemW = imgui.ItemRectSize().X
 				})).Build()
 			return itemW
 		},
 	}
 }
 
-func rowAlignedLink(label, tip string, font *g.FontInfo, padX, padY float32, onClick func()) alignedRowItem {
+func rowAlignedLink(label, tip string, font textFont, padX, padY float32, onClick func()) alignedRowItem {
 	return alignedRowItem{
 		render: func(x, rowY, rowH float32) float32 {
 			var itemW float32
-			g.Style().
-				SetFont(font).
+			font.style().
 				To(g.Custom(func() {
 					_, textH := g.CalcTextSize(label)
 					btnH := textH + padY*2
@@ -517,7 +475,7 @@ func renderAutoHeightCard(
 			SetStyleFloat(g.StyleVarChildBorderSize, borderSize).
 			To(
 				g.Child().
-					ID(id).
+					ID(g.ID(id)).
 					Border(borderSize > 0).
 					Flags(flags).
 					Size(g.Auto, height).
@@ -549,17 +507,15 @@ func renderCalloutCard(id string, borderColor, bgColor color.RGBA, title, body s
 	content := g.Layout{}
 	if title != "" {
 		content = append(content,
-			g.Style().
+			fontSemiBold(20).style().
 				SetColor(g.StyleColorText, borderColor).
-				SetFont(fontSemiBold(20)).
 				To(g.Label(title).Wrapped(true)),
 		)
 	}
 	if body != "" {
 		content = append(content,
-			g.Style().
+			fontRegular(20).style().
 				SetColor(g.StyleColorText, ThemeFg1).
-				SetFont(fontRegular(20)).
 				To(g.Label(body).Wrapped(true)),
 		)
 	}

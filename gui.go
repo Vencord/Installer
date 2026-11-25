@@ -8,6 +8,11 @@
 
 package main
 
+// const char *glfwGetKeyName(int key, int scancode);
+// int glfwGetPlatform(void);
+// enum { GLFW_PLATFORM_WAYLAND = 0x00060003 };
+import "C"
+
 import (
 	"bytes"
 	_ "embed"
@@ -24,9 +29,9 @@ import (
 	"sync/atomic"
 	"vencordinstaller/buildinfo"
 
+	"github.com/AllenDang/cimgui-go/backend/glfwbackend"
+	"github.com/AllenDang/cimgui-go/imgui"
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/imgui-go"
-	"github.com/go-gl/glfw/v3.3/glfw"
 
 	// png decoder for icon
 	_ "image/png"
@@ -103,14 +108,14 @@ func hasZoomModifier(mod g.Modifier, goos string) bool {
 	return false
 }
 
-func classifyZoomKey(key g.Key, keyName string) zoomAction {
+func classifyZoomKey(key glfwbackend.GLFWKey, keyName string) zoomAction {
 	// Numpad keys are layout-independent across keyboard layouts.
 	switch key {
-	case g.KeyKPAdd:
+	case glfwbackend.GLFWKeyKpAdd:
 		return zoomIn
-	case g.KeyKPSubtract:
+	case glfwbackend.GLFWKeyKpSubtract:
 		return zoomOut
-	case g.KeyKP0:
+	case glfwbackend.GLFWKeyKp0:
 		return zoomReset
 	}
 
@@ -127,11 +132,11 @@ func classifyZoomKey(key g.Key, keyName string) zoomAction {
 	// Fallback if the platform did not provide a layout key name.
 	if keyName == "" {
 		switch key {
-		case g.KeyEqual:
+		case glfwbackend.GLFWKeyEqual:
 			return zoomIn
-		case g.KeyMinus:
+		case glfwbackend.GLFWKeyMinus:
 			return zoomOut
-		case g.Key0:
+		case glfwbackend.GLFWKey0:
 			return zoomReset
 		}
 	}
@@ -160,38 +165,25 @@ func performZoomAction(action zoomAction) bool {
 	return false
 }
 
-type zoomInputHandler struct {
-	base g.InputHandler
-}
-
-func (h *zoomInputHandler) RegisterKeyboardShortcuts(s ...g.Shortcut) {
-	if h.base != nil {
-		h.base.RegisterKeyboardShortcuts(s...)
+func handleKey(key, scancode, action, modifiers int) {
+	if g.Action(action) != g.Press {
+		return
 	}
-}
-
-func (h *zoomInputHandler) UnregisterWindowShortcuts() {
-	if h.base != nil {
-		h.base.UnregisterWindowShortcuts()
-	}
-}
-
-func (h *zoomInputHandler) Handle(key g.Key, mod g.Modifier) {
+	mod := g.Modifier(modifiers) &^ (g.ModNumLock | g.ModCapsLock)
 	if hasZoomModifier(mod, runtime.GOOS) {
-		keyName := ""
-		if key != g.KeyUnknown {
-			keyName = glfw.GetKeyName(glfw.Key(key), 0)
+		name := C.GoString(C.glfwGetKeyName(C.int(key), C.int(scancode)))
+		performZoomAction(classifyZoomKey(glfwbackend.GLFWKey(key), name))
+	} else if mod == g.ModNone {
+		switch glfwbackend.GLFWKey(key) {
+		case glfwbackend.GLFWKeyUp:
+			if radioIdx > 0 {
+				radioIdx--
+			}
+		case glfwbackend.GLFWKeyDown:
+			if radioIdx < maxRadioIdx() {
+				radioIdx++
+			}
 		}
-		if action := classifyZoomKey(key, keyName); action != zoomNone {
-			performZoomAction(action)
-			return
-		}
-	}
-
-	if h.base != nil {
-		// Strip lock flags so giu's exact-match shortcut table works with NumLock/CapsLock on.
-		cleanMod := mod &^ (g.ModNumLock | g.ModCapsLock)
-		h.base.Handle(key, cleanMod)
 	}
 }
 
@@ -205,7 +197,7 @@ func handleWheelZoom() {
 		return
 	}
 
-	wheel := imgui.CurrentIO().GetMouseWheelDelta()
+	wheel := imgui.CurrentIO().MouseWheel()
 	if wheel > 0 {
 		performZoomAction(zoomIn)
 	} else if wheel < 0 {
@@ -214,6 +206,21 @@ func handleWheelZoom() {
 }
 
 func main() {
+	const width, height = 1200, 800
+	win = g.NewMasterWindow("Vencord Installer", width, height, 0)
+	wayland := C.glfwGetPlatform() == C.GLFW_PLATFORM_WAYLAND
+	// GLFW 3.3 scaled the initial window on platforms with pixel-based window coordinates.
+	if runtime.GOOS == "windows" || (runtime.GOOS == "linux" && !wayland) {
+		scaleX, scaleY := g.Context.Backend().ContentScale()
+		if scaleX != 1 || scaleY != 1 {
+			win.SetSize(int(snap(width*scaleX)), int(snap(height*scaleY)))
+		}
+	}
+	win.SetSizeLimits(800, 580, -1, -1)
+	g.Context.Backend().SetKeyCallback(handleKey)
+	applyTheme(win)
+	initFonts()
+
 	InitGithubDownloader()
 	refreshDiscords()
 
@@ -228,20 +235,15 @@ func main() {
 		g.Update()
 	}()
 
-	setupDefaultFont()
-	win = g.NewMasterWindow("Vencord Installer", 1200, 800, 0)
-	win.SetSizeLimits(800, 580, g.DontCare, g.DontCare)
-	win.SetInputHandler(&zoomInputHandler{base: g.Context.InputHandler})
-	applyTheme(win)
-	initFonts()
-
 	icon, _, err := image.Decode(bytes.NewReader(iconBytes))
 	if err != nil {
 		Log.Warn("Failed to load application icon", err)
 		Log.Debug(iconBytes, len(iconBytes))
 	} else {
 		appIcon = icon
-		win.SetIcon([]image.Image{icon})
+		if !wayland {
+			win.SetIcon(icon)
+		}
 	}
 
 	win.Run(loop)
@@ -587,11 +589,10 @@ func renderFilesDirErr() g.Widget {
 }
 
 func Tooltip(label string) g.Widget {
-	return g.Style().
+	return fontRegular(18).style().
 		SetColor(g.StyleColorPopupBg, ThemeBg0).
 		SetColor(g.StyleColorBorder, ThemeFg0Muted).
 		SetColor(g.StyleColorText, ThemeFg1).
-		SetFont(fontRegular(18)).
 		SetStyle(g.StyleVarWindowPadding, scaled(10), scaled(8)).
 		SetStyleFloat(g.StyleVarWindowRounding, scaled(8)).
 		SetStyleFloat(g.StyleVarPopupBorderSize, 1).
@@ -601,10 +602,9 @@ func Tooltip(label string) g.Widget {
 }
 
 func styledModal(id string, content ...g.Widget) g.Widget {
-	return g.Style().
+	return fontRegular(20).style().
 		SetColor(g.StyleColorPopupBg, ThemeBgCurrentWord).
 		SetColor(g.StyleColorBorder, ThemeFg0Muted).
-		SetFont(fontRegular(20)).
 		SetStyle(g.StyleVarWindowPadding, scaled(28), scaled(24)).
 		SetStyleFloat(g.StyleVarWindowRounding, scaled(14)).
 		SetStyleFloat(g.StyleVarPopupBorderSize, 1.5).
@@ -632,9 +632,8 @@ func InfoModalExtra(id, title, description, extra string) g.Widget {
 func ErrorModal(id, title, errText, supportLink string) g.Widget {
 	return styledModal(
 		id,
-		g.Style().
+		fontSemiBold(30).style().
 			SetColor(g.StyleColorText, ThemeAccentRed).
-			SetFont(fontSemiBold(30)).
 			To(g.Label(title)),
 		g.Dummy(0, scaled(6)),
 		g.Custom(func() {
@@ -643,7 +642,7 @@ func ErrorModal(id, title, errText, supportLink string) g.Widget {
 			padX := scaled(3)
 			padY := scaled(2)
 			var rowH float32
-			g.Style().SetFont(labelFont).To(g.Custom(func() {
+			labelFont.style().To(g.Custom(func() {
 				_, textH := g.CalcTextSize("Ag")
 				rowH = textH + padY*2
 			})).Build()
@@ -657,9 +656,8 @@ func ErrorModal(id, title, errText, supportLink string) g.Widget {
 			).Build()
 		}),
 		g.Dummy(0, scaled(14)),
-		g.Style().
+		fontSemiBold(18).style().
 			SetColor(g.StyleColorText, ThemeGrey2).
-			SetFont(fontSemiBold(18)).
 			To(g.Label("Error Information")),
 		g.Dummy(0, scaled(4)),
 		g.Style().
@@ -673,14 +671,13 @@ func ErrorModal(id, title, errText, supportLink string) g.Widget {
 					Border(true).
 					Size(scaled(580), scaled(130)).
 					Layout(
-						g.Style().
+						fontRegular(18).style().
 							SetColor(g.StyleColorText, ThemeFg1).
-							SetFont(fontRegular(18)).
 							To(g.Label(errText).Wrapped(true)),
 					),
 			),
 		g.Dummy(0, scaled(16)),
-		g.Style().SetFont(fontSemiBold(20)).To(
+		fontSemiBold(20).style().To(
 			accentButton("Ok", ThemeAccentPurple, scaled(120), scaled(40), false, "", func() {
 				g.CloseCurrentPopup()
 			}),
@@ -699,14 +696,12 @@ func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widge
 
 	return styledModal(
 		id,
-		g.Style().
+		fontSemiBold(30).style().
 			SetColor(g.StyleColorText, titleColor).
-			SetFont(fontSemiBold(30)).
 			To(g.Label(title)),
 		g.Dummy(0, scaled(8)),
-		g.Style().
+		fontRegular(20).style().
 			SetColor(g.StyleColorText, ThemeFg0).
-			SetFont(fontRegular(20)).
 			To(g.Label(description)),
 		&CondWidget{extra != "", func() g.Widget {
 			return g.Column(
@@ -722,9 +717,8 @@ func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widge
 							Border(true).
 							Size(scaled(580), scaled(110)).
 							Layout(
-								g.Style().
+								fontRegular(18).style().
 									SetColor(g.StyleColorText, ThemeFg1).
-									SetFont(fontRegular(18)).
 									To(g.Label(extra).Wrapped(true)),
 							),
 					),
@@ -733,7 +727,7 @@ func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widge
 		&CondWidget{id == "#scuffed-install", func() g.Widget {
 			return g.Column(
 				g.Dummy(0, scaled(12)),
-				g.Style().SetFont(fontSemiBold(20)).To(
+				fontSemiBold(20).style().To(
 					accentButton("Take me there!", ThemeAccentBlue, scaled(210), scaled(40), false, "", func() {
 						// this issue only exists on windows so using Windows specific path is oki
 						username := os.Getenv("USERNAME")
@@ -746,7 +740,7 @@ func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widge
 		&CondWidget{id == "#insufficient-permissions", func() g.Widget {
 			return g.Column(
 				g.Dummy(0, scaled(12)),
-				g.Style().SetFont(fontSemiBold(20)).To(
+				fontSemiBold(20).style().To(
 					accentButton("Open Settings", ThemeAccentBlue, scaled(210), scaled(40), false, "", func() {
 						// "App Management" permissions doesnt exist on Monterey, just use full disk access for now
 						g.OpenURL("x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")
@@ -757,7 +751,7 @@ func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widge
 		g.Dummy(0, scaled(18)),
 		&CondWidget{isOpenAsar,
 			func() g.Widget {
-				return g.Style().SetFont(fontSemiBold(20)).To(
+				return fontSemiBold(20).style().To(
 					g.Row(
 						accentButton("Accept", ThemeAccentPurple, scaled(125), scaled(40), false, "", func() {
 							acceptedOpenAsar = true
@@ -770,7 +764,7 @@ func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widge
 				)
 			},
 			func() g.Widget {
-				return g.Style().SetFont(fontSemiBold(20)).To(
+				return fontSemiBold(20).style().To(
 					accentButton("Ok", ThemeAccentPurple, scaled(120), scaled(40), false, "", func() {
 						g.CloseCurrentPopup()
 					}),
@@ -800,7 +794,7 @@ func PostActionModal(id, title, shortDesc, fallbackDesc string) g.Widget {
 			if relaunchTarget != nil {
 				target := relaunchTarget
 				snapshot := relaunchSnapshot
-				buttons = g.Style().SetFont(fontSemiBold(20)).To(
+				buttons = fontSemiBold(20).style().To(
 					g.Row(
 						accentButton("Relaunch Now", ThemeAccentPurple, scaled(175), scaled(40), false, "", func() {
 							relaunchTarget = nil
@@ -818,7 +812,7 @@ func PostActionModal(id, title, shortDesc, fallbackDesc string) g.Widget {
 					),
 				)
 			} else {
-				buttons = g.Style().SetFont(fontSemiBold(20)).To(
+				buttons = fontSemiBold(20).style().To(
 					accentButton("Ok", ThemeAccentPurple, scaled(120), scaled(40), false, "", func() {
 						g.CloseCurrentPopup()
 					}),
@@ -826,14 +820,12 @@ func PostActionModal(id, title, shortDesc, fallbackDesc string) g.Widget {
 			}
 
 			g.Layout{
-				g.Style().
+				fontSemiBold(30).style().
 					SetColor(g.StyleColorText, titleColor).
-					SetFont(fontSemiBold(30)).
 					To(g.Label(title)),
 				g.Dummy(0, scaled(8)),
-				g.Style().
+				fontRegular(20).style().
 					SetColor(g.StyleColorText, ThemeFg0).
-					SetFont(fontRegular(20)).
 					To(g.Label(description)),
 				g.Dummy(0, scaled(18)),
 				buttons,
@@ -845,14 +837,12 @@ func PostActionModal(id, title, shortDesc, fallbackDesc string) g.Widget {
 func UpdateModal() g.Widget {
 	return styledModal(
 		"#update-prompt",
-		g.Style().
+		fontSemiBold(30).style().
 			SetColor(g.StyleColorText, ThemeAccentPurple).
-			SetFont(fontSemiBold(30)).
 			To(g.Label("Your Installer is outdated!")),
 		g.Dummy(0, scaled(8)),
-		g.Style().
+		fontRegular(20).style().
 			SetColor(g.StyleColorText, ThemeFg0).
-			SetFont(fontRegular(20)).
 			To(
 				g.Label(
 					"Would you like to update now?\n\n"+
@@ -863,7 +853,7 @@ func UpdateModal() g.Widget {
 				),
 			),
 		g.Dummy(0, scaled(18)),
-		g.Style().SetFont(fontSemiBold(20)).To(
+		fontSemiBold(20).style().To(
 			g.Row(
 				accentButton("Update Now", ThemeAccentPurple, scaled(160), scaled(40), false, "", func() {
 					if runtime.GOOS == "darwin" {
@@ -978,7 +968,7 @@ func renderHeaderMetadata() g.Widget {
 
 	return g.Custom(func() {
 		var rowH float32
-		g.Style().SetFont(metaFont).To(g.Custom(func() {
+		metaFont.style().To(g.Custom(func() {
 			_, textH := g.CalcTextSize("Ag")
 			rowH = textH + padY*2
 		})).Build()
@@ -995,10 +985,10 @@ func renderHeader() g.Widget {
 
 		if appIcon != nil {
 			var titleH, metaH float32
-			g.Style().SetFont(fontSemiBold(40)).To(g.Custom(func() {
+			fontSemiBold(40).style().To(g.Custom(func() {
 				_, titleH = g.CalcTextSize("Vencord Installer")
 			})).Build()
-			g.Style().SetFont(fontRegular(18)).To(g.Custom(func() {
+			fontRegular(18).style().To(g.Custom(func() {
 				_, metaH = g.CalcTextSize("Ag")
 			})).Build()
 
@@ -1014,9 +1004,8 @@ func renderHeader() g.Widget {
 		}
 
 		g.Column(
-			g.Style().
+			fontSemiBold(40).style().
 				SetColor(g.StyleColorText, ThemeAccentPurple).
-				SetFont(fontSemiBold(40)).
 				To(g.Label("Vencord Installer")),
 			renderHeaderMetadata(),
 		).Build()
@@ -1048,9 +1037,8 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 			refreshH := scaled(34)
 
 			var titleH float32
-			g.Style().
+			headingFont.style().
 				SetColor(g.StyleColorText, ThemeFg1).
-				SetFont(headingFont).
 				To(g.Custom(func() {
 					_, titleH = g.CalcTextSize("Select a Discord Install")
 					rowH := titleH
@@ -1067,7 +1055,7 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 			}
 			targetX := snap(startX + availW - refreshW)
 			imgui.SetCursorPos(imgui.Vec2{X: targetX, Y: snap(startY + (rowH-refreshH)/2)})
-			g.Style().SetFont(fontSemiBold(18)).To(
+			fontSemiBold(18).style().To(
 				secondaryButton("Refresh", refreshW, refreshH, false, "Re-scan for Discord installations", refreshDiscords),
 			).Build()
 
@@ -1086,12 +1074,11 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 
 			return &CondWidget{!showCustomLocation, func() g.Widget {
 				return g.Column(
-					g.Style().
+					fontRegular(24).style().
 						SetColor(g.StyleColorText, ThemeFg0).
-						SetFont(fontRegular(24)).
 						To(g.Label(s).Wrapped(true)),
 					g.Dummy(0, scaled(10)),
-					g.Style().SetFont(fontRegular(18)).To(
+					fontRegular(18).style().To(
 						g.Checkbox("I am an advanced user and have Discord installed at a different location", &showCustomLocation).
 							OnChange(func() {
 								if showCustomLocation {
@@ -1127,7 +1114,7 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 
 			return g.Custom(func() {
 				var rowH float32
-				g.Style().SetFont(radioFont).To(g.Custom(func() {
+				radioFont.style().To(g.Custom(func() {
 					_, framePadY := g.GetFramePadding()
 					_, textH := g.CalcTextSize("Ag")
 					rowH = textH + framePadY*2
@@ -1137,7 +1124,7 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 		}),
 
 		&CondWidget{showCustomLocation, func() g.Widget {
-			return g.Style().SetFont(radioFont).To(
+			return radioFont.style().To(
 				g.RadioButton("Custom Install Location", radioIdx == customChoiceIdx).
 					OnChange(makeRadioOnChange(customChoiceIdx)),
 			)
@@ -1148,7 +1135,7 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 				availW, _ := g.GetAvailableRegion()
 				g.Column(
 					g.Dummy(0, scaled(6)),
-					g.Style().
+					fontRegular(20).style().
 						SetColor(g.StyleColorFrameBg, ThemeBg0).
 						SetColor(g.StyleColorFrameBgHovered, ThemeBg0).
 						SetColor(g.StyleColorFrameBgActive, ThemeBg0).
@@ -1156,7 +1143,6 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 						SetStyle(g.StyleVarFramePadding, scaled(14), scaled(12)).
 						SetStyleFloat(g.StyleVarFrameBorderSize, 1).
 						SetStyleFloat(g.StyleVarFrameRounding, scaled(10)).
-						SetFont(fontRegular(20)).
 						To(
 							g.InputText(&customDir).Hint("Enter path to your Discord install folder (Tab to autocomplete)").
 								Size(availW).
@@ -1164,8 +1150,8 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 								OnChange(onCustomInputChanged).
 								// this library has its own autocomplete but it's broken
 								Callback(
-									func(data imgui.InputTextCallbackData) int32 {
-										if len(candidates) == 0 {
+									func(data imgui.InputTextCallbackData) int {
+										if data.EventFlag() != imgui.InputTextFlagsCallbackCompletion || len(candidates) == 0 {
 											return 0
 										}
 										// just wrap around
@@ -1180,15 +1166,15 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 										// Delete previous auto complete
 										if lastAutoComplete != "" {
 											start -= len(lastAutoComplete)
-											data.DeleteBytes(start, len(lastAutoComplete))
+											data.DeleteChars(int32(start), int32(len(lastAutoComplete)))
 										} else if autoCompleteFile != "" { // delete partial input
 											start -= len(autoCompleteFile)
-											data.DeleteBytes(start, len(autoCompleteFile))
+											data.DeleteChars(int32(start), int32(len(autoCompleteFile)))
 										}
 
 										// Insert auto complete
 										lastAutoComplete = candidates[autoCompleteIdx].(string)
-										data.InsertBytes(start, []byte(lastAutoComplete))
+										data.InsertChars(int32(start), lastAutoComplete)
 										autoCompleteIdx++
 
 										return 0
@@ -1198,13 +1184,12 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 					&CondWidget{len(candidates) > 0, func() g.Widget {
 						return g.Column(
 							g.Dummy(0, scaled(6)),
-							g.Style().
+							fontRegular(18).style().
 								SetColor(g.StyleColorChildBg, ThemeBg0).
 								SetColor(g.StyleColorBorder, ThemeFg0Muted2).
 								SetStyle(g.StyleVarWindowPadding, scaled(10), scaled(8)).
 								SetStyleFloat(g.StyleVarChildRounding, scaled(8)).
 								SetStyleFloat(g.StyleVarChildBorderSize, 1).
-								SetFont(fontRegular(18)).
 								To(
 									g.Child().
 										ID("AutoCompleteList").
@@ -1261,7 +1246,7 @@ func renderActionButtons(currentDiscord *DiscordInstall, isOpenAsar bool) g.Widg
 		openAsarColor := Ternary(isOpenAsar, ThemeAccentRed, ThemeAccentAqua)
 		openAsarTip := Ternary(isOpenAsar, "Restore Discord's original app.asar", "Install OpenAsar for faster startup & performance")
 
-		g.Style().SetFont(fontSemiBold(20)).To(
+		fontSemiBold(20).style().To(
 			g.Row(
 				accentButton("Install", ThemeAccentGreen, btnW, btnH, installDisabled, installTip, handlePatch),
 				accentButton("Reinstall / Repair", ThemeAccentBlue, btnW, btnH, installDisabled, repairTip, func() {
@@ -1312,7 +1297,7 @@ func renderFooter() g.Widget {
 
 	return g.Custom(func() {
 		var rowH float32
-		g.Style().SetFont(footerFont).To(g.Custom(func() {
+		footerFont.style().To(g.Custom(func() {
 			_, textH := g.CalcTextSize("Ag")
 			rowH = textH + padY*2
 		})).Build()
@@ -1394,25 +1379,12 @@ func renderInstaller() g.Widget {
 }
 
 func loop() {
-	syncPixelScale()
 	handleWheelZoom()
 	pushedVars := pushGlobalStyleVars()
 
 	g.SingleWindow().
-		RegisterKeyboardShortcuts(
-			g.WindowShortcut{Key: g.KeyUp, Callback: func() {
-				if radioIdx > 0 {
-					radioIdx--
-				}
-			}},
-			g.WindowShortcut{Key: g.KeyDown, Callback: func() {
-				if radioIdx < maxRadioIdx() {
-					radioIdx++
-				}
-			}},
-		).
 		Layout(
-			g.Style().SetFont(fontRegular(20)).To(
+			fontRegular(20).style().To(
 				renderHeader(),
 				g.Dummy(0, scaled(16)),
 
@@ -1433,7 +1405,7 @@ func loop() {
 										padX := scaled(3)
 										padY := scaled(2)
 										var rowH float32
-										g.Style().SetFont(labelFont).To(g.Custom(func() {
+										labelFont.style().To(g.Custom(func() {
 											_, textH := g.CalcTextSize("Ag")
 											rowH = textH + padY*2
 										})).Build()
@@ -1448,7 +1420,7 @@ func loop() {
 										).Build()
 									}),
 									g.Dummy(0, scaled(8)),
-									g.Style().SetFont(fontSemiBold(18)).To(
+									fontSemiBold(18).style().To(
 										accentButton("Retry", ThemeAccentRed, scaled(115), scaled(34), false, "Retry fetching release info from GitHub", retryGithubFetch),
 									),
 								),
