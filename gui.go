@@ -63,6 +63,11 @@ var (
 	appIcon    image.Image
 
 	win *g.MasterWindow
+
+	relaunchTarget   *DiscordInstall
+	relaunchSnapshot *RunningDiscord
+	relaunchNote     string
+	relaunchErr      error
 )
 
 //go:embed winres/icon.png
@@ -356,21 +361,52 @@ func handleOpenAsar() {
 	g.OpenPopup("#openasar-confirm")
 }
 
+func preparePostPatchRelaunch(di *DiscordInstall) {
+	relaunchTarget = nil
+	relaunchSnapshot = nil
+	relaunchNote = ""
+
+	if di == nil {
+		return
+	}
+
+	name := branchDisplayName(di.branch)
+	if runtime.GOOS == "windows" {
+		relaunched, err := di.RelaunchKilled()
+		if err != nil {
+			Log.Warn("Failed to relaunch", name+":", err)
+			relaunchNote = "Failed to automatically relaunch " + name + ": " + err.Error() + "\nPlease start it manually."
+		} else if relaunched {
+			relaunchNote = name + " has been automatically relaunched."
+		}
+		return
+	}
+
+	if running := di.FindRunning(); running != nil {
+		relaunchTarget = di
+		relaunchSnapshot = running
+	}
+}
+
 func handleOpenAsarConfirmed(choice *DiscordInstall) {
 	if choice == nil {
 		return
 	}
 	if choice.IsOpenAsar() {
 		if err := choice.UninstallOpenAsar(); err != nil {
+			choice.ClearPendingRelaunch()
 			handleErr(choice, err, "uninstall OpenAsar from")
 		} else {
+			preparePostPatchRelaunch(choice)
 			g.OpenPopup("#openasar-unpatched")
 			g.Update()
 		}
 	} else {
 		if err := choice.InstallOpenAsar(); err != nil {
+			choice.ClearPendingRelaunch()
 			handleErr(choice, err, "install OpenAsar on")
 		} else {
+			preparePostPatchRelaunch(choice)
 			g.OpenPopup("#openasar-patched")
 			g.Update()
 		}
@@ -406,16 +442,20 @@ func (di *DiscordInstall) Patch() {
 		return
 	}
 	if err := di.patch(); err != nil {
+		di.ClearPendingRelaunch()
 		handleErr(di, err, "patch")
 	} else {
+		preparePostPatchRelaunch(di)
 		g.OpenPopup("#patched")
 	}
 }
 
 func (di *DiscordInstall) Unpatch() {
 	if err := di.unpatch(); err != nil {
+		di.ClearPendingRelaunch()
 		handleErr(di, err, "unpatch")
 	} else {
+		preparePostPatchRelaunch(di)
 		g.OpenPopup("#unpatched")
 	}
 }
@@ -490,19 +530,6 @@ func makeAutoComplete() []any {
 func makeRadioOnChange(i int) func() {
 	return func() {
 		radioIdx = i
-	}
-}
-
-func branchDisplayName(branch string) string {
-	switch branch {
-	case "ptb":
-		return "Discord PTB"
-	case "canary":
-		return "Discord Canary"
-	case "development":
-		return "Discord Development"
-	default:
-		return "Discord"
 	}
 }
 
@@ -719,6 +746,68 @@ func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widge
 				)
 			},
 		},
+	)
+}
+
+func PostActionModal(id, title, shortDesc, fallbackDesc string) g.Widget {
+	titleColor := ThemeAccentPurple
+	if id == "#patched" || id == "#openasar-patched" {
+		titleColor = ThemeAccentGreen
+	}
+
+	return styledModal(
+		id,
+		g.Custom(func() {
+			description := fallbackDesc
+			if relaunchTarget != nil {
+				description = shortDesc + "\n\n" + branchDisplayName(relaunchTarget.branch) + " is currently running. Would you like to relaunch it now?"
+			} else if relaunchNote != "" {
+				description = shortDesc + "\n\n" + relaunchNote
+			}
+
+			var buttons g.Widget
+			if relaunchTarget != nil {
+				target := relaunchTarget
+				snapshot := relaunchSnapshot
+				buttons = g.Style().SetFont(fontSemiBold(20)).To(
+					g.Row(
+						accentButton("Relaunch Now", ThemeAccentPurple, scaled(175), scaled(40), false, "", func() {
+							relaunchTarget = nil
+							relaunchSnapshot = nil
+							if err := target.Relaunch(snapshot); err != nil {
+								relaunchErr = err
+							}
+							g.CloseCurrentPopup()
+						}),
+						secondaryButton("Not Now", scaled(125), scaled(40), false, "", func() {
+							relaunchTarget = nil
+							relaunchSnapshot = nil
+							g.CloseCurrentPopup()
+						}),
+					),
+				)
+			} else {
+				buttons = g.Style().SetFont(fontSemiBold(20)).To(
+					accentButton("Ok", ThemeAccentPurple, scaled(120), scaled(40), false, "", func() {
+						g.CloseCurrentPopup()
+					}),
+				)
+			}
+
+			g.Layout{
+				g.Style().
+					SetColor(g.StyleColorText, titleColor).
+					SetFont(fontSemiBold(30)).
+					To(g.Label(title)),
+				g.Dummy(0, scaled(8)),
+				g.Style().
+					SetColor(g.StyleColorText, ThemeFg0).
+					SetFont(fontRegular(20)).
+					To(g.Label(description)),
+				g.Dummy(0, scaled(18)),
+				buttons,
+			}.Build()
+		}),
 	)
 }
 
@@ -1212,6 +1301,12 @@ func renderInstaller() g.Widget {
 		g.OpenPopup("#update-prompt")
 	}
 
+	if relaunchErr != nil {
+		err := relaunchErr
+		relaunchErr = nil
+		ShowModal("Failed to relaunch Discord", "Please restart Discord manually.", err.Error())
+	}
+
 	return g.Layout{
 		renderCalloutCard(
 			"OfficialDownloadNoticeCard",
@@ -1244,8 +1339,8 @@ func renderInstaller() g.Widget {
 
 		renderFooter(),
 
-		InfoModal("#patched", "Installed!", "Vencord was successfully installed!"),
-		InfoModal("#unpatched", "Uninstalled", "Vencord has been uninstalled!"),
+		PostActionModal("#patched", "Installed!", "Vencord was successfully installed!", "Vencord was successfully installed!"),
+		PostActionModal("#unpatched", "Uninstalled", "Vencord has been uninstalled!", "Vencord has been uninstalled!"),
 		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
 			"Sometimes Discord decides to install to the wrong location for some reason!\n"+
 			"You need to fix this before patching, otherwise Vencord will likely not work.\n\n"+
@@ -1258,8 +1353,8 @@ func renderInstaller() g.Widget {
 			"no support will be provided, join the OpenAsar Server instead!\n\n"+
 			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", "", true),
 		InfoModal("#insufficient-permissions", "Insufficient Permissions", "Permission denied. Please grant the installer permissions in the settings."),
-		InfoModal("#openasar-patched", "Successfully Installed OpenAsar", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
-		InfoModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
+		PostActionModal("#openasar-patched", "Successfully Installed OpenAsar", "OpenAsar was successfully installed!", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
+		PostActionModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "OpenAsar has been uninstalled!", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
 		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install.\nMake sure you select the base folder.\n\nHint: Discord snap is not supported. Use flatpak or .deb."),
 		InfoModalExtra("#modal"+strconv.Itoa(modalId), modalTitle, modalMessage, modalExtra),
 		ErrorModal("#error-modal"+strconv.Itoa(modalId), modalTitle, modalExtra, modalSupportLink),
