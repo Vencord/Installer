@@ -247,8 +247,17 @@ func main() {
 }
 
 func refreshDiscords() {
+	prev := getSelectedDiscord()
+	wasCustom := showCustomLocation && radioIdx == customChoiceIdx
+
 	discords = FindDiscords()
 	customChoiceIdx = len(discords)
+
+	if wasCustom {
+		radioIdx = customChoiceIdx
+	} else if _, idx := findMatchingInstall(discords, prev); idx != -1 {
+		radioIdx = idx
+	}
 	clampRadioIdx()
 }
 
@@ -302,8 +311,13 @@ func (w *CondWidget) Build() {
 }
 
 func getChosenInstall() *DiscordInstall {
-	if d := getSelectedDiscord(); d != nil {
-		return d
+	if prev := getSelectedDiscord(); prev != nil {
+		refreshDiscords()
+		if refreshed, idx := findMatchingInstall(discords, prev); refreshed != nil {
+			radioIdx = idx
+			return refreshed
+		}
+		return nil
 	}
 
 	if !showCustomLocation {

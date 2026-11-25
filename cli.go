@@ -266,6 +266,8 @@ func handlePromptError(err error) {
 }
 
 func PromptDiscord(action, dir, branch string) *DiscordInstall {
+	discords = FindDiscords()
+
 	if branch == "auto" {
 		for _, b := range []string{"stable", "canary", "ptb"} {
 			for _, discord := range discords {
@@ -314,7 +316,12 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 	handlePromptError(err)
 
 	if choice != "Custom Location" {
-		return discords[SliceIndex(items, choice)].(*DiscordInstall)
+		selected := discords[SliceIndex(items, choice)].(*DiscordInstall)
+		discords = FindDiscords()
+		if refreshed, _ := findMatchingInstall(discords, selected); refreshed != nil {
+			return refreshed
+		}
+		return selected
 	}
 
 	for {
