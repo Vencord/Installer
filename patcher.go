@@ -54,6 +54,7 @@ type DiscordInstall struct {
 	isPatched     bool
 	isFlatpak     bool
 	isOpenAsar    *bool
+	relaunchInfo  *RunningDiscord
 }
 
 //region Patch
@@ -120,14 +121,7 @@ func (di *DiscordInstall) patch() error {
 	di.isPatched = true
 
 	if di.isFlatpak {
-		pathElements := strings.Split(di.path, "/")
-		var name string
-		for _, e := range pathElements {
-			if strings.HasPrefix(e, "com.discordapp") {
-				name = e
-				break
-			}
-		}
+		name := getFlatpakAppId(di.path)
 
 		Log.Debug("This is a flatpak. Trying to grant the Flatpak access to", FilesDir+"...")
 

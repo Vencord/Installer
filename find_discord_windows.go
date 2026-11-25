@@ -12,9 +12,6 @@ import (
 	path "path/filepath"
 	"strings"
 	"sync"
-	"unsafe"
-
-	"golang.org/x/sys/windows"
 )
 
 var windowsNames = map[string]string{
@@ -94,26 +91,19 @@ func PreparePatch(di *DiscordInstall) {
 	killLock.Lock()
 	defer killLock.Unlock()
 
-	name := windowsNames[di.branch]
-	Log.Debug("Trying to kill", name)
-	pid := findProcessIdByName(name + ".exe")
-	if pid == 0 {
-		Log.Debug("Didn't find process matching name")
+	info := di.findRunningInstance()
+	if info == nil {
+		Log.Debug("No running Discord process found for", di.path)
 		return
 	}
 
-	proc, err := os.FindProcess(int(pid))
-	if err != nil {
-		Log.Warn("Failed to find process with pid", pid)
-		return
+	if di.relaunchInfo == nil {
+		di.relaunchInfo = info
 	}
 
-	err = proc.Kill()
-	if err != nil {
-		Log.Warn("Failed to kill", name+":", err)
-	} else {
-		Log.Debug("Waiting for", name, "to exit")
-		_, _ = proc.Wait()
+	Log.Debug("Stopping running Discord instance at", di.path, "pids:", info.pids)
+	if err := killRunningInstance(di, info); err != nil {
+		Log.Warn("Failed to stop Discord:", err)
 	}
 }
 
@@ -133,22 +123,4 @@ func CheckScuffedInstall() bool {
 		}
 	}
 	return false
-}
-
-func findProcessIdByName(name string) uint32 {
-	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
-	if err != nil {
-		return 0
-	}
-
-	procEntry := windows.ProcessEntry32{Size: uint32(unsafe.Sizeof(windows.ProcessEntry32{}))}
-	for {
-		err = windows.Process32Next(snapshot, &procEntry)
-		if err != nil {
-			return 0
-		}
-		if windows.UTF16ToString(procEntry.ExeFile[:]) == name {
-			return procEntry.ProcessID
-		}
-	}
 }

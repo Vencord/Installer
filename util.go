@@ -80,6 +80,19 @@ func GetBranch(name string) string {
 	return "stable"
 }
 
+func branchDisplayName(branch string) string {
+	switch branch {
+	case "ptb":
+		return "Discord PTB"
+	case "canary":
+		return "Discord Canary"
+	case "dev", "development":
+		return "Discord Development"
+	default:
+		return "Discord"
+	}
+}
+
 func Ptr[T any](v T) *T {
 	return &v
 }
