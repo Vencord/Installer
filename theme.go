@@ -518,7 +518,7 @@ func renderAutoHeightCard(
 			To(
 				g.Child().
 					ID(id).
-					Border(true).
+					Border(borderSize > 0).
 					Flags(flags).
 					Size(g.Auto, height).
 					Layout(

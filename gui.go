@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	"math"
 	"os"
 	path "path/filepath"
@@ -1022,20 +1023,20 @@ func renderHeader() g.Widget {
 	})
 }
 
-func renderInstallListCard(candidates []any, maxListHeight float32) g.Widget {
+func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget {
 	headingFont := fontSemiBold(28)
 	radioFont := fontSemiBold(20)
 	badgeFont := fontSemiBold(18)
 	pathFont := fontRegular(20)
 
 	return renderAutoHeightCard(
-		"InstallSectionCard",
-		ThemeBgCurrentWord,
-		ThemeFg0Muted2,
-		1,
-		scaled(14),
-		scaled(22),
-		scaled(18),
+		"InstallSection",
+		color.RGBA{},
+		color.RGBA{},
+		0,
+		0,
+		0,
+		0,
 		scaled(180),
 		maxListHeight,
 		g.Custom(func() {
@@ -1358,7 +1359,7 @@ func renderInstaller() g.Widget {
 			if maxListH < scaled(160) {
 				maxListH = scaled(160)
 			}
-			renderInstallListCard(candidates, maxListH).Build()
+			renderInstallListSection(candidates, maxListH).Build()
 		}),
 
 		g.Dummy(0, scaled(18)),
