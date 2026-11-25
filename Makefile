@@ -11,7 +11,6 @@ IDENTITY 	?= -
 
 GUI 		?= 0
 DMG 		?= 0
-WAYLAND 	?= 0
 
 LDFLAGS 	?= -s -w -X 'vencordinstaller/buildinfo.InstallerGitHash=$(HASH)' -X 'vencordinstaller/buildinfo.InstallerTag=$(VERSION)'
 TAGS    	?= static
@@ -31,9 +30,6 @@ TAGS 		+= cli
 POSTFIX 	:= Cli
 else
 CGO 		:= 1
-ifeq ($(WAYLAND),1)
-TAGS 		+= wayland
-endif # WAYLAND
 endif # GUI
 
 # macOS specific
@@ -133,7 +129,6 @@ help:
 		'Options:' \
 		'  GUI=1       Build with GUI support' \
 		'  DMG=1       Build DMG for macOS' \
-		'  WAYLAND=1        Build with Wayland support for Linux' \
 		'  PLATFORM=<os>    Target platform (darwin, windows, linux)' \
 		'  ARCH=<arch>      Target architecture (amd64, arm64, 386, universal (macOS only))' \
 		'  IDENTITY=<id>    Code signing identity for macOS (default: -)' \

@@ -17,22 +17,11 @@ You need to install the [Go programming language](https://go.dev/doc/install) an
 <details>
 <summary>Additionally, if you're using Linux, you have to install some additional dependencies:</summary>
 
-#### Base dependencies
-```sh
-apt install -y pkg-config libsdl2-dev libglx-dev libgl1-mesa-dev
-dnf install pkg-config libGL-devel libXxf86vm-devel
-```
+The Linux GUI uses the x86-64 GLFW and ImGui libraries bundled with cimgui-go.
 
-#### X11 dependencies
 ```sh
-apt install -y xorg-dev
-dnf install libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
-```
-
-#### Wayland dependencies
-```sh
-apt install -y libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules
-dnf install wayland-devel libxkbcommon-devel wayland-protocols-devel extra-cmake-modules
+apt install -y libgl-dev libx11-dev
+dnf install libglvnd-devel libX11-devel
 ```
 
 </details>
@@ -47,14 +36,10 @@ go mod tidy
 
 #### Build the GUI
 
-##### Windows / Mac / Linux X11
+On Linux the same binary selects X11 or Wayland at startup.
+
 ```sh
 make GUI=1
-```
-
-##### Linux Wayland
-```sh
-make GUI=1 WAYLAND=1
 ```
 
 #### Build the CLI
