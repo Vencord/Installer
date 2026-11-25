@@ -175,7 +175,10 @@ jobs:
           name: ${{ env.VERSION }}
           prerelease: false
           draft: true
+          fail_on_unmatched_files: true
           files: |
-            build-linux/*
-            build-macos/*
-            build-windows/*
+            build-linux/VencordInstallerCli-linux
+            build-macos/VencordInstallerCli-darwin
+            build-macos/VencordInstaller.dmg
+            build-windows/VencordInstallerCli.exe
+            build-windows/VencordInstaller.exe

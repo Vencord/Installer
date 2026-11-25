@@ -45,7 +45,6 @@ endif
 all: build
 
 build:
-	$(MAKE) -s clean
 	mkdir -p build
 
 ifeq ($(PLATFORM),darwin)
@@ -68,6 +67,7 @@ ifeq ($(ARCH),universal)
 	rm build/installer-amd64 build/installer-arm64
 endif # ARCH
 ifeq ($(GUI),1)
+	rm -rf build/VencordInstaller.app
 	cp -R macos/VencordInstaller.app build/VencordInstaller.app
 	/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $(VERSION)" build/VencordInstaller.app/Contents/Info.plist
 	/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(HASH)" build/VencordInstaller.app/Contents/Info.plist
@@ -81,6 +81,7 @@ ifeq ($(DMG),1)
 ifeq ($(shell command -v create-dmg 2>/dev/null),)
 	$(error create-dmg is not installed)
 endif
+	rm -f build/VencordInstaller.dmg
 	create-dmg \
 		--volname "Vencord Installer" \
 		--volicon macos/dmg.icns \
