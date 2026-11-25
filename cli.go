@@ -158,7 +158,7 @@ func main() {
 			switch choice {
 			case "View Help Menu":
 				flag.Usage()
-				return
+				exit(0)
 			case "Quit":
 				return
 			case "Update Vencord Installer":
