@@ -87,7 +87,7 @@ func (h *Handler) Log(level Level, a ...any) {
 	}
 
 	levelName := levelNames[level]
-	var prefix any = levelColors[level].Sprintf(levelName + strings.Repeat(" ", len("error")-len(levelName)))
+	var prefix any = levelColors[level].Sprint(levelName + strings.Repeat(" ", len("error")-len(levelName)))
 	line := fmt.Sprintln(Prepend(a, prefix)...)
 
 	h.mu.Lock()
