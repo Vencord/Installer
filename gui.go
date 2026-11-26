@@ -466,6 +466,16 @@ func HandleScuffedInstall() {
 	g.OpenPopup("#scuffed-install")
 }
 
+const fullDiskAccessRetry = "If access is already enabled, remove Vencord Installer from the list, add it again, and restart the installer."
+
+func fullDiskAccessButton() g.Widget {
+	return fontSemiBold(20).style().To(
+		accentButton("Open Settings", ThemeAccentBlue, scaled(210), scaled(40), false, "", func() {
+			g.OpenURL("x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")
+		}),
+	)
+}
+
 func HandleInsufficientPermissions() {
 	g.OpenPopup("#insufficient-permissions")
 }
@@ -740,12 +750,7 @@ func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widge
 		&CondWidget{id == "#insufficient-permissions", func() g.Widget {
 			return g.Column(
 				g.Dummy(0, scaled(12)),
-				fontSemiBold(20).style().To(
-					accentButton("Open Settings", ThemeAccentBlue, scaled(210), scaled(40), false, "", func() {
-						// "App Management" permissions doesnt exist on Monterey, just use full disk access for now
-						g.OpenURL("x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")
-					}),
-				),
+				fullDiskAccessButton(),
 			)
 		}, nil},
 		g.Dummy(0, scaled(18)),
@@ -1066,6 +1071,17 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 		g.Separator(),
 		g.Dummy(0, scaled(6)),
 
+		&CondWidget{macDiscordScanDenied, func() g.Widget {
+			return renderCalloutCard(
+				"DiscordScanPermission",
+				ThemeAccentRed,
+				ThemeBgVisualRed,
+				"Permission denied while looking for Discord",
+				"Enable Full Disk Access for Vencord Installer in System Settings, then click Refresh. "+fullDiskAccessRetry,
+				fullDiskAccessButton(),
+			)
+		}, nil},
+
 		&CondWidget{len(discords) == 0, func() g.Widget {
 			s := "No Discord installs found. You first need to install Discord."
 			if runtime.GOOS == "linux" {
@@ -1074,9 +1090,11 @@ func renderInstallListSection(candidates []any, maxListHeight float32) g.Widget 
 
 			return &CondWidget{!showCustomLocation, func() g.Widget {
 				return g.Column(
-					fontRegular(24).style().
-						SetColor(g.StyleColorText, ThemeFg0).
-						To(g.Label(s).Wrapped(true)),
+					&CondWidget{!macDiscordScanDenied, func() g.Widget {
+						return fontRegular(24).style().
+							SetColor(g.StyleColorText, ThemeFg0).
+							To(g.Label(s).Wrapped(true))
+					}, nil},
 					g.Dummy(0, scaled(10)),
 					fontRegular(18).style().To(
 						g.Checkbox("I am an advanced user and have Discord installed at a different location", &showCustomLocation).
@@ -1368,7 +1386,7 @@ func renderInstaller() g.Widget {
 			"You're installing OpenAsar at your own risk. If you run into issues with OpenAsar,\n"+
 			"no support will be provided, join the OpenAsar Server instead!\n\n"+
 			"To install OpenAsar, press Accept and click 'Install OpenAsar' again.", "", true),
-		InfoModal("#insufficient-permissions", "Insufficient Permissions", "Permission denied. Please grant the installer permissions in the settings."),
+		InfoModal("#insufficient-permissions", "Insufficient Permissions", "Enable Full Disk Access for Vencord Installer in System Settings.\n"+fullDiskAccessRetry),
 		PostActionModal("#openasar-patched", "Successfully Installed OpenAsar", "OpenAsar was successfully installed!", "If Discord is still open, fully close it first. Then start it again and verify OpenAsar installed successfully!"),
 		PostActionModal("#openasar-unpatched", "Successfully Uninstalled OpenAsar", "OpenAsar has been uninstalled!", "If Discord is still open, fully close it first. Then start it again and it should be back to stock!"),
 		InfoModal("#invalid-custom-location", "Invalid Location", "The specified location is not a valid Discord install.\nMake sure you select the base folder.\n\nHint: Discord snap is not supported. Use flatpak or .deb."),

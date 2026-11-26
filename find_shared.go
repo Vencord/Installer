@@ -2,6 +2,8 @@ package main
 
 import "path"
 
+var macDiscordScanDenied bool
+
 func isResourcesFolderValid(dir string) bool {
 	return ExistsFile(path.Join(dir, "app.asar"))
 }
